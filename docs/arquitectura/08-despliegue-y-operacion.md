@@ -1,37 +1,20 @@
 # 08. Despliegue y operación
 
-## Entornos
+## Referencia Orivia
 
-- Desarrollo: AOI pequeño, productos de prueba identificados y datos sintéticos cuando convenga.
-- Staging: misma configuración que producción, claves separadas, revisión de publicación.
-- Producción piloto: un AOI acotado, publicación versionada y respaldo operativo.
+Docker Compose levanta frontend Next.js en Node 22, API Flask/Gunicorn en Python 3.12, PostgreSQL 16 y Caddy 2. Caddy termina TLS y enruta tráfico. PostgreSQL permanece interno. Lightsail Debian 13 y Tailscale aparecen en la documentación de staging Orivia; no asumir que están disponibles para Terrasent.
 
-## Componentes desplegables
+## Extensión Terrasent
 
-1. PWA estática servida por CDN o hosting web.
-2. API FastAPI en contenedor.
-3. Trabajos programados de búsqueda e ingesta.
-4. Cola o ejecución por lotes para procesamiento pesado.
-5. PostgreSQL/PostGIS administrado o respaldado.
-6. Almacenamiento de objetos para COG, manifiestos y archivos de origen permitidos.
+Agregar PostGIS, almacenamiento de objetos y worker científico de ingesta/procesamiento. Mantener cálculos SAR fuera de requests de Flask. Secretos ASF y proveedores permanecen en servidor. Separar límites de recursos del worker y API.
 
-## Publicación
+## Flujo de despliegue
 
-Construir -> validar contratos y capas -> generar manifiesto -> publicar API y datos -> publicar versión PWA -> verificar compatibilidad móvil y offline. El Service Worker usa versión de caché explícita para evitar mezclar shell nuevo y datos incompatibles.
+Build -> migraciones -> comprobar health/ready -> validar productos y capas -> revisión -> publicar manifiesto -> verificar mapa/API. Entornos de desarrollo, staging y piloto deben distinguir datos sintéticos y reales.
 
-## Observabilidad
+## Operación
 
-Registrar latencia y errores de API, éxito y retraso de ingesta, duración de procesamiento, cobertura de AOI, última adquisición, vigencia de capas y errores de rutas. No registrar coordenadas de usuario ni secretos.
+Monitorear API, base, retraso de ingesta, duración de procesamiento, cobertura AOI, vigencia de capas, error de rutas e integraciones. No registrar información privada.
 
-## Indicadores operativos
-
-- Frescura por fuente y porcentaje de AOI cubierto.
-- Tiempo desde adquisición hasta publicación.
-- Porcentaje de productos con calidad aprobada.
-- Disponibilidad de API y éxito de sincronización PWA.
-- Rutas disponibles frente a solicitudes y porcentaje con red vigente.
-
-## Respuesta a incidentes
-
-Retirar una publicación incorrecta, fijar la PWA al último manifiesto confiable, avisar a responsables y dejar visible el estado de indisponibilidad. Mantener contacto y procedimiento acordados con autoridad del piloto.
+Mantener respaldo PostgreSQL y probar restauración. Ante dato incorrecto, retirar publicación y volver a una versión confiable con estado visible.
 

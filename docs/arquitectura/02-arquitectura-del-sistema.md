@@ -2,49 +2,47 @@
 
 ## Vista lógica
 
-    Productos NISAR y contexto local
-        -> ingesta programada y validación
-        -> almacenamiento de originales y derivados
-        -> procesamiento geoespacial y control de calidad
-        -> PostGIS, COG y teselas versionadas
-        -> API de lectura
-        -> PWA: mapa, evidencia, acciones y rutas
-        -> caché Service Worker e IndexedDB
+    Next.js: interfaz pública, mapa y paneles
+       | HTTPS y Bearer JWT
+       v
+    Flask + Gunicorn
+       +-- PostgreSQL y extensión PostGIS propuesta
+       +-- worker de ingesta y análisis NISAR
+       +-- almacenamiento de objetos para escenas y ráster derivados
+       +-- servicio de riesgo y rutas
+       +-- Ollama como explicación opcional de solo lectura
+       +-- adaptador EVM opcional para anclar hashes
 
-    Analista / autoridad -> revisión -> aprobación de publicación
+    Caddy proporciona TLS y reverse proxy.
+    Docker Compose orquesta frontend, API, base de datos y proxy.
+
+Frontend, Flask, PostgreSQL, Caddy y Compose siguen el patrón de Orivia. PostGIS, pipeline científico SAR, almacenamiento ráster y rutas son componentes nuevos de Terrasent.
 
 ## Componentes
 
-### Cliente PWA
+### Frontend
 
-Interfaz cartográfica, estado de datos, comparación temporal, explicación del riesgo, recomendaciones, rutas y fuentes. Conserva el paquete aprobado más reciente en IndexedDB. El Service Worker cachea shell, fuentes y datos versionados.
+Next.js, React y TypeScript para landing, mapa, detalle de zona y panel de analista. La API entrega datos y aplica permisos; no asumir PWA u operación offline completa.
 
-### API y catálogo
+### API
 
-Servicio HTTP de lectura para el público. Publica conjuntos geoespaciales con versión y vigencia. La edición de AOI, reglas y publicación se limita a una consola interna autenticada.
+Flask con factory, blueprints, servicios y repositorios. Gunicorn ejecuta la aplicación. Módulos para AOI, observaciones, evaluaciones, recomendaciones, rutas, autenticación y auditoría.
 
-### Ingesta
+### Datos
 
-Consulta catálogo y disponibilidad NISAR para el AOI, registra metadatos y evita duplicados por identificador y checksum. Un fallo de descarga no elimina el último producto válido. Las credenciales viven solo en el servidor.
+PostgreSQL conserva estado operacional. Añadir PostGIS para AOI e índices espaciales. Guardar productos NISAR y derivados en almacenamiento de objetos como COG o teselas. No cargar procesos SAR pesados en requests web.
 
-### Procesamiento
+### Pipeline
 
-Validación -> recorte del AOI -> alineación -> cálculo de métrica SAR compatible -> máscara de calidad -> combinación contextual -> exportación versionada. El método depende del producto disponible, geometría, terreno y fenómeno.
+Worker consulta disponibilidad, registra linaje, valida metadatos y calidad, procesa productos comparables, combina factores auxiliares y publica resultados versionados.
 
-### Almacenamiento
+### Ollama y EVM
 
-- PostgreSQL/PostGIS para geometrías, eventos, zonas, red y metadatos.
-- Almacenamiento de objetos para fuentes y GeoTIFF optimizados para nube.
-- Teselas vectoriales o ráster para visualización web.
+Ollama resume evidencia estructurada; no decide nivel ni cambia estados. EVM puede anclar hash mínimo de publicación, sin datos sensibles. Ninguna de las dos integraciones debe bloquear la evaluación o consulta.
 
-## Flujo de decisión
+## Flujo
 
-1. Se genera una observación y una métrica con su calidad.
-2. Se agregan factores locales con vigencia comprobada.
-3. Reglas versionadas calculan nivel de atención, explicación e incertidumbre.
-4. Durante el piloto, una persona autorizada revisa resultados de alto impacto.
-5. El enrutador busca alternativas por red conocida, aplicando cierres y zonas excluidas.
-6. La interfaz muestra prioridad y canal oficial configurado para la zona.
+Ingesta -> control de calidad -> análisis SAR versionado -> factores de contexto -> evaluación explicable -> revisión humana cuando aplique -> publicación -> visualización.
 
-NISAR mide propiedades de retrodispersión y fase radar. La deformación requiere geometría y procesamiento adecuados. Un cambio observado no equivale por sí mismo a pronóstico de desastre; umbrales y modelos requieren calibración local y evaluación independiente.
+NISAR mide propiedades de radar. El cambio detectado no es por sí mismo un pronóstico de desastre. Umbrales y modelos requieren validación local.
 

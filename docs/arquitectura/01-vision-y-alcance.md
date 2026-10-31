@@ -1,39 +1,32 @@
 # 01. Visión y alcance
 
-## Propósito
-
-Terrasent traduce observaciones de radar y contexto geográfico en una lectura comprensible de cambios del terreno, escenarios de riesgo y próximos pasos prácticos. Debe responder: ¿qué cambió?, ¿qué podría significar para mi zona? y ¿qué acción conviene priorizar?
+Terrasent convierte observaciones NISAR y contexto local en cambios observados, una evaluación explicable de atención y próximos pasos. Debe responder qué cambió, qué podría significar para la zona y qué acción conviene priorizar.
 
 ## Usuarios
 
-- Residentes y visitantes de zonas expuestas a deslizamientos, subsidencia, deformación volcánica o inundaciones.
-- Equipos locales de gestión del riesgo y protección civil.
-- Analistas que verifican cambios territoriales.
+- Residentes en zonas expuestas a deslizamiento, subsidencia, volcanes o inundaciones.
+- Protección civil y gestión local del riesgo.
+- Analistas que validan señales territoriales.
 
 ## Resultados
 
-- Mapa de cambio observado con referencia temporal y calidad del dato.
-- Evaluación de atención por zona y horizonte, explicando factores e incertidumbre.
-- Recomendación priorizada con motivo, urgencia y fuente.
-- Rutas sugeridas hacia destinos seguros, con alternativas y restricciones conocidas.
-- Consulta offline del último paquete sincronizado y aviso visible de antigüedad.
+- Mapa temporal de cambios con fuente y calidad.
+- Evaluación por zona y horizonte con factores e incertidumbre.
+- Recomendación priorizada y explicada.
+- Rutas alternativas hacia destinos seguros confirmados.
+- Panel para analistas y revisión.
 
-## Fuera de alcance
+## Límites
 
-- Emitir alertas oficiales o declarar una zona segura.
-- Predecir con certeza un evento puntual o su hora.
-- Trazar rutas sin red vial, cierres y destinos seguros validados.
-- Interpretar desplazamiento radar LOS como vector vertical u horizontal único sin análisis adicional.
+No emite alertas oficiales, no declara zonas seguras ni predice con certeza la hora de un evento. No traza rutas sin red vial, restricciones y refugios verificados. El radar LOS no equivale a desplazamiento vertical u horizontal único. Ollama puede explicar hallazgos, pero no decidir ni publicar acciones de emergencia.
 
 ## Criterios de éxito
 
-1. La persona entiende la acción prioritaria y por qué aparece primero.
-2. Cada capa presenta fecha, procedencia, calidad, resolución y nivel de confianza.
-3. Una ruta aparece solo con red y restricciones suficientemente vigentes.
-4. La ausencia de datos nunca se presenta como bajo riesgo.
-5. Toda recomendación es trazable a datos, método y regla de decisión.
+1. Entender la acción principal y por qué tiene prioridad.
+2. Ver fechas, fuente, calidad, cobertura e incertidumbre de cada capa.
+3. Mostrar rutas solo con datos locales vigentes.
+4. Expresar falta de datos como evaluación no disponible.
+5. Auditar resultados hasta productos fuente y versiones de método.
 
-## Supuestos
-
-El piloto se limita a un área y un peligro seleccionados con autoridades y especialistas locales. Se confirma disponibilidad NISAR para esa zona. Lluvia, elevación, geología, eventos históricos, carreteras y refugios complementan la observación satelital.
+El piloto debe elegir AOI y fenómeno con especialistas, comprobar disponibilidad de NISAR e integrar lluvia, elevación, geología, eventos, vías y refugios.
 

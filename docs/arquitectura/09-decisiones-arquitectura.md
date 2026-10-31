@@ -1,32 +1,26 @@
 # 09. Decisiones de arquitectura
 
-## ADR-001: conservar cliente web ligero
+## ADR-001: adoptar el stack real de Orivia
 
-**Decisión:** HTML, CSS, JavaScript nativo y PWA como experiencia principal.  
-**Motivo:** sigue el stack de Orivia, abre desde enlace/QR y puede ofrecer modo offline.  
-**Consecuencia:** visualizaciones y estado se deben mantener modulares y probados en móviles modestos.
+Next.js, React y TypeScript para frontend; Flask y Gunicorn para API. Mantener Caddy, Docker Compose y PostgreSQL. No describirlo como PWA estática.
 
-## ADR-002: separar procesamiento de la PWA
+## ADR-002: PostGIS como extensión
 
-**Decisión:** análisis SAR y geoprocesamiento se ejecutan en backend.  
-**Motivo:** volumen, dependencias científicas, credenciales y reproducibilidad.  
-**Consecuencia:** el cliente solo consulta productos derivados aprobados.
+PostgreSQL existente se amplía con PostGIS para AOI, geometrías e índices. Requiere migraciones y pruebas espaciales.
 
-## ADR-003: incertidumbre como dato de primera clase
+## ADR-003: pipeline SAR independiente
 
-**Decisión:** cada resultado expone calidad, vigencia, evidencia y datos insuficientes.  
-**Motivo:** una observación orbital no equivale a una alerta inmediata y la cobertura puede variar.  
-**Consecuencia:** no se produce una recomendación de bajo riesgo por ausencia de dato.
+Workers procesan ráster fuera de requests web para aislar memoria, CPU y dependencias.
 
-## ADR-004: revisión humana para publicación de alto impacto
+## ADR-004: explicación generativa no decide
 
-**Decisión:** el piloto requiere revisión autorizada antes de publicación de recomendaciones de alta urgencia.  
-**Motivo:** evitar instrucciones no verificadas en un contexto de seguridad pública.  
-**Consecuencia:** el SLA debe incluir disponibilidad de revisión.
+Ollama resume evidencia; modelos/reglas revisados calculan atención. La publicación sensible requiere revisión autorizada.
 
-## ADR-005: rutas condicionadas a datos locales vigentes
+## ADR-005: blockchain opcional
 
-**Decisión:** el motor no dibuja rutas si faltan destino seguro, grafo o estado mínimo.  
-**Motivo:** NISAR no contiene por sí solo red vial, cierres ni capacidad de refugios.  
-**Consecuencia:** la experiencia ofrece canal oficial en lugar de ruta ficticia.
+Anclar hash mínimo solo si aporta trazabilidad. La app opera con PostgreSQL si EVM falla.
+
+## ADR-006: no inventar rutas
+
+Devolver ruta solo con red vial, cierres y destino seguro vigentes. En otro caso, ofrecer canal oficial.
 

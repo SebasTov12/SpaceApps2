@@ -1,28 +1,26 @@
 # 07. Seguridad, privacidad y resiliencia
 
+## Controles del stack de referencia
+
+- Access JWT, refresh tokens rotativos y permisos en Flask.
+- Hash de contraseña bcrypt.
+- CORS explícito y rate limiting de login.
+- Secretos en entorno privado, nunca en frontend ni Git.
+- PostgreSQL solo en red privada del Compose.
+- API/frontend detrás de Caddy.
+- Contenedores no root, filesystem de solo lectura y no-new-privileges donde aplica.
+- Staging Orivia documenta SSH administrativo por Tailscale; verificar antes de usarlo para el reto.
+- No registrar tokens, contraseñas, claves ni ubicación precisa de usuarios.
+
 ## Privacidad
 
-La vista pública funciona sin cuenta y no necesita ubicación precisa. Si el usuario comparte ubicación, solicitar permiso explícito y procesarla localmente cuando sea posible. No almacenar rutas personales ni perfiles de hogar por defecto. Definir retención y consentimiento antes de incorporar reportes comunitarios.
+Permitir consulta pública sin ubicación precisa. Pedir consentimiento para geolocalización y evitar almacenar rutas personales. Separar datos públicos de exposición de información personal.
 
-## Seguridad
+## Integridad
 
-- HTTPS en tránsito y cifrado del almacenamiento administrado.
-- Credenciales de Earthdata y llaves en gestor de secretos; rotación y mínimo privilegio.
-- API pública de solo lectura, límites de frecuencia y validación de entradas.
-- Consola de revisión con autenticación fuerte, roles y bitácora de publicación.
-- Dependencias fijadas, imágenes escaneadas y despliegues reproducibles.
-- Sanitizar datos vectoriales y evitar contenido activo en etiquetas o metadatos.
-- Copias de seguridad de catálogo y configuración, con restauración ensayada.
-
-## Integridad y auditoría
-
-Cada publicación registra fuentes, checksums, método, parámetros, revisión, autoría operativa, timestamp y versión. Las correcciones crean versión nueva y conservan historial auditable.
+Versionar producto fuente, método, parámetros, revisión y fecha. Anclaje EVM opcional de hashes; Postgres conserva la operación. Un fallo de blockchain no impide consultar.
 
 ## Resiliencia
 
-- Si NISAR o una fuente auxiliar falla, conservar el último paquete dentro de su vigencia y mostrar antigüedad.
-- Tras vencimiento, marcar la información como desactualizada y retirar instrucciones dependientes del estado actual.
-- Si API cae, mostrar paquete local con banner de fecha y acceso offline.
-- Si no hay evidencia suficiente, mostrar “sin evaluación disponible” y canales oficiales.
-- Mantener página ligera con contactos y pasos básicos descargables.
+Si NISAR o fuente auxiliar falla, mostrar última fecha y degradar evaluación. Si Ollama falla, usar explicación estructurada determinista. Si falta evidencia, indicar evaluación no disponible. Raspberry Pi, SQLite y outbox son una extensión futura indicada por Orivia, no un componente MVP.
 

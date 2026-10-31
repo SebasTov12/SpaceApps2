@@ -1,46 +1,40 @@
 # 04. Datos y procesamiento NISAR
 
-## Entradas
-
-| Familia | Uso | Metadatos mínimos |
-|---|---|---|
-| NISAR L-band SAR | Cambio de retrodispersión y potencial deformación si el producto lo permite | ID, producto, órbita, adquisición, geometría, versión, calidad |
-| Lluvia y meteorología | Contexto o condiciones disparadoras | Fuente, periodo, resolución, unidad, retraso |
-| Elevación y pendiente | Contexto topográfico | DEM, datum, resolución, fecha |
-| Geología, suelo y cobertura | Susceptibilidad e interpretación | Escala, fecha, clasificación, licencia |
-| Inventario y observación de campo | Calibración y validación | Fecha, ubicación, precisión, protocolo |
-| Red vial, cierres, refugios | Rutas y destino | Fuente, vigencia, acceso y capacidad conocida |
-
-NISAR L-band se archiva en NASA Earthdata Cloud y se distribuye por ASF DAAC. Algunos datos S-band se distribuyen por ISRO/Bhoonidhi; cobertura y disponibilidad varían. Credenciales Earthdata solo en el servicio de ingesta.
-
-## Flujo reproducible
-
-1. Descubrir productos que intersectan el AOI y la ventana.
-2. Registrar identificador, origen, licencia, versión y checksum.
-3. Validar integridad, CRS, dimensiones, geometría y calidad.
-4. Recortar AOI, armonizar grilla y aplicar máscaras con linaje.
-5. Comparar fechas compatibles mediante diferencia, coherencia o deformación apropiada.
-6. Asociar cada señal con lluvia, topografía, geología y eventos como evidencias separadas.
-7. Calcular nivel de atención, horizonte, incertidumbre, explicación y limitaciones.
-8. Revisar, versionar y publicar un manifiesto. Retirar versiones defectuosas.
-
-## Registro de evidencia
-
-Cada resultado identifica fuente, ID de producto, fecha de adquisición, fecha de procesamiento, métrica, unidad, máscara de calidad, algoritmo y versión. Incluir clase de datos insuficientes.
-
-## Controles científicos
-
-- No mezclar geometrías o productos incompatibles sin transformación documentada.
-- Distinguir fechas de adquisición, procesamiento y publicación.
-- No atribuir mayor resolución que la soportada por el producto y método.
-- No traducir ausencia de señal o falta de cobertura en riesgo bajo.
-- Evaluar falsas alarmas, omisiones, cobertura y calibración por subzona.
-- Llamar “cambio observado” a la señal no confirmada, no “desastre inminente”.
-
 ## Fuentes
 
-- [NISAR Mission Overview — NASA](https://science.nasa.gov/mission/nisar/mission-overview/)
-- [Accessing NISAR Data — ASF DAAC](https://nisar-docs.asf.alaska.edu/access-overview/)
-- [NISAR Data Products — ASF DAAC](https://nisar-docs.asf.alaska.edu/products-overview/)
-- [Using NISAR Data — ASF DAAC](https://nisar-docs.asf.alaska.edu/using-overview/)
+NISAR L-band SAR, lluvia, elevación, pendiente, geología, cobertura, inventario de eventos, red vial, cierres y refugios. Para cada fuente registrar fecha, resolución, unidad, procedencia, licencia y vigencia. Comprobar disponibilidad real del producto para el área de interés.
+
+## Pipeline propuesto
+
+1. Descubrir productos que intersectan el área y periodo.
+2. Registrar ID, origen, licencia, checksum y fechas.
+3. Validar integridad, proyección, geometría, resolución y máscaras.
+4. Recortar y alinear productos compatibles.
+5. Calcular métrica SAR adecuada al fenómeno: cambio de retrodispersión, coherencia o deformación interferométrica.
+6. Agregar contexto local sin ocultar procedencia.
+7. Calcular atención con reglas o modelo validado, incertidumbre y limitaciones.
+8. Revisar y publicar con manifiesto versionado.
+
+## Persistencia propuesta
+
+PostgreSQL/PostGIS para AOI, metadatos, observaciones, evaluaciones, rutas y revisiones. Almacenamiento de objetos para escenas y capas ráster; COG y teselas para lectura por ventana y mapa. Estas capacidades no están en el stack actual de Orivia.
+
+## Evidencia
+
+Cada resultado identifica producto, adquisición, proceso, métrica, unidad, calidad, algoritmo, versión, cobertura, factores auxiliares, confianza y estado de revisión. Admitir evaluación insuficiente.
+
+## Controles
+
+- No confundir desplazamiento radar LOS con movimiento vertical.
+- No comparar geometrías incompatibles sin método documentado.
+- No interpretar falta de señal como riesgo bajo.
+- Medir falsas alarmas, omisiones, cobertura y calibración localmente.
+- Separar cambio observado, contexto de amenaza y pronóstico.
+- Validar con especialistas y eventos locales.
+
+## Referencias
+
+- [NISAR NASA](https://science.nasa.gov/mission/nisar/mission-overview/)
+- [Acceso de datos ASF](https://nisar-docs.asf.alaska.edu/access-overview/)
+- [Productos ASF](https://nisar-docs.asf.alaska.edu/products-overview/)
 

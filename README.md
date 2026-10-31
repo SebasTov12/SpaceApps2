@@ -1,10 +1,6 @@
-# Terrasent: arquitectura documental
+# Terrasent — arquitectura para NISAR
 
-Propuesta para el reto NASA Space Apps: usar observaciones NISAR para detectar cambios del terreno, estimar riesgos y convertirlos en recomendaciones y rutas accionables.
-
-Estado: arquitectura de referencia para un prototipo. No sustituye a autoridades, alertas oficiales ni evaluación profesional.
-
-La capa de experiencia conserva el stack web ligero de Orivia: HTML, CSS y JavaScript nativos, PWA, Service Worker y persistencia local primero. El procesamiento geoespacial ocurre en servicios de backend. La PWA consulta el último paquete aprobado aun sin conexión.
+Documentación del sistema que usa NISAR para detectar cambios del terreno, estimar atención y orientar acciones y rutas. La referencia correcta de stack es [KHEZ09/hackathon_usco](https://github.com/KHEZ09/hackathon_usco).
 
 ## Documentos
 
@@ -16,8 +12,10 @@ La capa de experiencia conserva el stack web ligero de Orivia: HTML, CSS y JavaS
 - [Experiencia y recomendaciones](docs/arquitectura/06-experiencia-y-recomendaciones.md)
 - [Seguridad, privacidad y resiliencia](docs/arquitectura/07-seguridad-privacidad-y-resiliencia.md)
 - [Despliegue y operación](docs/arquitectura/08-despliegue-y-operacion.md)
-- [Decisiones de arquitectura](docs/arquitectura/09-decisiones-arquitectura.md)
+- [Decisiones](docs/arquitectura/09-decisiones-arquitectura.md)
 - [Plan de implementación](docs/arquitectura/10-plan-de-implementacion.md)
 
-NISAR tiene un ciclo exacto de repetición de 12 días, con intervalo medio cercano a 6 días al combinar pasadas. No es una promesa de alerta inmediata. Toda capa muestra fechas, cobertura, calidad e incertidumbre. Las rutas requieren cartografía vial y destinos seguros validados.
+El frontend Next.js/React/TypeScript, API Flask, PostgreSQL, Docker Compose y Caddy reflejan Orivia. PostGIS, procesamiento SAR, almacenamiento ráster y motor de rutas son extensiones propuestas para el reto, no componentes que existan en Orivia.
+
+NISAR repite observaciones cada 12 días por ciclo exacto y promedia cerca de 6 días al combinar pasadas. No es una alerta inmediata. La app debe mostrar fechas, cobertura, calidad e incertidumbre. No sustituye autoridades ni evaluación profesional.
 

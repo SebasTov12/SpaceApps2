@@ -1,35 +1,31 @@
 # 03. Stack tecnológico
 
-## Principio
+## Stack del repositorio Orivia
 
-Conservar el stack de Orivia en la experiencia: sitio web estático, JavaScript sin framework obligatorio, CSS nativo, PWA y Service Worker. El cómputo geoespacial se ejecuta en trabajos del servidor.
-
-| Capa | Opción de referencia | Función |
+| Capa | Referencia real | Uso propuesto |
 |---|---|---|
-| UI | HTML semántico, CSS, JavaScript ES modules | Accesibilidad y experiencia |
-| Mapa | Leaflet detrás de un adaptador | Capas y rutas |
-| PWA | Web App Manifest y Service Worker | Instalación y shell offline |
-| Datos cliente | IndexedDB | Paquetes y preferencias |
-| API | Python y FastAPI | Catálogo, riesgo, recomendaciones, rutas |
-| Geoprocesamiento | Python, GDAL, Rasterio, xarray, NumPy | Preparación de capas |
-| SAR | Herramientas científicas compatibles con el producto y algoritmo elegido | Análisis reproducible |
-| Base | PostgreSQL y PostGIS | Datos geoespaciales y metadatos |
-| Ráster | Cloud Optimized GeoTIFF y almacenamiento de objetos | Distribución eficiente |
-| API contract | OpenAPI 3 | Contratos versionados |
-| Despliegue | Contenedores OCI para API y trabajos; hosting estático para PWA | Portabilidad |
+| UI | Next.js 16.4, React 19.3, TypeScript 5 | Mapa, landing y paneles |
+| Estilos y UI | Tailwind CSS 4, clsx, tailwind-merge, Lucide React, Framer Motion | Componentes y visualización |
+| Runtime frontend | Node 22 Alpine, Next standalone | Servir aplicación |
+| API | Python 3.12, Flask 3, blueprints y factory | Servicios geoespaciales |
+| Servidor | Gunicorn 23 | Ejecutar Flask |
+| Persistencia | PostgreSQL 16, psycopg 3, repositorios y migraciones | Agregar esquema geoespacial |
+| Identidad | PyJWT 2, bcrypt 4, access y refresh tokens | Proteger paneles |
+| IA | Ollama Cloud configurable con fallback local | Explicar datos estructurados |
+| Blockchain | web3.py 7, adaptador EVM opcional | Anclar hashes, no datos |
+| Infraestructura | Docker Compose, Caddy 2 | Orquestar servicios y TLS |
 
-## Compatibilidad con Orivia
+## Dependencias revisadas
 
-El cliente se publica como sitio estático y abre desde URL o QR. La interfaz se organiza en módulos sin requerir una compilación compleja. El Service Worker mantiene caché versionada. Los paquetes de datos se publican por manifiesto y no se incrustan en código.
+Frontend: Next, React, TypeScript, Tailwind CSS 4 y sus plugins, ESLint, tsx, clsx, tailwind-merge, Lucide y Framer Motion.
 
-## Portabilidad y secretos
+Backend: Flask, PyJWT, bcrypt, Gunicorn, psycopg binary y web3.py. Desarrollo: pytest y Ruff. No asumir ORM; el proyecto usa repositorios y migraciones SQL.
 
-Versionar dependencias, contenedores, esquemas, reglas y formato de paquete. Ocultar proveedor de mapas, almacenamiento, rutas y ejecución de trabajos detrás de interfaces. No incluir claves o credenciales en frontend ni repositorio.
+## Extensiones nuevas de NISAR
 
-## Validaciones antes de fijar proveedor
+Agregar PostGIS, worker geoespacial, bibliotecas científicas compatibles con el producto SAR elegido, almacenamiento de objetos, derivados COG/teselas y motor de rutas. GDAL, Rasterio, xarray y NumPy son opciones a validar por prototipo; no son stack ya instalado en Orivia.
 
-- Rendimiento de COG y teselas en móviles de gama baja.
-- Acceso automatizado, autenticación y cuotas de ASF/Earthdata.
-- Método de deformación válido para producto y fenómeno piloto.
-- Licencia y vigencia de red vial, refugios, límites y cierres.
+## Despliegue
+
+Compose de referencia ejecuta frontend, API, PostgreSQL y Caddy. La base no expone puerto público. Las imágenes aplican usuario no root y controles de escritura donde corresponde. Orivia documenta Lightsail con Debian 13 y administración Tailscale; confirmar antes de reutilizar esa infraestructura.
 
