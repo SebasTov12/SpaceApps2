@@ -1,20 +1,22 @@
 # 08. Despliegue y operación
 
-## Referencia Orivia
+## Base Orivia
 
-Docker Compose levanta frontend Next.js en Node 22, API Flask/Gunicorn en Python 3.12, PostgreSQL 16 y Caddy 2. Caddy termina TLS y enruta tráfico. PostgreSQL permanece interno. Lightsail Debian 13 y Tailscale aparecen en la documentación de staging Orivia; no asumir que están disponibles para Terrasent.
+Docker Compose de referencia levanta Next.js en Node 22, Flask/Gunicorn en Python 3.12, PostgreSQL 16 y Caddy 2. Caddy proporciona TLS y proxy; PostgreSQL queda en red privada. Lightsail Debian 13 y Tailscale corresponden al staging documentado de Orivia, no se asumen para el piloto sin confirmación.
 
-## Extensión Terrasent
+## Extensiones del proyecto
 
-Agregar PostGIS, almacenamiento de objetos y worker científico de ingesta/procesamiento. Mantener cálculos SAR fuera de requests de Flask. Secretos ASF y proveedores permanecen en servidor. Separar límites de recursos del worker y API.
+Agregar PostGIS, almacenamiento de objetos y worker científico para ingestión/procesamiento. Separar límites de CPU y memoria del pipeline respecto a API. Mantener productos fuente, resultados y metadatos en rutas/versiones distintas.
 
-## Flujo de despliegue
+## Ciclo de datos y publicación
 
-Build -> migraciones -> comprobar health/ready -> validar productos y capas -> revisión -> publicar manifiesto -> verificar mapa/API. Entornos de desarrollo, staging y piloto deben distinguir datos sintéticos y reales.
+Ingestar -> validar licencia y madurez -> revisar calidad/cobertura -> procesar -> cruzar exposición -> calcular prioridad -> revisión -> publicar manifiesto -> verificar frontend y API. Marcar claramente conjuntos sintéticos y resultados exploratorios.
 
-## Operación
+## Métricas
 
-Monitorear API, base, retraso de ingesta, duración de procesamiento, cobertura AOI, vigencia de capas, error de rutas e integraciones. No registrar información privada.
+Frescura de fuentes, cobertura territorial, errores de ingesta, duración de análisis, resultados insuficientes, revisión pendiente, latencia API, fallos de ruta y restauración de base.
 
-Mantener respaldo PostgreSQL y probar restauración. Ante dato incorrecto, retirar publicación y volver a una versión confiable con estado visible.
+## Incidente
+
+Retirar una publicación incorrecta, conservar la versión auditada, mostrar aviso y coordinar corrección con responsable técnico y autoridad local.
 

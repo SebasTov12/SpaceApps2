@@ -2,47 +2,50 @@
 
 ## Vista lógica
 
-    Next.js: interfaz pública, mapa y paneles
-       | HTTPS y Bearer JWT
+    Frontend Next.js
+       | HTTPS + JWT
        v
-    Flask + Gunicorn
-       +-- PostgreSQL y extensión PostGIS propuesta
-       +-- worker de ingesta y análisis NISAR
-       +-- almacenamiento de objetos para escenas y ráster derivados
-       +-- servicio de riesgo y rutas
-       +-- Ollama como explicación opcional de solo lectura
-       +-- adaptador EVM opcional para anclar hashes
+    API Flask + Gunicorn
+       +-- PostgreSQL / PostGIS
+       +-- catálogo y metadatos de datos
+       +-- worker de ingesta y análisis SAR
+       +-- almacenamiento de objetos: productos, COG y resultados
+       +-- módulos de exposición social y económica
+       +-- priorización y recomendaciones
+       +-- rutas y destinos, si hay datos suficientes
+       +-- Ollama para explicar resultados estructurados
+       +-- anclaje EVM opcional de hashes
 
-    Caddy proporciona TLS y reverse proxy.
-    Docker Compose orquesta frontend, API, base de datos y proxy.
+    Caddy: TLS y reverse proxy
+    Docker Compose: frontend, API, base de datos y proxy
 
-Frontend, Flask, PostgreSQL, Caddy y Compose siguen el patrón de Orivia. PostGIS, pipeline científico SAR, almacenamiento ráster y rutas son componentes nuevos de Terrasent.
+## Capas
 
-## Componentes
+### Aplicación
 
-### Frontend
+Next.js, React y TypeScript implementan landing, mapa, panel analista y vista territorial. Flask expone contratos versionados, autenticación, catálogos, resultados y publicación. PostgreSQL/PostGIS mantiene estado operativo y geometrías.
 
-Next.js, React y TypeScript para landing, mapa, detalle de zona y panel de analista. La API entrega datos y aplica permisos; no asumir PWA u operación offline completa.
+### Datos y análisis
 
-### API
+Un catálogo registra fuente, licencia, cobertura, escala y vigencia. Los workers consultan productos NISAR y fuentes auxiliares, validan calidad y ejecutan análisis científico reproducible. Los productos grandes viven en almacenamiento de objetos; las capas livianas se publican como COG o teselas.
 
-Flask con factory, blueprints, servicios y repositorios. Gunicorn ejecuta la aplicación. Módulos para AOI, observaciones, evaluaciones, recomendaciones, rutas, autenticación y auditoría.
+### Riesgo socioeconómico
 
-### Datos
+El análisis mantiene dimensiones separadas:
+- Indicadores de amenaza derivados de observaciones y contexto físico.
+- Exposición de personas, viviendas, servicios y activos productivos.
+- Vulnerabilidad y capacidad de respuesta, con variables documentadas.
+- Dependencia entre sectores, por ejemplo vía interrumpida y acceso a mercado.
 
-PostgreSQL conserva estado operacional. Añadir PostGIS para AOI e índices espaciales. Guardar productos NISAR y derivados en almacenamiento de objetos como COG o teselas. No cargar procesos SAR pesados en requests web.
+La prioridad se construye sobre esas evidencias y reglas versionadas. La interfaz no colapsa factores distintos en una cifra opaca.
 
-### Pipeline
+### Asistencia e integridad
 
-Worker consulta disponibilidad, registra linaje, valida metadatos y calidad, procesa productos comparables, combina factores auxiliares y publica resultados versionados.
-
-### Ollama y EVM
-
-Ollama resume evidencia estructurada; no decide nivel ni cambia estados. EVM puede anclar hash mínimo de publicación, sin datos sensibles. Ninguna de las dos integraciones debe bloquear la evaluación o consulta.
+Ollama puede redactar una explicación basada en resultados ya calculados. No genera riesgo ni ejecuta decisiones. Un adaptador EVM opcional ancla hashes de publicación; PostgreSQL sigue como fuente de verdad.
 
 ## Flujo
 
-Ingesta -> control de calidad -> análisis SAR versionado -> factores de contexto -> evaluación explicable -> revisión humana cuando aplique -> publicación -> visualización.
+Ingesta → control de calidad → detección de cambio → evaluación de amenaza → intersección con población, infraestructura y economía → priorización → recomendación → revisión y publicación → visualización.
 
-NISAR mide propiedades de radar. El cambio detectado no es por sí mismo un pronóstico de desastre. Umbrales y modelos requieren validación local.
+Rutas y puntos de encuentro requieren fuentes locales validadas. El modelo de riesgo y sus umbrales requieren revisión experta.
 

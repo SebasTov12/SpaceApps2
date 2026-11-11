@@ -1,26 +1,30 @@
 # 09. Decisiones de arquitectura
 
-## ADR-001: adoptar el stack real de Orivia
+## ADR-001: adoptar el stack Orivia
 
-Next.js, React y TypeScript para frontend; Flask y Gunicorn para API. Mantener Caddy, Docker Compose y PostgreSQL. No describirlo como PWA estática.
+Next.js/React/TypeScript para frontend; Flask/Gunicorn para API; PostgreSQL, Compose y Caddy para operación. Blockchain y Ollama son integraciones auxiliares.
 
-## ADR-002: PostGIS como extensión
+## ADR-002: una amenaza principal para el piloto
 
-PostgreSQL existente se amplía con PostGIS para AOI, geometrías e índices. Requiere migraciones y pruebas espaciales.
+Acotar región y fenómeno, preferiblemente deslizamientos si productos y validación lo permiten. Las demás amenazas son expansión, no promesa del prototipo.
 
-## ADR-003: pipeline SAR independiente
+## ADR-003: separar amenaza, exposición y vulnerabilidad
 
-Workers procesan ráster fuera de requests web para aislar memoria, CPU y dependencias.
+Mantener indicadores y procedencia por dimensión. La prioridad relativa debe ser interpretable y no fabricar probabilidad o pérdida monetaria.
 
-## ADR-004: explicación generativa no decide
+## ADR-004: PostGIS y pipeline son extensiones
 
-Ollama resume evidencia; modelos/reglas revisados calculan atención. La publicación sensible requiere revisión autorizada.
+Agregar extensión espacial, worker SAR y almacenamiento ráster sin presentar esas piezas como existentes en Orivia.
 
-## ADR-005: blockchain opcional
+## ADR-005: IA explica, metodología estima
 
-Anclar hash mínimo solo si aporta trazabilidad. La app opera con PostgreSQL si EVM falla.
+Ollama resume evidencia estructurada. La evaluación proviene de método documentado y revisado. La IA no publica acciones.
 
-## ADR-006: no inventar rutas
+## ADR-006: rutas de planificación requieren datos locales
 
-Devolver ruta solo con red vial, cierres y destino seguro vigentes. En otro caso, ofrecer canal oficial.
+Usar red, cierres y puntos de encuentro validados. No garantizar seguridad ni transitabilidad durante una emergencia.
+
+## ADR-007: cadena es opcional
+
+Anclar hashes solo si mejora auditoría; conservar PostgreSQL como fuente de verdad.
 

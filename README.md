@@ -1,8 +1,8 @@
-# Terrasent — arquitectura para NISAR
+# Tobaru Workteam — análisis socioeconómico de riesgo con NISAR
 
-Documentación del sistema que usa NISAR para detectar cambios del terreno, estimar atención y orientar acciones y rutas. La referencia correcta de stack es [KHEZ09/hackathon_usco](https://github.com/KHEZ09/hackathon_usco).
+Plataforma geoespacial que combina observaciones NISAR con información territorial, demográfica y económica para identificar amenazas, analizar quién y qué actividad puede quedar expuesto, priorizar prevención y comunicar recomendaciones explicables.
 
-## Documentos
+## Arquitectura
 
 - [Visión y alcance](docs/arquitectura/01-vision-y-alcance.md)
 - [Arquitectura del sistema](docs/arquitectura/02-arquitectura-del-sistema.md)
@@ -14,8 +14,11 @@ Documentación del sistema que usa NISAR para detectar cambios del terreno, esti
 - [Despliegue y operación](docs/arquitectura/08-despliegue-y-operacion.md)
 - [Decisiones](docs/arquitectura/09-decisiones-arquitectura.md)
 - [Plan de implementación](docs/arquitectura/10-plan-de-implementacion.md)
+- [Catálogo de datos](docs/arquitectura/11-catalogo-de-datos.md)
 
-El frontend Next.js/React/TypeScript, API Flask, PostgreSQL, Docker Compose y Caddy reflejan Orivia. PostGIS, procesamiento SAR, almacenamiento ráster y motor de rutas son extensiones propuestas para el reto, no componentes que existan en Orivia.
+## Piloto
 
-NISAR repite observaciones cada 12 días por ciclo exacto y promedia cerca de 6 días al combinar pasadas. No es una alerta inmediata. La app debe mostrar fechas, cobertura, calidad e incertidumbre. No sustituye autoridades ni evaluación profesional.
+El prototipo se concentra en una región delimitada y una amenaza principal, preferiblemente deslizamientos si los productos y datos locales lo permiten. Conecta: datos NISAR → cambio del terreno → evaluación de amenaza → exposición social y económica → prioridad relativa → recomendación preventiva.
+
+Las demás amenazas y sectores quedan como ampliaciones. Toda vista debe mostrar fuentes, fechas y limitaciones. No se publican probabilidades ni pérdidas monetarias como resultados reales sin modelos y datos que las respalden.
 

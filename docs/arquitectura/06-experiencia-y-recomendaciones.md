@@ -1,25 +1,33 @@
 # 06. Experiencia y recomendaciones
 
-## Interfaz
+## Superficies
 
-Seguir Next.js, React, TypeScript y sistema visual Tailwind de Orivia. Crear landing, mapa ciudadano, detalle de zona y panel analista con acceso por roles. Usar iconos etiquetados y movimiento reducido.
+Seguir Next.js, React, TypeScript y Tailwind de Orivia. Proponer landing, mapa regional, ficha de zona y panel analista. El acceso a publicación se controla con roles de la API Flask.
 
-## Pantalla de zona
+## Mapa y panel territorial
 
-1. Estado y hora de actualización.
-2. Acción prioritaria y explicación.
-3. Mapa temporal de observaciones.
-4. Alternativas de ruta si existen datos válidos.
-5. Evidencias, fechas, fuentes y limitaciones.
-6. Contacto oficial local.
+Mostrar observaciones NISAR por fecha, amenaza y calidad; luego capas de población, servicios, infraestructura y sectores productivos. Permitir activar/desactivar capas y comparar fechas. Leyendas deben indicar escala, fuente y limitaciones.
 
-## Prioridad
+## Resumen para decisión
 
-Combinar severidad potencial, exposición, urgencia, calidad de evidencia y capacidad de actuar. Explicar los factores. No mostrar probabilidad exacta sin modelo calibrado. Cada recomendación especifica qué hacer, para quién, por qué, cuándo, vigencia, confianza y canal oficial.
+Cada área muestra:
+- Qué cambio se observó.
+- Qué amenaza se analiza y con qué evidencia.
+- Quiénes/qué servicios podrían estar expuestos.
+- Qué actividades económicas dependen del sitio o infraestructura.
+- Qué factores elevan o reducen la prioridad.
+- Qué dato falta o tiene resolución desigual.
+- Acción preventiva sugerida y responsable sugerido.
 
-## Rutas
+## Recomendaciones
 
-Solo grafo vial y destino seguro validados; aplicar cierres y exclusiones. Mostrar vigencia y limitaciones. No garantizar transitabilidad. Sin cobertura suficiente, presentar canal oficial.
+Priorizar inspecciones, mitigación, evaluación técnica, preparación de evacuación, identificación de puntos de encuentro y continuidad productiva. Ajustar las medidas al contexto local. Separar recomendaciones propuestas por sistema de decisiones de autoridad.
 
-Mostrar claramente datos vencidos; diseño móvil, teclado, contraste y etiquetas. No depender únicamente de color.
+## Planificación de rutas
+
+Mostrar opciones y puntos de encuentro solo si la red y destinos tienen validación local suficiente. Son herramientas de planificación, no promesas de seguridad en tiempo real.
+
+## Accesibilidad
+
+Diseño móvil, navegación por teclado, alto contraste, texto simple, etiquetas para controles, movimiento reducido y leyendas que no dependan solo del color.
 

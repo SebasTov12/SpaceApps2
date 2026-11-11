@@ -1,32 +1,46 @@
 # 01. Visión y alcance
 
-Terrasent convierte observaciones NISAR y contexto local en cambios observados, una evaluación explicable de atención y próximos pasos. Debe responder qué cambió, qué podría significar para la zona y qué acción conviene priorizar.
+## Visión
+
+Desarrollar un sistema de análisis territorial que combine observaciones de NISAR con datos geográficos, demográficos y económicos para identificar amenazas, evaluar exposición social y económica, y recomendar acciones preventivas.
+
+Un desastre puede afectar vidas, viviendas, cultivos, transporte, comercio e ingresos. El sistema relaciona evidencia del terreno con posibles consecuencias para comunidades, infraestructura y medios de vida.
+
+## Objetivo del piloto
+
+Demostrar el flujo en una región delimitada y frente a una amenaza principal. Se priorizarán deslizamientos si hay cobertura NISAR adecuada, información local y validación experta. Inundaciones y escenarios sísmicos quedan como extensiones; NISAR no predice cuándo ocurrirá un terremoto.
 
 ## Usuarios
 
-- Residentes en zonas expuestas a deslizamiento, subsidencia, volcanes o inundaciones.
-- Protección civil y gestión local del riesgo.
-- Analistas que validan señales territoriales.
+- Autoridades y equipos de gestión del riesgo.
+- Analistas geoespaciales y económicos.
+- Comunidades, organizaciones productivas y operadores de infraestructura.
 
-## Resultados
+## Capacidades
 
-- Mapa temporal de cambios con fuente y calidad.
-- Evaluación por zona y horizonte con factores e incertidumbre.
-- Recomendación priorizada y explicada.
-- Rutas alternativas hacia destinos seguros confirmados.
-- Panel para analistas y revisión.
+1. Analizar productos NISAR para deformación, cambios de retrodispersión y humedad del suelo cuando el producto sea adecuado.
+2. Relacionar indicadores con amenaza y susceptibilidad geográfica.
+3. Identificar población, viviendas, servicios, vías e infraestructura expuesta.
+4. Estimar afectación potencial a agricultura, ganadería, comercio, transporte, turismo y cadenas de abastecimiento.
+5. Priorizar territorios con indicadores sociales y económicos explicables.
+6. Recomendar inspecciones, prevención, planificación de evacuación y continuidad productiva.
+
+## Riesgo social y económico
+
+La plataforma mostrará por separado evidencia de amenaza, exposición social, vulnerabilidad y exposición económica. La prioridad será relativa y explicará las variables usadas. No presentará porcentajes de probabilidad ni estimaciones monetarias sin sustento.
 
 ## Límites
 
-No emite alertas oficiales, no declara zonas seguras ni predice con certeza la hora de un evento. No traza rutas sin red vial, restricciones y refugios verificados. El radar LOS no equivale a desplazamiento vertical u horizontal único. Ollama puede explicar hallazgos, pero no decidir ni publicar acciones de emergencia.
+- No reemplaza alertas oficiales, estudios de ingeniería ni decisiones de protección civil.
+- Cambio detectado no significa desastre inminente.
+- Rutas son para planificación, no garantías de seguridad durante una emergencia.
+- Falta de cobertura o de datos no se interpreta como riesgo bajo.
+- No se infiere daño real a un cultivo, negocio o vivienda solo por proximidad geográfica.
 
 ## Criterios de éxito
 
-1. Entender la acción principal y por qué tiene prioridad.
-2. Ver fechas, fuente, calidad, cobertura e incertidumbre de cada capa.
-3. Mostrar rutas solo con datos locales vigentes.
-4. Expresar falta de datos como evaluación no disponible.
-5. Auditar resultados hasta productos fuente y versiones de método.
-
-El piloto debe elegir AOI y fenómeno con especialistas, comprobar disponibilidad de NISAR e integrar lluvia, elevación, geología, eventos, vías y refugios.
+- Se entiende qué cambió, a quién podría afectar y qué acción preventiva priorizar.
+- Cada indicador tiene fuente, fecha, escala y limitación visible.
+- Se distingue observación, amenaza, exposición, vulnerabilidad e impacto potencial.
+- Demo completa en un AOI y amenaza con datos claramente identificados.
 

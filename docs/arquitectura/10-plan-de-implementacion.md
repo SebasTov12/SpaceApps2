@@ -1,30 +1,32 @@
 # 10. Plan de implementación
 
-## Fase 1: adaptar Orivia
+## Fase 1: delimitar piloto
 
-Confirmar base de código y conservar Next.js/React/TypeScript con API Flask/Gunicorn. Añadir módulos para áreas, observaciones, riesgo, recomendaciones y rutas.
+Escoger región, amenaza primaria y usuario decisor. Acordar extensión, temporalidad, escala, fuentes y criterios con especialistas y autoridad.
 
-## Fase 2: datos espaciales
+## Fase 2: preparar catálogo
 
-Agregar PostGIS, migraciones, almacenamiento de objetos y manifiestos. Definir contratos entre frontend, API y worker.
+Inventariar productos NISAR disponibles por fecha y madurez, límites AOI, auxiliares físicos, censales, infraestructura y economía. Registrar licencias, vacíos, calidad y responsables.
 
-## Fase 3: NISAR
+## Fase 3: análisis NISAR
 
-Elegir AOI y peligro, verificar productos disponibles y calendario. Crear ingesta reproducible y un análisis inicial validado por especialista.
+Seleccionar producto y método adecuados. Preparar pares comparables, máscara de calidad, indicadores y linaje. Validar señal con datos y especialista.
 
-## Fase 4: experiencia
+## Fase 4: evaluación socioeconómica
 
-Crear mapa temporal, evidencia, explicación de prioridad y panel analista en Next.js. Proteger publicación con JWT/roles.
+Armonizar unidades geográficas, cruzar amenaza con población, servicios, vías y sectores. Definir indicadores relativos, documentar pesos/reglas y analizar sesgo de cobertura.
 
-## Fase 5: validar y operar
+## Fase 5: interfaz y decisiones
 
-Evaluar falsas alarmas, omisiones y umbrales; añadir monitorización, backups, retiro de publicación y revisión humana. Probar rendimiento de workers.
+Construir mapa y panel Next.js. Añadir explicación de prioridad, procedencia, escenarios y recomendaciones. Rutas solo con infraestructura y destinos validados.
 
-## Fase 6: integraciones opcionales
+## Fase 6: revisión y despliegue
 
-Ollama para explicación estructurada. EVM solo para hashes si se justifica; ni IA ni blockchain son prerrequisito de riesgo.
+Evaluar falsos positivos/negativos, probar supuestos, privacidad, permisos y restauración. Publicar en staging con etiquetas de demo y mecanismo de retirada.
 
 ## Bloqueadores
 
-AOI y peligro, productos NISAR adecuados, especialista SAR, datos viales/refugios/cierres vigentes y coordinación con autoridad. Etiquetar cualquier dato simulado en la demo.
+AOI, amenaza seleccionada, productos disponibles con madurez conocida, datos sociales/económicos legales y apropiados, método revisado, autoridad o especialista que valide recomendaciones.
+
+Datos simulados deben estar marcados. No presentar prioridad de demostración como alerta real.
 

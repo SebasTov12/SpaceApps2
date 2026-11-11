@@ -2,25 +2,27 @@
 
 ## Controles del stack de referencia
 
-- Access JWT, refresh tokens rotativos y permisos en Flask.
-- Hash de contraseña bcrypt.
-- CORS explícito y rate limiting de login.
-- Secretos en entorno privado, nunca en frontend ni Git.
-- PostgreSQL solo en red privada del Compose.
-- API/frontend detrás de Caddy.
-- Contenedores no root, filesystem de solo lectura y no-new-privileges donde aplica.
-- Staging Orivia documenta SSH administrativo por Tailscale; verificar antes de usarlo para el reto.
-- No registrar tokens, contraseñas, claves ni ubicación precisa de usuarios.
+- Access JWT y refresh tokens rotables/revocables; permisos comprobados en Flask.
+- Contraseñas con bcrypt.
+- CORS por origen explícito y rate limit en login.
+- Secretos en entorno privado, nunca en frontend o Git.
+- PostgreSQL solo en red interna de Compose, API y web detrás de Caddy.
+- Contenedores no root y filesystem restringido donde aplique.
+- Logs sin tokens, datos de hogares, coordenadas precisas ni secretos.
 
-## Privacidad
+## Privacidad de datos socioeconómicos
 
-Permitir consulta pública sin ubicación precisa. Pedir consentimiento para geolocalización y evitar almacenar rutas personales. Separar datos públicos de exposición de información personal.
+Preferir datos agregados por unidad territorial. Evitar mostrar ubicación de hogares individuales o negocios vulnerables. Aplicar mínimos de agregación definidos con custodios de los datos. Registrar licencias, restricciones y finalidades de uso.
+
+## Calidad, sesgo y representación
+
+Registrar año, cobertura y resolución de cada conjunto. La población omitida, informalidad económica y diferencias entre censos pueden sesgar prioridades. Exponer calidad y brechas; no ocultar ausencia bajo una puntuación promedio.
 
 ## Integridad
 
-Versionar producto fuente, método, parámetros, revisión y fecha. Anclaje EVM opcional de hashes; Postgres conserva la operación. Un fallo de blockchain no impide consultar.
+Versionar fuentes, transformaciones, método, parámetros, revisión y publicación. PostgreSQL conserva el estado operativo. EVM puede anclar hashes mínimos de publicaciones si se justifica; su indisponibilidad no bloquea el servicio.
 
 ## Resiliencia
 
-Si NISAR o fuente auxiliar falla, mostrar última fecha y degradar evaluación. Si Ollama falla, usar explicación estructurada determinista. Si falta evidencia, indicar evaluación no disponible. Raspberry Pi, SQLite y outbox son una extensión futura indicada por Orivia, no un componente MVP.
+Si una fuente falla o está vencida, señalarlo y recalcular solo si las reglas lo permiten. Ollama no disponible implica explicación estructurada sin generación. Sin evidencia suficiente, estado de evaluación incompleta. Mantener copias de seguridad y procedimiento de retiro de resultados erróneos.
 

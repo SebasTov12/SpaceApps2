@@ -1,31 +1,40 @@
 # 05. API y contratos
 
-Conservar Flask y el prefijo /api/v1 de Orivia. JSON, timestamps UTC, errores consistentes y X-Request-ID. Rutas administrativas usan Bearer JWT y permisos. Definir contratos antes de conectar componentes Next.js.
+Mantener Flask y el prefijo /api/v1. JSON, fechas UTC, errores consistentes, X-Request-ID y autenticación Bearer JWT con permisos para administración. Acordar contratos antes de conectar Next.js.
 
 ## Recursos propuestos
 
-| Método | Ruta | Uso |
+| Método | Ruta | Función |
 |---|---|---|
-| GET | /health y /ready | Estado de servicio y base |
-| GET | /api/v1/manifest | Versiones, cobertura y vigencia |
-| GET | /api/v1/areas | Áreas de interés |
-| GET | /api/v1/areas/{id}/observations | Cambios y procedencia |
-| GET | /api/v1/areas/{id}/risk | Evaluación, evidencia e incertidumbre |
-| GET | /api/v1/areas/{id}/recommendations | Acciones priorizadas |
-| POST | /api/v1/routes | Alternativas a destino validado |
+| GET | /health y /ready | Salud de aplicación y dependencias |
+| GET | /api/v1/manifest | Versión y vigencia de conjuntos publicados |
+| GET | /api/v1/areas | Áreas del piloto y cobertura |
+| GET | /api/v1/datasets | Catálogo y procedencia de datos |
+| GET | /api/v1/areas/{id}/observations | Cambios satelitales observados |
+| GET | /api/v1/areas/{id}/exposure/social | Población, vivienda y servicios expuestos |
+| GET | /api/v1/areas/{id}/exposure/economic | Sectores, activos y dependencias expuestos |
+| GET | /api/v1/areas/{id}/risk | Amenaza, exposición, vulnerabilidad y prioridad |
+| GET | /api/v1/areas/{id}/recommendations | Acciones y justificación |
+| POST | /api/v1/routes | Rutas de planificación a destino validado |
 | POST | /api/v1/admin/publications | Publicación restringida y auditada |
 
-## Objetos
+## Recursos de dominio
 
-Observation incluye fuente, ID, fechas, métrica, unidad, geometría, calidad y versión de algoritmo.
+Dataset: identificador, tema, fuente, fecha, cobertura, escala, licencia, madurez y calidad.
 
-RiskAssessment incluye área, vigencia, peligro, atención, horizonte, confianza, limitaciones, evidencia y revisión.
+Observation: producto, adquisición, procesamiento, métrica, unidad, geometría, máscara, cobertura y método.
 
-Recommendation incluye prioridad, acción, motivo, urgencia, área, fuentes, expiración y canal oficial.
+Exposure: tipo de activo o población, unidad, escala, fuente, periodo, intersección y limitaciones.
 
-Route incluye geometría, distancia, tiempo estimado, versión de red, restricciones, advertencias y cobertura.
+RiskAssessment: peligro, indicadores, exposición social/económica, vulnerabilidad, capacidad de respuesta, prioridad relativa, evidencia y revisión.
 
-## Límites de acción
+Recommendation: prioridad, acción, beneficiario/zona, motivo, fuentes, vigencia y responsable/canal.
 
-La recomendación se calcula con reglas/modelo versionado. Ollama solo redacta una explicación de evidencia ya suministrada. Si faltan datos de red o destino, responder ruta no disponible, no inventar camino. PostgreSQL mantiene fuente de verdad; EVM solo ancla hashes opcionales.
+## Reglas
+
+- No devolver una cifra de probabilidad o pérdida monetaria sin base validada.
+- Diferenciar exposición de daño confirmado.
+- Hacer que cada indicador pueda trazarse a su fuente.
+- Si falta cobertura, responder evaluación parcial o insuficiente.
+- Ollama solo explica una salida estructurada existente.
 
