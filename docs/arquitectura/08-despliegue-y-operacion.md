@@ -2,7 +2,7 @@
 
 ## Base Orivia
 
-Docker Compose de referencia levanta Next.js en Node 22, Flask/Gunicorn en Python 3.12, PostgreSQL 16 y Caddy 2. Caddy proporciona TLS y proxy; PostgreSQL queda en red privada. Lightsail Debian 13 y Tailscale corresponden al staging documentado de Orivia, no se asumen para el piloto sin confirmación.
+Docker Compose de referencia levanta Next.js en Node 24, Flask/Gunicorn en Python 3.12, PostgreSQL 16 y Caddy 2. Caddy proporciona TLS y proxy; PostgreSQL queda en red privada. Lightsail Debian 13 y Tailscale corresponden al staging documentado de Orivia, no se asumen para el piloto sin confirmación.
 
 ## Extensiones del proyecto
 

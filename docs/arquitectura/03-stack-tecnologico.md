@@ -6,7 +6,7 @@
 |---|---|---|
 | Interfaz | Next.js 16.4, React 19.3, TypeScript 5 | Mapa, landing y paneles |
 | UI | Tailwind CSS 4, clsx, tailwind-merge, Lucide React, Framer Motion | Sistema visual y componentes |
-| Runtime web | Node 22 Alpine y Next standalone | Servir frontend |
+| Runtime web | Node 24 Alpine y Next standalone | Servir frontend |
 | API | Python 3.12, Flask 3, blueprints y factory | API de análisis territorial |
 | Servidor | Gunicorn 23 | Ejecutar Flask |
 | Persistencia | PostgreSQL 16, psycopg 3, repositorios y migraciones SQL | Agregar PostGIS y esquema espacial |
