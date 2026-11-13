@@ -6,8 +6,8 @@ const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans", dis
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Tobaru Workteam | Observación territorial",
-  description: "Explora observaciones satelitales y cambios del terreno con contexto territorial.",
+  title: "TENUA | Observación terrestre con NISAR",
+  description: "TENUA cruza observaciones del satélite NISAR con datos territoriales para priorizar la prevención de riesgos.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

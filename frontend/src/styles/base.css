@@ -65,7 +65,7 @@ button {
 .brand-mark {
   width: 30px;
   height: 30px;
-  border: 1px solid rgba(156,200,203,.35);
+  border: 1px solid rgba(56,93,95,.35);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -96,8 +96,8 @@ button {
   height: 6px;
   border-radius: 50%;
   display: inline-block;
-  background: #dbac66;
-  box-shadow: 0 0 9px rgba(219,172,102,.5);
+  background: #90682d;
+  box-shadow: 0 0 9px rgba(144,104,45,.5);
 }
 
 @media (max-width:390px) {

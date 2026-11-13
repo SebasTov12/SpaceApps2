@@ -1,6 +1,8 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { CountUp, Reveal, Stagger, StaggerItem, easeOut, trackSpotlight } from "@/components/motion/reveal";
 import { Badge, Button, Provenance } from "@/components/ui";
 import { demoMetrics, demoObservations } from "@/lib/demo-dashboard";
 import {
@@ -27,7 +29,7 @@ export default function ExplorerDashboard() {
   return (
     <section className="explorer-section" id="explorador">
       <header className="app-header">
-        <a className="brand" href="#inicio"><span className="brand-mark"><Satellite size={17} /></span><span>TOBARU <i>WORKTEAM</i></span></a>
+        <a className="brand" href="#inicio"><span className="brand-mark"><Satellite size={17} /></span><span>TENUA <i>TOBARU WORKTEAM</i></span></a>
         <div className="header-center"><span className="live-dot" /> <span className="header-center-prefix">ENTORNO DE </span>DEMOSTRACIÓN</div>
         <div className="header-actions"><button className="header-icon" aria-label="Buscar"><Search size={17} /></button><button className="avatar">TW</button><button className="mobile-menu" onClick={() => setMobilePanel(!mobilePanel)} aria-label="Abrir filtros">{mobilePanel ? <X size={18} /> : <Menu size={18} />}</button></div>
       </header>
@@ -54,16 +56,16 @@ export default function ExplorerDashboard() {
         </aside>
 
         <main className="dashboard-main">
-          <div className="dashboard-title-row">
-            <div><div className="breadcrumb">TOBARU <ChevronRight size={12} /> EXPLORADOR</div><h1>Panorama territorial</h1><p>Explora observaciones y contexto del área seleccionada.</p></div>
+          <Reveal className="dashboard-title-row" y={20}>
+            <div><div className="breadcrumb">TENUA <ChevronRight size={12} /> EXPLORADOR</div><h1>Panorama territorial</h1><p>Explora observaciones y contexto del área seleccionada.</p></div>
             <Button variant="outline" className="title-action"><LocateFixed size={16} /><span className="ui-button-label">Centrar mapa</span></Button>
-          </div>
+          </Reveal>
 
-          <div className="metrics-grid">
+          <Stagger className="metrics-grid">
             {demoMetrics.map((metric, index) => <MetricCard key={metric.id} label={metric.label} value={metric.value} suffix={metric.unit} trend={metric.context} icon={metricIcons[index]} accent={metric.accent} />)}
-          </div>
+          </Stagger>
 
-          <section className="map-card" aria-label="Mapa de demostración">
+          <Reveal y={40}><section className="map-card" aria-label="Mapa de demostración">
             <div className="map-topline"><div className="map-place"><MapPin size={14} /><span>Región piloto <i>· ubicación por definir</i></span></div><div className="map-tools"><Badge tone="demo">Mapa demo</Badge><button aria-label="Capas"><Layers3 size={16} /></button><button aria-label="Pantalla completa">⛶</button></div></div>
             <div className={`map-visual ${layers.rainfall ? "show-rainfall" : ""} ${layers.slope ? "show-slope" : ""}`}>
               <div className="map-grid" />
@@ -76,10 +78,12 @@ export default function ExplorerDashboard() {
                 <path d="M67 580c-6-97 76-109 59-201s-54-117 8-194 51-126 29-205M212 580c44-91 11-132 52-199s98-88 67-172 17-122 78-209M523 580c-41-85 27-138 20-205s-63-121-21-198 101-103 69-177M834 580c-49-99 34-157 16-229s-70-115-12-177 92-98 67-172" />
               </svg>
               <svg className="river-line" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true"><path d="M0 232c126-82 159 64 276-8 119-74 121 63 236 0s119-92 224-18 142 40 264-35" /></svg>
-              {layers.rainfall && <div className="rainfall-overlay" />}
-              {layers.slope && <div className="slope-overlay" />}
-              {layers.displacement && <div className="change-zone zone-one"><i /><span>CAMBIO OBSERVADO</span></div>}
-              {layers.displacement && <div className="change-zone zone-two"><i /><span>SEÑAL DEMO</span></div>}
+              <AnimatePresence>
+                {layers.rainfall && <motion.div key="rain" className="rainfall-overlay" initial={{ opacity: 0, scale: 1.08 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.08 }} transition={{ duration: 0.6, ease: easeOut }} />}
+                {layers.slope && <motion.div key="slope" className="slope-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} />}
+                {layers.displacement && <motion.div key="z1" className="change-zone zone-one" initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.6, y: 8 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}><i className="pulse" /><span>CAMBIO OBSERVADO</span></motion.div>}
+                {layers.displacement && <motion.div key="z2" className="change-zone zone-two" initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.6, y: 8 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.08 }}><i className="pulse" /><span>SEÑAL DEMO</span></motion.div>}
+              </AnimatePresence>
               <div className="map-label label-one"><span>01</span> LADERA NORTE</div><div className="map-label label-two"><span>02</span> CUENCA ALTA</div><div className="map-label label-three">RÍO PRINCIPAL</div>
               <div className="map-compass">N <span>↑</span></div>
               <div className="map-scale"><i /> 0 <span>2 km</span></div>
@@ -91,13 +95,13 @@ export default function ExplorerDashboard() {
               <div className="timeline-heading"><div><strong>Serie temporal</strong><span>Fechas simuladas · no representan la frecuencia real de NISAR</span></div><span className="timeline-current">{activeObservation.label} · {activeObservation.date.slice(0, 4)}</span></div>
               <div className="timeline-track"><input aria-label="Seleccionar fecha de observación" type="range" min="0" max="5" value={dateIndex} onChange={(event) => setDateIndex(Number(event.target.value))} style={{ "--range-progress": `${(dateIndex / 5) * 100}%` } as React.CSSProperties} /><div className="timeline-labels">{dateLabels.map((date, index) => <button key={date} className={index === dateIndex ? "is-current" : ""} onClick={() => setDateIndex(index)}>{date}</button>)}</div></div>
             </div>
-          </section>
+          </section></Reveal>
 
-          <div className="below-grid">
-            <section className="detail-card"><div className="card-heading"><div><p className="eyebrow">DETALLE DE LA OBSERVACIÓN</p><h2>Ladera norte</h2></div><button className="quiet-icon" aria-label="Más detalles"><ArrowDownRight size={17} /></button></div><div className="observation-value"><strong>+ {activeObservation.value.toFixed(1)}</strong><span>{activeObservation.unit}</span><Badge tone="accent"><ArrowUpRight size={13} /> cambio observado</Badge></div><p className="detail-copy">Valor ilustrativo para mostrar el diseño. La unidad, el método y los umbrales se definirán según el producto y la validación.</p><Provenance source={activeObservation.source} date={`${activeObservation.label} ${activeObservation.date.slice(0, 4)}`} limitation="Valor ilustrativo, sin validar" /></section>
-            <section className="review-card"><div className="review-icon"><Activity size={17} /></div><p className="eyebrow">ESTADO DE LA EVIDENCIA</p><h2>Revisión requerida</h2><p>Una variación observada necesita contexto y validación local. No es una alerta ni predice por sí sola un deslizamiento.</p><button className="text-link">Ver metodología <ChevronRight size={14} /></button></section>
-          </div>
-          <footer className="app-footer"><span>TOBARU WORKTEAM <i>· PROTOTIPO VISUAL</i></span><span>DATOS SIMULADOS PARA DEMOSTRACIÓN</span></footer>
+          <Stagger className="below-grid">
+            <StaggerItem as="article" className="detail-card lift spotlight" onPointerMove={trackSpotlight}><div className="card-heading"><div><p className="eyebrow">DETALLE DE LA OBSERVACIÓN</p><h2>Ladera norte</h2></div><button className="quiet-icon" aria-label="Más detalles"><ArrowDownRight size={17} /></button></div><div className="observation-value"><AnimatePresence mode="wait" initial={false}><motion.strong key={activeObservation.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.3, ease: easeOut }}>+ {activeObservation.value.toFixed(1)}</motion.strong></AnimatePresence><span>{activeObservation.unit}</span><Badge tone="accent"><ArrowUpRight size={13} /> cambio observado</Badge></div><p className="detail-copy">Valor ilustrativo para mostrar el diseño. La unidad, el método y los umbrales se definirán según el producto y la validación.</p><Provenance source={activeObservation.source} date={`${activeObservation.label} ${activeObservation.date.slice(0, 4)}`} limitation="Valor ilustrativo, sin validar" /></StaggerItem>
+            <StaggerItem as="article" className="review-card lift spotlight" onPointerMove={trackSpotlight}><div className="review-icon"><Activity size={17} /></div><p className="eyebrow">ESTADO DE LA EVIDENCIA</p><h2>Revisión requerida</h2><p>Una variación observada necesita contexto y validación local. No es una alerta ni predice por sí sola un deslizamiento.</p><button className="text-link">Ver metodología <ChevronRight size={14} /></button></StaggerItem>
+          </Stagger>
+          <footer className="app-footer"><span>TENUA · TOBARU WORKTEAM <i>· PROTOTIPO VISUAL</i></span><span>DATOS SIMULADOS PARA DEMOSTRACIÓN</span></footer>
         </main>
       </div>
     </section>
@@ -109,5 +113,5 @@ function LayerToggle({ active, onClick, icon, title, detail, color }: { active: 
 }
 
 function MetricCard({ label, value, suffix, trend, icon, accent }: { label: string; value: string; suffix: string; trend: string; icon: React.ReactNode; accent: string }) {
-  return <article className="metric-card"><div className={`metric-icon ${accent}`}>{icon}</div><p>{label}</p><div className="metric-number"><strong>{value}</strong><span>{suffix}</span></div><span className="metric-trend">{trend}</span></article>;
+  return <StaggerItem as="article" className="metric-card lift spotlight" onPointerMove={trackSpotlight}><div className={`metric-icon ${accent}`}>{icon}</div><p>{label}</p><div className="metric-number"><strong><CountUp value={value} /></strong><span>{suffix}</span></div><span className="metric-trend">{trend}</span></StaggerItem>;
 }

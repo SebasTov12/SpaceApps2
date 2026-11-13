@@ -26,6 +26,8 @@ Si trabajas en una sección nueva (por ejemplo, la ficha de zona), crea su propi
 
 ## Tokens principales
 
+- **Paleta TENUA:** `--color-green` #A8DCC5, `--color-green-soft` #D7EFE4, `--color-sky` #A9D8E8, `--color-tech` #6FAFC9, `--color-white` #F5FAF8, `--color-ink` #244C55. Úsalos para rellenos, iconos y degradados. Para texto de acento usa `--color-accent`, una versión oscurecida que cumple contraste.
+- **Sombras:** `--shadow-sm`, `--shadow-md`, `--shadow-lg`. **Radios:** 8 · 12 · 18 · 24 px.
 - **Texto:** `--color-text` (principal), `--color-text-secondary`, `--color-text-muted`.
 - **Superficies:** `--color-bg` < `--color-surface` < `--color-surface-raised`; `--color-surface-sunken` para mapa y línea de tiempo.
 - **Acentos:** `--color-accent` (acción, observación NISAR), `--color-warning` (demo o revisión), `--color-danger`, `--color-info`, `--color-violet`.
@@ -45,3 +47,16 @@ import { Badge, Button, Card, Provenance } from "@/components/ui";
 <Badge tone="demo">Mapa demo</Badge>                 // neutral | accent | warning | danger | demo
 <Provenance source="NISAR · demo" date="04 AGO 2026" limitation="Valor ilustrativo" />
 ```
+
+## Animaciones (`@/components/motion/reveal`)
+
+```tsx
+<Reveal>…</Reveal>                     // aparece al entrar en pantalla; once={false} también sale al irse
+<Stagger><StaggerItem>…</StaggerItem></Stagger>   // hijos que aparecen uno tras otro
+<CountUp value="8,420" />              // cifra que cuenta desde cero
+<article className="lift spotlight" onPointerMove={trackSpotlight}>  // se eleva y una luz sigue al cursor
+```
+
+- Para que algo entre y salga al montarse y desmontarse (capas del mapa, valores que cambian), usa `AnimatePresence` de framer-motion.
+- Hay clases CSS listas en `src/styles/motion.css`: `.lift`, `.spotlight` y `.pulse`.
+- `MotionProvider` respeta "reducir movimiento" del sistema. No hace falta hacer nada más.

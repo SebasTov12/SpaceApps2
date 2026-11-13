@@ -254,6 +254,16 @@ export function EarthGlobe() {
   );
 }
 
+const heroEase = [0.22, 1, 0.36, 1] as const;
+const lineVariants = {
+  hidden: { y: "110%" },
+  show: (index: number) => ({ y: "0%", transition: { duration: 1, ease: heroEase, delay: 0.25 + index * 0.12 } }),
+};
+const fadeUp = {
+  hidden: { opacity: 0, y: 18 },
+  show: (delay: number) => ({ opacity: 1, y: 0, transition: { duration: 0.9, ease: heroEase, delay } }),
+};
+
 export default function EarthHero() {
   const section = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
@@ -264,32 +274,49 @@ export default function EarthHero() {
   const scale = useTransform(scrollYProgress, [0, 1], [1.48, 0.78]);
   const rotate = useTransform(scrollYProgress, [0, 1], [-4, 0]);
   const animatedStyle = { y, scale, rotate };
+  // Salida del texto al hacer scroll: sube, se desvanece y se desenfoca
+  const copyOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
+  const copyY = useTransform(scrollYProgress, [0, 0.4], [0, -80]);
+  const copyBlur = useTransform(scrollYProgress, [0, 0.4], ["blur(0px)", "blur(6px)"]);
+  const cueOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
 
   return (
     <section ref={section} className="earth-scroll" aria-label="Introducción al proyecto">
       <div className="earth-stage">
         <div className="starfield" aria-hidden="true" />
-        <header className="hero-nav">
-          <a className="brand brand-light" href="#inicio" aria-label="Tobaru, inicio">
+        <motion.header className="hero-nav" initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: heroEase }}>
+          <a className="brand brand-light" href="#inicio" aria-label="TENUA, inicio">
             <span className="brand-mark"><Orbit size={17} strokeWidth={1.5} /></span>
-            <span>TOBARU <i>WORKTEAM</i></span>
+            <span>TENUA <i>TOBARU WORKTEAM</i></span>
           </a>
-          <a className="hero-nav-link" href="#explorador">ABRIR EXPLORADOR <span>↗</span></a>
-        </header>
-        <div className="hero-copy" id="inicio">
-          <p className="eyebrow">OBSERVACIÓN TERRITORIAL · NISAR</p>
-          <h1>La Tierra<br /><span>en movimiento.</span></h1>
-          <p className="hero-description">Una nueva perspectiva para comprender los cambios de nuestro planeta.</p>
-        </div>
-        <motion.div className="earth-orbit" style={animatedStyle}>
+          <nav className="hero-links" aria-label="Secciones">
+            <a href="#como-funciona">Cómo funciona</a>
+            <a className="hero-nav-cta" href="#explorador">Abrir explorador <span aria-hidden="true">↗</span></a>
+          </nav>
+        </motion.header>
+        <motion.div className="hero-copy" id="inicio" style={{ opacity: copyOpacity, y: copyY, filter: copyBlur }} initial="hidden" animate="show">
+          <motion.p className="eyebrow hero-eyebrow" variants={fadeUp} custom={0.1}>OBSERVACIÓN TERRESTRE · NISAR</motion.p>
+          <h1>
+            <span className="hero-line"><motion.span variants={lineVariants} custom={0}>La Tierra</motion.span></span>
+            <span className="hero-line"><motion.span className="hero-gradient" variants={lineVariants} custom={1}>en movimiento.</motion.span></span>
+          </h1>
+          <motion.p className="hero-description" variants={fadeUp} custom={0.6}>
+            Naturaleza, tecnología y datos satelitales para entender qué cambia en el territorio y a quién podría afectar.
+          </motion.p>
+          <motion.div className="hero-actions" variants={fadeUp} custom={0.75}>
+            <a className="ui-button ui-button--primary" href="#explorador">Explorar el mapa</a>
+            <a className="ui-button ui-button--outline" href="#como-funciona">Cómo funciona</a>
+          </motion.div>
+        </motion.div>
+        <motion.div className="earth-orbit" style={animatedStyle} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, ease: heroEase }}>
           <div className="orbit-line orbit-line-one" />
           <div className="orbit-line orbit-line-two" />
           <NisarSatellite />
           <EarthGlobe />
         </motion.div>
-        <a href="#explorador" className="scroll-cue">
+        <motion.a href="#como-funciona" className="scroll-cue" style={{ opacity: cueOpacity }}>
           <span>DESLIZA PARA EXPLORAR</span><ArrowDown size={15} />
-        </a>
+        </motion.a>
         <div className="hero-coordinate" aria-hidden="true">7° 53′ 00″ N<br />72° 30′ 00″ W</div>
         <div className="hero-index" aria-hidden="true">01 / 03</div>
       </div>
