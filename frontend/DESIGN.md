@@ -9,8 +9,11 @@ Base común para todo el equipo. Antes de crear estilos nuevos, usa lo que ya ex
 | `src/styles/tokens.css` | Colores, escala de texto, radios y movimiento. Única fuente de valores. |
 | `src/styles/base.css` | Reset, foco de teclado, marca y etiquetas (`.eyebrow`). |
 | `src/styles/components.css` | Estilos de los componentes de `src/components/ui`. |
-| `src/styles/hero.css` | Landing con la Tierra y la órbita de NISAR. |
-| `src/styles/dashboard.css` | Explorador: panel, métricas, mapa, línea de tiempo y tarjetas. |
+| `src/styles/motion.css` | Efectos reutilizables: `.lift`, `.spotlight`, `.pulse`, barra de progreso. |
+| `src/styles/layout.css` | Contenedor, navegación fija, `.panel`, cabeceras de sección y pie. |
+| `src/styles/journey.css` | Recorrido con scroll: globo WebGL, capítulos, satélite e indicador. |
+| `src/styles/sections.css` | Sección "Cómo funciona". |
+| `src/styles/explorer.css` | Explorador: mapa con paneles flotantes, columna lateral y resumen para decisión. |
 | `src/app/globals.css` | Solo importa los archivos anteriores, en orden. |
 
 Si trabajas en una sección nueva (por ejemplo, la ficha de zona), crea su propio `src/styles/<seccion>.css` e impórtalo en `globals.css`.
@@ -60,3 +63,8 @@ import { Badge, Button, Card, Provenance } from "@/components/ui";
 - Para que algo entre y salga al montarse y desmontarse (capas del mapa, valores que cambian), usa `AnimatePresence` de framer-motion.
 - Hay clases CSS listas en `src/styles/motion.css`: `.lift`, `.spotlight` y `.pulse`.
 - `MotionProvider` respeta "reducir movimiento" del sistema. No hace falta hacer nada más.
+
+## Recorrido del globo (`components/journey`)
+
+- `globe-canvas.tsx`: shader WebGL. Recibe en cada fotograma centro, radio, longitud y latitud, más la intensidad de la franja de radar, la retícula, los anillos y el interferograma.
+- `globe-journey.tsx`: la función `choreograph(p)` convierte el progreso del scroll (0–1) en ese estado. Para cambiar tiempos, zoom o zona piloto se editan los tramos de esa función y la constante `TARGET`.

@@ -1,73 +1,71 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import {
+  Activity, AlertTriangle, ArrowUpRight, Briefcase, CalendarDays, ChevronRight, CloudRain,
+  Layers3, LocateFixed, Maximize2, MapPin, Mountain, Satellite, ShieldCheck, Sprout, Users,
+} from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { CountUp, Reveal, Stagger, StaggerItem, easeOut, trackSpotlight } from "@/components/motion/reveal";
 import { Badge, Button, Provenance } from "@/components/ui";
-import { demoMetrics, demoObservations } from "@/lib/demo-dashboard";
-import {
-  Activity, ArrowDownRight, ArrowUpRight, CalendarDays, ChevronDown,
-  ChevronRight, CloudRain, Layers3, LocateFixed, MapPin, Menu, Mountain,
-  Satellite, Search, SlidersHorizontal, Users, X,
-} from "lucide-react";
+import { demoInsights, demoMetrics, demoObservations } from "@/lib/demo-dashboard";
+import type { DecisionInsight } from "@/types/territory";
 
 const initialLayers = { displacement: true, rainfall: false, slope: false };
+type LayerKey = keyof typeof initialLayers;
+
+const layerList: { key: LayerKey; title: string; detail: string; icon: ReactNode; tone: string }[] = [
+  { key: "displacement", title: "Movimiento del terreno", detail: "NISAR · demo", icon: <Activity size={16} />, tone: "tech" },
+  { key: "rainfall", title: "Precipitación", detail: "Fuente pendiente", icon: <CloudRain size={16} />, tone: "sky" },
+  { key: "slope", title: "Pendiente", detail: "Fuente pendiente", icon: <Mountain size={16} />, tone: "green" },
+];
+
+const metricIcons = [<Activity key="a" size={18} />, <Mountain key="m" size={18} />, <Users key="u" size={18} />];
+const insightIcons: Record<DecisionInsight["id"], ReactNode> = {
+  change: <Activity size={20} />,
+  social: <Users size={20} />,
+  economic: <Sprout size={20} />,
+  action: <ShieldCheck size={20} />,
+};
 
 export default function ExplorerDashboard() {
   const [layers, setLayers] = useState(initialLayers);
   const [dateIndex, setDateIndex] = useState(3);
-  const [mobilePanel, setMobilePanel] = useState(false);
-  const activeObservation = demoObservations[dateIndex];
-  const dateLabels = demoObservations.map((observation) => observation.label);
-  const formattedDate = new Intl.DateTimeFormat("es-CO", {
-    day: "2-digit", month: "short", year: "numeric", timeZone: "UTC",
-  }).format(new Date(activeObservation.date));
-  const metricIcons = [<Activity key="activity" size={17} />, <Mountain key="mountain" size={17} />, <Users key="users" size={17} />];
-  const toggleLayer = (key: keyof typeof initialLayers) =>
-    setLayers((current) => ({ ...current, [key]: !current[key] }));
+  const active = demoObservations[dateIndex];
+  const lastIndex = demoObservations.length - 1;
+  const toggleLayer = (key: LayerKey) => setLayers((current) => ({ ...current, [key]: !current[key] }));
 
   return (
-    <section className="explorer-section" id="explorador">
-      <header className="app-header">
-        <a className="brand" href="#inicio"><span className="brand-mark"><Satellite size={17} /></span><span>TENUA <i>TOBARU WORKTEAM</i></span></a>
-        <div className="header-center"><span className="live-dot" /> <span className="header-center-prefix">ENTORNO DE </span>DEMOSTRACIÓN</div>
-        <div className="header-actions"><button className="header-icon" aria-label="Buscar"><Search size={17} /></button><button className="avatar">TW</button><button className="mobile-menu" onClick={() => setMobilePanel(!mobilePanel)} aria-label="Abrir filtros">{mobilePanel ? <X size={18} /> : <Menu size={18} />}</button></div>
-      </header>
-
-      <div className="explorer-layout">
-        <aside className={`side-panel ${mobilePanel ? "side-panel-open" : ""}`}>
-          <div className="panel-heading">
-            <div><p className="eyebrow">ÁREA DE ANÁLISIS</p><h2>Explorador</h2></div>
-            <button className="quiet-icon" aria-label="Ajustes"><SlidersHorizontal size={16} /></button>
+    <section className="explorer" id="explorador" aria-labelledby="explorer-title">
+      <div className="container">
+        <Reveal className="section-head">
+          <div>
+            <p className="eyebrow">EXPLORADOR TERRITORIAL</p>
+            <h2 id="explorer-title">Panorama de la <span className="text-gradient">zona piloto</span></h2>
+            <p>Observaciones del terreno, exposición y acciones sugeridas en un solo lugar. Cada dato muestra su fuente, fecha y limitación.</p>
           </div>
-          <button className="area-select"><span className="area-icon"><MapPin size={17} /></span><span><small>REGIÓN SELECCIONADA</small><strong>Zona piloto <em>· por definir</em></strong></span><ChevronDown size={15} /></button>
-          <div className="panel-divider" />
-          <div className="section-label"><span>CAPAS DEL MAPA</span><Layers3 size={15} /></div>
-          <LayerToggle active={layers.displacement} onClick={() => toggleLayer("displacement")} icon={<Activity size={16} />} title="Movimiento del terreno" detail="NISAR · demostración" color="cyan" />
-          <LayerToggle active={layers.rainfall} onClick={() => toggleLayer("rainfall")} icon={<CloudRain size={16} />} title="Precipitación" detail="Fuente pendiente" color="blue" />
-          <LayerToggle active={layers.slope} onClick={() => toggleLayer("slope")} icon={<Mountain size={16} />} title="Pendiente del terreno" detail="Fuente pendiente" color="amber" />
-          <div className="panel-divider" />
-          <div className="section-label"><span>FECHA DE OBSERVACIÓN</span><CalendarDays size={15} /></div>
-          <button className="date-select"><span>{formattedDate}</span><ChevronDown size={15} /></button>
-          <div className="date-note">Fechas simuladas para la propuesta visual</div>
-          <div className="panel-divider" />
-          <div className="source-card"><span className="source-icon"><Satellite size={17} /></span><div><strong>Fuente del análisis</strong><p>NISAR · producto por confirmar</p></div><ChevronRight size={14} /></div>
-          <div className="side-foot"><span className="demo-dot" /> Los datos de esta vista son de demostración.</div>
-        </aside>
+          <div className="section-head-aside">
+            <Badge tone="demo">Datos de demostración</Badge>
+            <span className="region-chip"><MapPin size={15} /> Zona piloto · por definir</span>
+          </div>
+        </Reveal>
 
-        <main className="dashboard-main">
-          <Reveal className="dashboard-title-row" y={20}>
-            <div><div className="breadcrumb">TENUA <ChevronRight size={12} /> EXPLORADOR</div><h1>Panorama territorial</h1><p>Explora observaciones y contexto del área seleccionada.</p></div>
-            <Button variant="outline" className="title-action"><LocateFixed size={16} /><span className="ui-button-label">Centrar mapa</span></Button>
-          </Reveal>
+        <div className="explorer-grid">
+          {/* Mapa: protagonista */}
+          <Reveal className="panel map-panel" y={40}>
+            <div className="panel-bar">
+              <div className="panel-bar-title">
+                <span className="icon-chip tech"><Satellite size={16} /></span>
+                <div><strong>Mapa de cambios</strong><small>7°53′ N · 72°30′ W</small></div>
+              </div>
+              <div className="panel-bar-tools">
+                <Badge tone="demo">Mapa demo</Badge>
+                <Button size="icon" variant="ghost" aria-label="Centrar mapa"><LocateFixed size={17} /></Button>
+                <Button size="icon" variant="ghost" aria-label="Pantalla completa"><Maximize2 size={16} /></Button>
+              </div>
+            </div>
 
-          <Stagger className="metrics-grid">
-            {demoMetrics.map((metric, index) => <MetricCard key={metric.id} label={metric.label} value={metric.value} suffix={metric.unit} trend={metric.context} icon={metricIcons[index]} accent={metric.accent} />)}
-          </Stagger>
-
-          <Reveal y={40}><section className="map-card" aria-label="Mapa de demostración">
-            <div className="map-topline"><div className="map-place"><MapPin size={14} /><span>Región piloto <i>· ubicación por definir</i></span></div><div className="map-tools"><Badge tone="demo">Mapa demo</Badge><button aria-label="Capas"><Layers3 size={16} /></button><button aria-label="Pantalla completa">⛶</button></div></div>
-            <div className={`map-visual ${layers.rainfall ? "show-rainfall" : ""} ${layers.slope ? "show-slope" : ""}`}>
+            <div className="map-stage">
               <div className="map-grid" />
               <svg className="terrain-lines" viewBox="0 0 1100 580" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
                 <path d="M-30 385C80 330 150 417 234 340S371 224 456 294 585 422 687 339 811 205 912 267s142 139 228 73" />
@@ -77,41 +75,144 @@ export default function ExplorerDashboard() {
                 <path d="M-5 289c100-13 171 68 255-17s153-177 248-140 111 144 193 100 158-181 271-140 143 92 234 45" />
                 <path d="M67 580c-6-97 76-109 59-201s-54-117 8-194 51-126 29-205M212 580c44-91 11-132 52-199s98-88 67-172 17-122 78-209M523 580c-41-85 27-138 20-205s-63-121-21-198 101-103 69-177M834 580c-49-99 34-157 16-229s-70-115-12-177 92-98 67-172" />
               </svg>
-              <svg className="river-line" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true"><path d="M0 232c126-82 159 64 276-8 119-74 121 63 236 0s119-92 224-18 142 40 264-35" /></svg>
+              <svg className="river-line" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true">
+                <motion.path d="M0 232c126-82 159 64 276-8 119-74 121 63 236 0s119-92 224-18 142 40 264-35" initial={{ pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 2.2, ease: easeOut }} />
+              </svg>
+
               <AnimatePresence>
                 {layers.rainfall && <motion.div key="rain" className="rainfall-overlay" initial={{ opacity: 0, scale: 1.08 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.08 }} transition={{ duration: 0.6, ease: easeOut }} />}
                 {layers.slope && <motion.div key="slope" className="slope-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} />}
-                {layers.displacement && <motion.div key="z1" className="change-zone zone-one" initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.6, y: 8 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}><i className="pulse" /><span>CAMBIO OBSERVADO</span></motion.div>}
-                {layers.displacement && <motion.div key="z2" className="change-zone zone-two" initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.6, y: 8 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.08 }}><i className="pulse" /><span>SEÑAL DEMO</span></motion.div>}
+                {layers.displacement && (
+                  <motion.div key="z1" className="change-zone zone-one" initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.6, y: 8 }} transition={{ type: "spring", stiffness: 260, damping: 20 }}>
+                    <i className="pulse" /><span>Cambio observado</span>
+                  </motion.div>
+                )}
+                {layers.displacement && (
+                  <motion.div key="z2" className="change-zone zone-two" initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.6, y: 8 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.08 }}>
+                    <i className="pulse" /><span>Señal demo</span>
+                  </motion.div>
+                )}
               </AnimatePresence>
-              <div className="map-label label-one"><span>01</span> LADERA NORTE</div><div className="map-label label-two"><span>02</span> CUENCA ALTA</div><div className="map-label label-three">RÍO PRINCIPAL</div>
-              <div className="map-compass">N <span>↑</span></div>
-              <div className="map-scale"><i /> 0 <span>2 km</span></div>
-              <div className="map-crosshair">+</div>
-              <div className="map-legend"><strong>CAMBIO OBSERVADO</strong><span><i className="legend-low" /> señal demo</span><span><i className="legend-mid" /> punto seleccionado</span></div>
-              <div className="map-disclaimer">Visualización ilustrativa · sin datos geográficos reales</div>
-            </div>
-            <div className="timeline">
-              <div className="timeline-heading"><div><strong>Serie temporal</strong><span>Fechas simuladas · no representan la frecuencia real de NISAR</span></div><span className="timeline-current">{activeObservation.label} · {activeObservation.date.slice(0, 4)}</span></div>
-              <div className="timeline-track"><input aria-label="Seleccionar fecha de observación" type="range" min="0" max="5" value={dateIndex} onChange={(event) => setDateIndex(Number(event.target.value))} style={{ "--range-progress": `${(dateIndex / 5) * 100}%` } as React.CSSProperties} /><div className="timeline-labels">{dateLabels.map((date, index) => <button key={date} className={index === dateIndex ? "is-current" : ""} onClick={() => setDateIndex(index)}>{date}</button>)}</div></div>
-            </div>
-          </section></Reveal>
 
-          <Stagger className="below-grid">
-            <StaggerItem as="article" className="detail-card lift spotlight" onPointerMove={trackSpotlight}><div className="card-heading"><div><p className="eyebrow">DETALLE DE LA OBSERVACIÓN</p><h2>Ladera norte</h2></div><button className="quiet-icon" aria-label="Más detalles"><ArrowDownRight size={17} /></button></div><div className="observation-value"><AnimatePresence mode="wait" initial={false}><motion.strong key={activeObservation.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.3, ease: easeOut }}>+ {activeObservation.value.toFixed(1)}</motion.strong></AnimatePresence><span>{activeObservation.unit}</span><Badge tone="accent"><ArrowUpRight size={13} /> cambio observado</Badge></div><p className="detail-copy">Valor ilustrativo para mostrar el diseño. La unidad, el método y los umbrales se definirán según el producto y la validación.</p><Provenance source={activeObservation.source} date={`${activeObservation.label} ${activeObservation.date.slice(0, 4)}`} limitation="Valor ilustrativo, sin validar" /></StaggerItem>
-            <StaggerItem as="article" className="review-card lift spotlight" onPointerMove={trackSpotlight}><div className="review-icon"><Activity size={17} /></div><p className="eyebrow">ESTADO DE LA EVIDENCIA</p><h2>Revisión requerida</h2><p>Una variación observada necesita contexto y validación local. No es una alerta ni predice por sí sola un deslizamiento.</p><button className="text-link">Ver metodología <ChevronRight size={14} /></button></StaggerItem>
+              <span className="map-label label-one"><b>01</b> Ladera norte</span>
+              <span className="map-label label-two"><b>02</b> Cuenca alta</span>
+              <span className="map-label label-river">Río principal</span>
+
+              {/* Panel flotante de capas */}
+              <div className="map-float map-layers">
+                <p className="float-title"><Layers3 size={14} /> Capas</p>
+                {layerList.map((layer) => (
+                  <button key={layer.key} className={`layer-row ${layers[layer.key] ? "is-on" : ""}`} onClick={() => toggleLayer(layer.key)} aria-pressed={layers[layer.key]}>
+                    <span className={`icon-chip ${layer.tone}`}>{layer.icon}</span>
+                    <span className="layer-text"><strong>{layer.title}</strong><small>{layer.detail}</small></span>
+                    <span className="switch"><i /></span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="map-float map-legend">
+                <p className="float-title">Leyenda</p>
+                <span><i className="dot tech" /> Cambio observado</span>
+                <span><i className="dot warning" /> Señal por revisar</span>
+              </div>
+
+              <div className="map-scale" aria-hidden="true"><i /> 2 km</div>
+            </div>
+
+            <div className="timeline">
+              <div className="timeline-head">
+                <div>
+                  <strong><CalendarDays size={15} /> Serie temporal</strong>
+                  <small>Fechas simuladas · no representan la frecuencia real de NISAR</small>
+                </div>
+                <span className="timeline-current">{active.label} · {active.date.slice(0, 4)}</span>
+              </div>
+              <input
+                className="timeline-range"
+                aria-label="Seleccionar fecha de observación"
+                type="range" min={0} max={lastIndex} value={dateIndex}
+                onChange={(event) => setDateIndex(Number(event.target.value))}
+                style={{ "--range-progress": `${(dateIndex / lastIndex) * 100}%` } as React.CSSProperties}
+              />
+              <div className="timeline-labels">
+                {demoObservations.map((observation, index) => (
+                  <button key={observation.id} className={index === dateIndex ? "is-current" : undefined} onClick={() => setDateIndex(index)}>{observation.label}</button>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Columna lateral de paneles */}
+          <Stagger className="side-stack">
+            <StaggerItem className="panel lift spotlight" onPointerMove={trackSpotlight}>
+              <p className="eyebrow">RESUMEN DE LA ZONA</p>
+              <ul className="metric-list">
+                {demoMetrics.map((metric, index) => (
+                  <li key={metric.id}>
+                    <span className={`icon-chip ${["tech", "green", "sky"][index]}`}>{metricIcons[index]}</span>
+                    <div className="metric-text">
+                      <small>{metric.label.toLowerCase()}</small>
+                      <span className="metric-value"><strong><CountUp value={metric.value} /></strong> {metric.unit}</span>
+                    </div>
+                    <span className="metric-context">{metric.context}</span>
+                  </li>
+                ))}
+              </ul>
+            </StaggerItem>
+
+            <StaggerItem className="panel lift spotlight" onPointerMove={trackSpotlight}>
+              <div className="panel-head">
+                <div><p className="eyebrow">OBSERVACIÓN SELECCIONADA</p><h3>Ladera norte</h3></div>
+                <Badge tone="accent"><ArrowUpRight size={13} /> Cambio</Badge>
+              </div>
+              <div className="observation-value">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.strong key={active.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.3, ease: easeOut }}>
+                    +{active.value.toFixed(1)}
+                  </motion.strong>
+                </AnimatePresence>
+                <span>{active.unit}</span>
+              </div>
+              <p className="panel-copy">Valor ilustrativo. La unidad, el método y los umbrales se definirán según el producto NISAR y la validación local.</p>
+              <Provenance source={active.source} date={`${active.label} ${active.date.slice(0, 4)}`} limitation="Sin validar" />
+            </StaggerItem>
+
+            <StaggerItem className="panel panel-warning lift" >
+              <div className="panel-head">
+                <div><p className="eyebrow">ESTADO DE LA EVIDENCIA</p><h3>Revisión requerida</h3></div>
+                <span className="icon-chip warning"><AlertTriangle size={18} /></span>
+              </div>
+              <p className="panel-copy">Una variación observada necesita contexto y validación local. No es una alerta ni predice por sí sola un deslizamiento.</p>
+              <button className="text-link">Ver metodología <ChevronRight size={15} /></button>
+            </StaggerItem>
           </Stagger>
-          <footer className="app-footer"><span>TENUA · TOBARU WORKTEAM <i>· PROTOTIPO VISUAL</i></span><span>DATOS SIMULADOS PARA DEMOSTRACIÓN</span></footer>
-        </main>
+        </div>
+
+        {/* Resumen para decisión */}
+        <Reveal className="subsection-head">
+          <p className="eyebrow">RESUMEN PARA DECISIÓN</p>
+          <h3>De la señal a la acción preventiva</h3>
+        </Reveal>
+        <Stagger className="insight-grid">
+          {demoInsights.map((insight) => (
+            <StaggerItem as="article" key={insight.id} className={`panel insight-card insight-${insight.id} lift spotlight`} onPointerMove={trackSpotlight}>
+              <span className="insight-icon">{insightIcons[insight.id]}</span>
+              <p className="eyebrow">{insight.eyebrow}</p>
+              <h4>{insight.title}</h4>
+              <ul>{insight.points.map((point) => <li key={point}>{point}</li>)}</ul>
+              {insight.id === "action" && (
+                <p className="priority"><span className="priority-dot" aria-hidden="true" /> Prioridad relativa: <strong>media</strong></p>
+              )}
+              <Provenance source={insight.source} date="AGO 2026" limitation={insight.limitation} />
+            </StaggerItem>
+          ))}
+        </Stagger>
+
+        <Reveal className="explorer-note">
+          <Briefcase size={16} />
+          <p>Responsable sugerido: equipo municipal de gestión del riesgo. Las recomendaciones del sistema son propuestas y se separan de las decisiones de la autoridad.</p>
+        </Reveal>
       </div>
     </section>
   );
-}
-
-function LayerToggle({ active, onClick, icon, title, detail, color }: { active: boolean; onClick: () => void; icon: React.ReactNode; title: string; detail: string; color: string }) {
-  return <button className="layer-toggle" onClick={onClick} aria-pressed={active}><span className={`layer-icon ${color}`}>{icon}</span><span className="layer-copy"><strong>{title}</strong><small>{detail}</small></span><span className={`switch ${active ? "switch-on" : ""}`}><i /></span></button>;
-}
-
-function MetricCard({ label, value, suffix, trend, icon, accent }: { label: string; value: string; suffix: string; trend: string; icon: React.ReactNode; accent: string }) {
-  return <StaggerItem as="article" className="metric-card lift spotlight" onPointerMove={trackSpotlight}><div className={`metric-icon ${accent}`}>{icon}</div><p>{label}</p><div className="metric-number"><strong><CountUp value={value} /></strong><span>{suffix}</span></div><span className="metric-trend">{trend}</span></StaggerItem>;
 }
