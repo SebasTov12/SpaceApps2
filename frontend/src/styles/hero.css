@@ -1,0 +1,335 @@
+/* Landing: introducción con la Tierra, órbita de NISAR y scroll. */
+
+.earth-scroll {
+  height: 205svh;
+  position: relative;
+  background: var(--color-space);
+}
+
+.earth-stage {
+  height: 100svh;
+  min-height: 620px;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(ellipse at 53% 88%,#101d28 0,rgba(4,9,15,.5) 35%,#03070d 73%);
+}
+
+.starfield,
+.starfield:before,
+.starfield:after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: repeat;
+  content: "";
+}
+
+.starfield {
+  opacity: .62;
+  background-image: radial-gradient(1px 1px at 14% 18%,#d2e7f2 55%,transparent 100%),radial-gradient(1px 1px at 73% 19%,#a7d9e7 55%,transparent 100%),radial-gradient(1px 1px at 86% 62%,#edf2e6 55%,transparent 100%),radial-gradient(1px 1px at 32% 35%,#d5e1eb 55%,transparent 100%),radial-gradient(1px 1px at 64% 47%,#a7c1db 55%,transparent 100%);
+  background-size: 317px 257px,401px 327px,503px 373px,613px 417px,733px 541px;
+}
+
+.starfield:before {
+  opacity: .32;
+  background-image: radial-gradient(1.5px 1.5px at 39% 14%,#e5f4fc 55%,transparent 100%),radial-gradient(1px 1px at 18% 72%,#fff 55%,transparent 100%),radial-gradient(1px 1px at 92% 39%,#dceefb 55%,transparent 100%);
+  background-size: 743px 509px,557px 631px,811px 577px;
+}
+
+.hero-nav {
+  position: absolute;
+  z-index: 5;
+  left: clamp(24px,5.2vw,82px);
+  right: clamp(24px,5.2vw,82px);
+  top: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hero-nav-link {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  letter-spacing: .18em;
+}
+
+.hero-nav-link span {
+  font-size: var(--text-base);
+  color: var(--color-accent);
+}
+
+.hero-copy {
+  position: absolute;
+  z-index: 3;
+  left: clamp(28px,9vw,142px);
+  top: 25.5%;
+  max-width: 440px;
+}
+
+.hero-copy h1 {
+  margin: 17px 0 12px;
+  font-size: clamp(41px,6.2vw,88px);
+  line-height: .91;
+  letter-spacing: -.065em;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.hero-copy h1 span {
+  color: var(--color-text-muted);
+}
+
+.hero-description {
+  max-width: 310px;
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  line-height: 1.7;
+}
+
+.earth-orbit {
+  position: absolute;
+  z-index: 2;
+  width: min(78vh,72vw);
+  height: min(78vh,72vw);
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  translate: -50% -50%;
+  will-change: transform;
+  transform-origin: 50% 50%;
+}
+
+.earth-render {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  filter: drop-shadow(0 -6px 42px rgba(86,166,190,.28));
+}
+
+.earth-fallback,
+.earth-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.earth-fallback {
+  object-fit: cover;
+  filter: brightness(.83) saturate(.96);
+}
+
+.earth-canvas {
+  opacity: 0;
+  transition: opacity .8s ease;
+}
+
+.earth-canvas-ready {
+  opacity: 1;
+}
+
+.orbit-line {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgba(126,192,197,.11);
+  border-radius: 50%;
+  inset: -9%;
+  transform: rotate(-21deg) scaleY(.45);
+  pointer-events: none;
+}
+
+.orbit-line-two {
+  inset: -16%;
+  transform: rotate(24deg) scaleY(.31);
+  border-color: rgba(126,192,197,.07);
+}
+
+.nisar-orbit {
+  position: absolute;
+  z-index: 3;
+  inset: -20%;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  animation: nisar-orbit 64s linear infinite;
+}
+
+.nisar-orbit-plane {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform: rotate(-8deg) scaleX(.35) scaleY(.75);
+}
+
+.nisar-orbit-path {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(153,218,224,.23);
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(71,166,190,.07),inset 0 0 18px rgba(71,166,190,.04);
+}
+
+.nisar-satellite-anchor {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: clamp(132px,22vw,220px);
+  transform: translate(-50%,-50%) scaleY(1.45);
+  filter: brightness(1.4) contrast(1.12) saturate(1.08) drop-shadow(0 0 10px rgba(184,224,229,.28));
+}
+
+.nisar-satellite-anchor:before {
+  position: absolute;
+  top: 50%;
+  right: 68%;
+  width: clamp(30px,5vw,52px);
+  height: 1px;
+  background: linear-gradient(90deg,transparent,rgba(114,220,225,.88));
+  box-shadow: 0 0 7px rgba(79,196,205,.72);
+  content: "";
+}
+
+.nisar-spacecraft {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+@keyframes nisar-orbit {
+  from {
+    transform: rotate(41deg);
+  }
+  to {
+    transform: rotate(401deg);
+  }
+}
+
+.scroll-cue {
+  position: absolute;
+  z-index: 5;
+  bottom: 31px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: .19em;
+}
+
+.scroll-cue svg {
+  color: var(--color-accent);
+  animation: nudge 1.8s ease-in-out infinite;
+}
+
+@keyframes nudge {
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+.hero-coordinate,
+.hero-index {
+  position: absolute;
+  z-index: 4;
+  bottom: 33px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: .13em;
+  line-height: 1.8;
+}
+
+.hero-coordinate {
+  left: clamp(26px,5.2vw,82px);
+}
+
+.hero-index {
+  right: clamp(26px,5.2vw,82px);
+}
+
+@media (max-width:980px) {
+  .hero-copy {
+    left: 7vw;
+  }
+
+  .earth-orbit {
+    width: min(84vh,82vw);
+    height: min(84vh,82vw);
+  }
+}
+
+@media (max-width:720px) {
+  .earth-scroll {
+    height: 180svh;
+  }
+
+  .earth-stage {
+    min-height: 560px;
+  }
+
+  .hero-nav {
+    top: 19px;
+    left: 20px;
+    right: 20px;
+  }
+
+  .hero-nav-link {
+    font-size: var(--text-xs);
+  }
+
+  .hero-copy {
+    top: 23%;
+    left: 25px;
+    max-width: 290px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(43px,12vw,70px);
+  }
+
+  .hero-description {
+    font-size: var(--text-sm);
+    max-width: 260px;
+  }
+
+  .earth-orbit {
+    width: 110vw;
+    height: 110vw;
+    max-width: 82vh;
+    max-height: 82vh;
+  }
+
+  .nisar-orbit-plane {
+    transform: rotate(-8deg) scaleX(.22) scaleY(.75);
+  }
+
+  .nisar-satellite-anchor {
+    width: clamp(108px,31vw,150px);
+  }
+
+  .scroll-cue {
+    bottom: 25px;
+    white-space: nowrap;
+  }
+
+  .hero-coordinate,
+  .hero-index {
+    bottom: 21px;
+    font-size: var(--text-xs);
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .scroll-cue svg {
+    animation: none;
+  }
+}

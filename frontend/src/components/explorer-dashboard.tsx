@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Badge, Button, Provenance } from "@/components/ui";
 import { demoMetrics, demoObservations } from "@/lib/demo-dashboard";
 import {
   Activity, ArrowDownRight, ArrowUpRight, CalendarDays, ChevronDown,
@@ -27,7 +28,7 @@ export default function ExplorerDashboard() {
     <section className="explorer-section" id="explorador">
       <header className="app-header">
         <a className="brand" href="#inicio"><span className="brand-mark"><Satellite size={17} /></span><span>TOBARU <i>WORKTEAM</i></span></a>
-        <div className="header-center"><span className="live-dot" /> ENTORNO DE DEMOSTRACIÓN</div>
+        <div className="header-center"><span className="live-dot" /> <span className="header-center-prefix">ENTORNO DE </span>DEMOSTRACIÓN</div>
         <div className="header-actions"><button className="header-icon" aria-label="Buscar"><Search size={17} /></button><button className="avatar">TW</button><button className="mobile-menu" onClick={() => setMobilePanel(!mobilePanel)} aria-label="Abrir filtros">{mobilePanel ? <X size={18} /> : <Menu size={18} />}</button></div>
       </header>
 
@@ -55,7 +56,7 @@ export default function ExplorerDashboard() {
         <main className="dashboard-main">
           <div className="dashboard-title-row">
             <div><div className="breadcrumb">TOBARU <ChevronRight size={12} /> EXPLORADOR</div><h1>Panorama territorial</h1><p>Explora observaciones y contexto del área seleccionada.</p></div>
-            <button className="outline-button"><LocateFixed size={15} /> Centrar mapa</button>
+            <Button variant="outline" className="title-action"><LocateFixed size={16} /><span className="ui-button-label">Centrar mapa</span></Button>
           </div>
 
           <div className="metrics-grid">
@@ -63,7 +64,7 @@ export default function ExplorerDashboard() {
           </div>
 
           <section className="map-card" aria-label="Mapa de demostración">
-            <div className="map-topline"><div className="map-place"><MapPin size={14} /><span>Región piloto <i>· ubicación por definir</i></span></div><div className="map-tools"><span className="map-demo"><span className="demo-dot" /> MAPA DEMO</span><button aria-label="Capas"><Layers3 size={16} /></button><button aria-label="Pantalla completa">⛶</button></div></div>
+            <div className="map-topline"><div className="map-place"><MapPin size={14} /><span>Región piloto <i>· ubicación por definir</i></span></div><div className="map-tools"><Badge tone="demo">Mapa demo</Badge><button aria-label="Capas"><Layers3 size={16} /></button><button aria-label="Pantalla completa">⛶</button></div></div>
             <div className={`map-visual ${layers.rainfall ? "show-rainfall" : ""} ${layers.slope ? "show-slope" : ""}`}>
               <div className="map-grid" />
               <svg className="terrain-lines" viewBox="0 0 1100 580" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -93,7 +94,7 @@ export default function ExplorerDashboard() {
           </section>
 
           <div className="below-grid">
-            <section className="detail-card"><div className="card-heading"><div><p className="eyebrow">DETALLE DE LA OBSERVACIÓN</p><h2>Ladera norte</h2></div><button className="quiet-icon" aria-label="Más detalles"><ArrowDownRight size={17} /></button></div><div className="observation-value"><strong>+ {activeObservation.value.toFixed(1)}</strong><span>{activeObservation.unit}</span><span className="observation-badge"><ArrowUpRight size={13} /> cambio observado</span></div><p className="detail-copy">Valor ilustrativo para mostrar el diseño. La unidad, el método y los umbrales se definirán según el producto y la validación.</p><div className="detail-meta"><span>FUENTE <b>{activeObservation.source}</b></span><span>FECHA <b>{activeObservation.label} {activeObservation.date.slice(0, 4)}</b></span></div></section>
+            <section className="detail-card"><div className="card-heading"><div><p className="eyebrow">DETALLE DE LA OBSERVACIÓN</p><h2>Ladera norte</h2></div><button className="quiet-icon" aria-label="Más detalles"><ArrowDownRight size={17} /></button></div><div className="observation-value"><strong>+ {activeObservation.value.toFixed(1)}</strong><span>{activeObservation.unit}</span><Badge tone="accent"><ArrowUpRight size={13} /> cambio observado</Badge></div><p className="detail-copy">Valor ilustrativo para mostrar el diseño. La unidad, el método y los umbrales se definirán según el producto y la validación.</p><Provenance source={activeObservation.source} date={`${activeObservation.label} ${activeObservation.date.slice(0, 4)}`} limitation="Valor ilustrativo, sin validar" /></section>
             <section className="review-card"><div className="review-icon"><Activity size={17} /></div><p className="eyebrow">ESTADO DE LA EVIDENCIA</p><h2>Revisión requerida</h2><p>Una variación observada necesita contexto y validación local. No es una alerta ni predice por sí sola un deslizamiento.</p><button className="text-link">Ver metodología <ChevronRight size={14} /></button></section>
           </div>
           <footer className="app-footer"><span>TOBARU WORKTEAM <i>· PROTOTIPO VISUAL</i></span><span>DATOS SIMULADOS PARA DEMOSTRACIÓN</span></footer>

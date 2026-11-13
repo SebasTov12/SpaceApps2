@@ -1,0 +1,69 @@
+/*
+ * Tokens de diseño de Tobaru.
+ * Se declaran en @theme para que existan como variables CSS (var(--color-text))
+ * y como utilidades de Tailwind (text-text, bg-surface, text-sm, rounded-lg...).
+ * "static" obliga a emitirlas todas aunque ninguna utilidad las use todavía.
+ */
+@theme static {
+  /* Tipografía: fuentes cargadas con next/font en app/layout.tsx */
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Escala de texto. 12px es el mínimo: nada por debajo de --text-xs. */
+  --text-xs: 0.75rem;     /* 12px — etiquetas, leyendas, notas de fuente */
+  --text-sm: 0.875rem;    /* 14px — texto de interfaz y controles */
+  --text-base: 1rem;      /* 16px — párrafos */
+  --text-lg: 1.125rem;    /* 18px — subtítulos de tarjeta */
+  --text-xl: 1.25rem;     /* 20px — títulos de panel */
+  --text-2xl: 1.5rem;     /* 24px — cifras de métricas */
+  --text-3xl: 1.875rem;   /* 30px — título de página */
+
+  /* Superficies, de la más profunda a la más elevada */
+  --color-space: #03070d;          /* fondo del hero espacial */
+  --color-bg: #071019;             /* fondo de la aplicación */
+  --color-surface: #0a131b;        /* cabecera y panel lateral */
+  --color-surface-sunken: #0c161e; /* zonas hundidas: mapa, línea de tiempo */
+  --color-surface-raised: #101c25; /* tarjetas */
+  --color-surface-hover: #142430;
+
+  /* Bordes */
+  --color-line: rgba(163, 190, 202, 0.14);
+  --color-line-strong: rgba(163, 190, 202, 0.26);
+
+  /* Texto (contraste AA sobre --color-surface) */
+  --color-text: #e7eff1;
+  --color-text-secondary: #b6c4c7;
+  --color-text-muted: #8c9ea5;
+
+  /* Acentos */
+  --color-accent: #79d3d3;         /* acción principal, observación NISAR */
+  --color-accent-strong: #40aaa8;
+  --color-accent-soft: #b5e8e4;
+  --color-info: #82a9dd;
+  --color-violet: #b9a2e3;
+  --color-warning: #e8b36b;        /* datos demo, revisión pendiente */
+  --color-warning-soft: #eed1a0;
+  --color-danger: #e5877a;
+
+  /* Prioridad relativa. Siempre acompañar con texto o icono, nunca solo color. */
+  --color-priority-low: #77ccc4;
+  --color-priority-medium: #e4b36d;
+  --color-priority-high: #e5877a;
+
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-full: 999px;
+
+  /* Movimiento */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+}
+
+:root {
+  color-scheme: dark;
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent);
+}
