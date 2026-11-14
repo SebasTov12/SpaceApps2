@@ -5,6 +5,8 @@
 
 # Local NISAR data and model artifacts
 data/
+# capas ya procesadas que sirve el frontend (generadas por pipeline/build_layers.py)
+!frontend/public/data/
 artifacts/
 models/
 

@@ -1,0 +1,135 @@
+{
+  "id": "jakobshavn-glaciar",
+  "name": "Glaciar en movimiento",
+  "place": "Sermeq Kujalleq (Jakobshavn), Groenlandia",
+  "lat": 69.17,
+  "lon": -49.9,
+  "bbox": [
+    -50.5,
+    68.99,
+    -49.3,
+    69.35
+  ],
+  "change": "velocity",
+  "changeLabel": "Flujo de glaciar",
+  "product": "GOFF",
+  "metric": "Velocidad del hielo",
+  "unit": "m/día",
+  "range": [
+    0,
+    40
+  ],
+  "colormap": "ice",
+  "story": "Uno de los glaciares más rápidos del planeta. El seguimiento de desplazamientos entre pasadas del radar mide cuántos metros al día avanza el hielo.",
+  "pilot": false,
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/jakobshavn-glaciar/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/jakobshavn-glaciar/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/jakobshavn-glaciar/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/jakobshavn-glaciar/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/jakobshavn-glaciar/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/jakobshavn-glaciar/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/jakobshavn-glaciar/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/jakobshavn-glaciar/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/jakobshavn-glaciar/change.png",
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "unit": "m/día"
+  },
+  "legend": {
+    "colors": [
+      "#0f2c57",
+      "#2f6fb0",
+      "#79d3d3",
+      "#e9f6f2",
+      "#f6d58b",
+      "#e8803a"
+    ],
+    "range": [
+      0,
+      40
+    ],
+    "diverging": false
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Velocidad máxima al inicio",
+      "value": "36.0",
+      "unit": "m/día",
+      "note": "2026-08-02"
+    },
+    {
+      "label": "Velocidad máxima al final",
+      "value": "24.0",
+      "unit": "m/día",
+      "note": "2026-10-25"
+    },
+    {
+      "label": "Variación",
+      "value": "-33",
+      "unit": "%",
+      "note": "Desaceleración estacional"
+    }
+  ],
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GOFF",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+  },
+  "generated": "2026-11-14T14:49:46+00:00"
+}

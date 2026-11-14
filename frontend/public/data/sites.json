@@ -1,0 +1,134 @@
+{
+  "sites": [
+    {
+      "id": "colombia-ladera",
+      "name": "Ladera andina",
+      "place": "Norte de Santander, Colombia",
+      "lat": 7.88,
+      "lon": -72.5,
+      "bbox": [
+        -72.56,
+        7.82,
+        -72.44,
+        7.94
+      ],
+      "change": "deformation",
+      "changeLabel": "Deslizamiento",
+      "product": "GUNW",
+      "unit": "mm",
+      "story": "Zona piloto de TENUA. Las laderas andinas se mueven lentamente antes de fallar; el radar mide milímetros de desplazamiento aunque haya nubes.",
+      "pilot": true,
+      "mode": "demo",
+      "headline": {
+        "label": "Desplazamiento máximo",
+        "value": "-56.5",
+        "unit": "mm",
+        "note": "Alejándose del satélite"
+      }
+    },
+    {
+      "id": "cdmx-subsidencia",
+      "name": "Hundimiento urbano",
+      "place": "Ciudad de México, México",
+      "lat": 19.4,
+      "lon": -99.08,
+      "bbox": [
+        -99.32,
+        19.22,
+        -98.84,
+        19.58
+      ],
+      "change": "deformation",
+      "changeLabel": "Subsidencia",
+      "product": "GUNW",
+      "unit": "cm",
+      "story": "La extracción de agua subterránea hace que partes de la ciudad se hundan varios centímetros al año, dañando calles, tuberías y edificios.",
+      "pilot": false,
+      "mode": "demo",
+      "headline": {
+        "label": "Desplazamiento máximo",
+        "value": "-9.4",
+        "unit": "cm",
+        "note": "Alejándose del satélite"
+      }
+    },
+    {
+      "id": "sylhet-inundacion",
+      "name": "Humedales inundables",
+      "place": "Sylhet, Bangladés",
+      "lat": 24.85,
+      "lon": 91.75,
+      "bbox": [
+        91.45,
+        24.6,
+        92.05,
+        25.1
+      ],
+      "change": "backscatter",
+      "changeLabel": "Inundación",
+      "product": "GCOV",
+      "unit": "dB",
+      "story": "Tras el monzón, el agua de los humedales (haor) retrocede. El agua tranquila refleja el radar lejos del satélite y aparece oscura.",
+      "pilot": false,
+      "mode": "demo",
+      "headline": {
+        "label": "Área inundada al inicio",
+        "value": "1995",
+        "unit": "km²",
+        "note": "2026-08-02"
+      }
+    },
+    {
+      "id": "jakobshavn-glaciar",
+      "name": "Glaciar en movimiento",
+      "place": "Sermeq Kujalleq (Jakobshavn), Groenlandia",
+      "lat": 69.17,
+      "lon": -49.9,
+      "bbox": [
+        -50.5,
+        68.99,
+        -49.3,
+        69.35
+      ],
+      "change": "velocity",
+      "changeLabel": "Flujo de glaciar",
+      "product": "GOFF",
+      "unit": "m/día",
+      "story": "Uno de los glaciares más rápidos del planeta. El seguimiento de desplazamientos entre pasadas del radar mide cuántos metros al día avanza el hielo.",
+      "pilot": false,
+      "mode": "demo",
+      "headline": {
+        "label": "Velocidad máxima al inicio",
+        "value": "36.0",
+        "unit": "m/día",
+        "note": "2026-08-02"
+      }
+    },
+    {
+      "id": "rondonia-deforestacion",
+      "name": "Pérdida de bosque",
+      "place": "Rondônia, Brasil",
+      "lat": -9.9,
+      "lon": -63.0,
+      "bbox": [
+        -63.25,
+        -10.1,
+        -62.75,
+        -9.7
+      ],
+      "change": "backscatter",
+      "changeLabel": "Deforestación",
+      "product": "GCOV",
+      "unit": "dB",
+      "story": "El bosque devuelve mucha señal en polarización cruzada (HV). Cuando se tala, la señal cae: el radar ve la deforestación incluso bajo las nubes amazónicas.",
+      "pilot": false,
+      "mode": "demo",
+      "headline": {
+        "label": "Área sin bosque al inicio",
+        "value": "300",
+        "unit": "km²",
+        "note": "2026-08-02"
+      }
+    }
+  ]
+}

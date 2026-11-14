@@ -1,0 +1,8 @@
+# Modo demo: solo numpy y Pillow.
+numpy>=2.0
+Pillow>=10.0
+# Modo real (lectura de productos NISAR y descarga desde ASF):
+h5py>=3.10
+pyproj>=3.6
+earthaccess>=0.11
+python-dotenv>=1.0

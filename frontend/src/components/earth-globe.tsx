@@ -5,6 +5,7 @@ import { useProgress, useTexture } from "@react-three/drei";
 import { type MotionValue } from "framer-motion";
 import { Component, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import NisarOrbit from "@/components/nisar-orbit";
+import SiteMarkers from "@/components/site-markers";
 import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight, type DirectionalLight, type Group } from "three";
 
 type SceneQuality = "compact" | "full";
@@ -38,6 +39,8 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
             specularMap={specular} specular="#263b4e" shininess={55}
             emissive="#142f52" emissiveIntensity={0.32} />
         </mesh>
+        {/* Sitios monitoreados por TENUA; giran con la superficie */}
+        <SiteMarkers />
         <group ref={clouds}>
         {/* A faint offset veil gives cloud systems depth without heavy shadow maps. */}
         <mesh scale={1.0015} rotation={[0, 0.006, 0.003]}>

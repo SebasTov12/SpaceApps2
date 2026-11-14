@@ -1,0 +1,136 @@
+{
+  "id": "colombia-ladera",
+  "name": "Ladera andina",
+  "place": "Norte de Santander, Colombia",
+  "lat": 7.88,
+  "lon": -72.5,
+  "bbox": [
+    -72.56,
+    7.82,
+    -72.44,
+    7.94
+  ],
+  "change": "deformation",
+  "changeLabel": "Deslizamiento",
+  "product": "GUNW",
+  "metric": "Desplazamiento acumulado en línea de vista",
+  "unit": "mm",
+  "range": [
+    -60,
+    20
+  ],
+  "colormap": "diverging",
+  "story": "Zona piloto de TENUA. Las laderas andinas se mueven lentamente antes de fallar; el radar mide milímetros de desplazamiento aunque haya nubes.",
+  "pilot": true,
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/colombia-ladera/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/colombia-ladera/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/colombia-ladera/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/colombia-ladera/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/colombia-ladera/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/colombia-ladera/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/colombia-ladera/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/colombia-ladera/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/colombia-ladera/change.png",
+    "range": [
+      -60,
+      18.0
+    ],
+    "unit": "mm"
+  },
+  "legend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -60,
+      20
+    ],
+    "diverging": true
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -60,
+      18.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Desplazamiento máximo",
+      "value": "-56.5",
+      "unit": "mm",
+      "note": "Alejándose del satélite"
+    },
+    {
+      "label": "Área con más de 10 mm",
+      "value": "9.4",
+      "unit": "km²",
+      "note": "Al final del periodo"
+    },
+    {
+      "label": "Ritmo en el punto máximo",
+      "value": "-20.2",
+      "unit": "mm/mes",
+      "note": "Promedio del periodo"
+    }
+  ],
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GUNW",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+  },
+  "generated": "2026-11-14T14:49:37+00:00"
+}

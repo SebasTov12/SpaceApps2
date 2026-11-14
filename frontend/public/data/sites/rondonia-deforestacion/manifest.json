@@ -1,0 +1,135 @@
+{
+  "id": "rondonia-deforestacion",
+  "name": "Pérdida de bosque",
+  "place": "Rondônia, Brasil",
+  "lat": -9.9,
+  "lon": -63.0,
+  "bbox": [
+    -63.25,
+    -10.1,
+    -62.75,
+    -9.7
+  ],
+  "change": "backscatter",
+  "changeLabel": "Deforestación",
+  "product": "GCOV",
+  "metric": "Retrodispersión HV",
+  "unit": "dB",
+  "range": [
+    -22,
+    -8
+  ],
+  "colormap": "forest",
+  "story": "El bosque devuelve mucha señal en polarización cruzada (HV). Cuando se tala, la señal cae: el radar ve la deforestación incluso bajo las nubes amazónicas.",
+  "pilot": false,
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/rondonia-deforestacion/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/rondonia-deforestacion/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/rondonia-deforestacion/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/rondonia-deforestacion/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/rondonia-deforestacion/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/rondonia-deforestacion/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/rondonia-deforestacion/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/rondonia-deforestacion/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/rondonia-deforestacion/change.png",
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "unit": "dB"
+  },
+  "legend": {
+    "colors": [
+      "#8a5a2b",
+      "#c79a5b",
+      "#e6d6a2",
+      "#9cc98a",
+      "#3f8f52",
+      "#1d5c34"
+    ],
+    "range": [
+      -22,
+      -8
+    ],
+    "diverging": false
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Área sin bosque al inicio",
+      "value": "300",
+      "unit": "km²",
+      "note": "2026-08-02"
+    },
+    {
+      "label": "Área sin bosque al final",
+      "value": "401",
+      "unit": "km²",
+      "note": "2026-10-25"
+    },
+    {
+      "label": "Cambio neto",
+      "value": "+101",
+      "unit": "km²",
+      "note": "Umbral -15.5 dB"
+    }
+  ],
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GCOV",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+  },
+  "generated": "2026-11-14T14:49:48+00:00"
+}

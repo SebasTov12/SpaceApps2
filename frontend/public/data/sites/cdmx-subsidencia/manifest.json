@@ -1,0 +1,136 @@
+{
+  "id": "cdmx-subsidencia",
+  "name": "Hundimiento urbano",
+  "place": "Ciudad de México, México",
+  "lat": 19.4,
+  "lon": -99.08,
+  "bbox": [
+    -99.32,
+    19.22,
+    -98.84,
+    19.58
+  ],
+  "change": "deformation",
+  "changeLabel": "Subsidencia",
+  "product": "GUNW",
+  "metric": "Desplazamiento acumulado en línea de vista",
+  "unit": "cm",
+  "range": [
+    -14,
+    2
+  ],
+  "colormap": "diverging",
+  "story": "La extracción de agua subterránea hace que partes de la ciudad se hundan varios centímetros al año, dañando calles, tuberías y edificios.",
+  "pilot": false,
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/cdmx-subsidencia/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/cdmx-subsidencia/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/cdmx-subsidencia/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/cdmx-subsidencia/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/cdmx-subsidencia/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/cdmx-subsidencia/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/cdmx-subsidencia/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/cdmx-subsidencia/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/cdmx-subsidencia/change.png",
+    "range": [
+      -14,
+      4.2
+    ],
+    "unit": "cm"
+  },
+  "legend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -14,
+      2
+    ],
+    "diverging": true
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -14,
+      4.2
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Desplazamiento máximo",
+      "value": "-9.4",
+      "unit": "cm",
+      "note": "Alejándose del satélite"
+    },
+    {
+      "label": "Área con más de 3 cm",
+      "value": "349.6",
+      "unit": "km²",
+      "note": "Al final del periodo"
+    },
+    {
+      "label": "Ritmo en el punto máximo",
+      "value": "-3.4",
+      "unit": "cm/mes",
+      "note": "Promedio del periodo"
+    }
+  ],
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GUNW",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+  },
+  "generated": "2026-11-14T14:49:43+00:00"
+}

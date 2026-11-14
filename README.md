@@ -24,5 +24,7 @@ Las demás amenazas y sectores quedan como ampliaciones. Toda vista debe mostrar
 
 ## Estado actual del repo
 
-El frontend Next.js ya incluye el recorrido visual, el explorador territorial y tarjetas de exposición social/económica con datos sintéticos marcados como demo. La ubicación operativa del piloto sigue pendiente. Aún no hay API/backend, pipeline de descarga/procesamiento NISAR ni capas reales conectadas; el catálogo de datos registra lo que falta preparar.
-
+- **Frontend (Next.js):** recorrido 3D de la Tierra con NISAR y explorador con mapa real (MapLibre + imagen satelital). Muestra 5 sitios del mundo, uno por tipo de cambio: deslizamiento, subsidencia, inundación, flujo de glaciar y deforestación. Incluye vistas por fecha, antes/después y mapa de cambio, y la serie temporal de cualquier punto al hacer clic. Los sitios también aparecen como marcadores sobre el globo.
+- **Pipeline (`pipeline/`):** `search_nisar.py` busca y descarga productos NISAR de ASF DAAC con las credenciales de Earthdata del `.env`. `build_layers.py` convierte GUNW, GCOV y GOFF en las capas del explorador (`frontend/public/data`). Ver [pipeline/README.md](pipeline/README.md).
+- **Datos:** las capas actuales son **sintéticas con formato NISAR** (`build_layers.py --demo`) y la interfaz las marca como demo. El paso siguiente es descargar escenas reales y ejecutar `build_layers.py --real`; el modo real aún no se ha probado con archivos de ASF.
+- Pendiente: API/backend, `frontend/Dockerfile` (lo referencia `infra/tenua`; debe ejecutar `npm run build`, que copia el worker de MapLibre en `prebuild`) y la versión en inglés.

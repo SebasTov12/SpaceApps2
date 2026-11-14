@@ -6,7 +6,9 @@
     "node": ">=24.14.0 <25"
   },
   "scripts": {
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev --webpack",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
@@ -17,6 +19,7 @@
     "clsx": "2.1.1",
     "framer-motion": "^14.12.0",
     "lucide-react": "1.72.0",
+    "maplibre-gl": "6.16.0",
     "motion-dom": "^14.12.0",
     "motion-utils": "^14.7.0",
     "next": "16.4.6",
