@@ -14,7 +14,7 @@ import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight,
 
 type SceneQuality = "compact" | "full";
 
-function Planet({ onReady, playing, quality }: { onReady: () => void; playing: boolean; quality: SceneQuality }) {
+function Planet({ onReady, playing, quality, children }: { onReady: () => void; playing: boolean; quality: SceneQuality; children?: ReactNode }) {
   const surface = useRef<Group>(null);
   const clouds = useRef<Group>(null);
   const [day, cloud, normal, specular, height] = useTexture([
@@ -141,6 +141,7 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
         />
       </mesh>
     </group>
+    {children}
     </group>
   );
 }
@@ -244,10 +245,11 @@ export default function EarthGlobe({ progress, playing }: { progress: MotionValu
           gl={{ antialias: quality === "full", alpha: true, powerPreference: "high-performance" }}>
           <Sunlight progress={progress} />
           <Suspense fallback={null}>
-            <Planet onReady={showScene} playing={playing} quality={quality} />
-            <NisarOrbit playing={playing} progress={progress} />
+            <Planet onReady={showScene} playing={playing} quality={quality}>
+              <NisarOrbit playing={playing} progress={progress} />
+              <CompanionSats playing={playing} />
+            </Planet>
             <ReconScan ready={ready} progress={progress} />
-            <CompanionSats playing={playing} />
             <CameraRig />
           </Suspense>
         </Canvas>

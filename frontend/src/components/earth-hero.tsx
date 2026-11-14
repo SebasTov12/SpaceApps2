@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useInView, useScroll, useSpring, useTransform } from "framer-motion";
-import { ChevronDown, Pause, Play } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
@@ -16,12 +16,9 @@ const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
 
 export default function EarthHero() {
   const section = useRef<HTMLElement>(null);
-  // Continuous motion is intentional for this orbital scene. A local control
-  // replaces the previous OS preference that silently froze both objects.
-  const [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(true);
   const inView = useInView(section, { amount: 0 });
-  const playing = !paused && visible && inView;
+  const playing = visible && inView;
   useEffect(() => {
     const update = () => setVisible(!document.hidden);
     update();
@@ -64,11 +61,6 @@ export default function EarthHero() {
             <path d="M-40 248C160 118 220 333 420 208S700 148 860 248s320-130 580-40" />
           </svg>
         </motion.div>
-        <button className="scene-motion-toggle" onClick={() => setPaused((value) => !value)}
-          aria-label={paused ? "Reanudar animación orbital" : "Pausar animación orbital"}
-          title={paused ? "Reanudar animación orbital" : "Pausar animación orbital"}>
-          {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
-        </button>
         {/* Zona elegida: acercamiento y panel con su información */}
         <ZoneView />
         {/* Último evento, cifras y buscador de zonas */}
