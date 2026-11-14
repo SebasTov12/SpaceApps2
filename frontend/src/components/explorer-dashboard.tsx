@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { demoMetrics, demoObservations } from "@/lib/demo-dashboard";
 import {
   Activity, ArrowDownRight, ArrowUpRight, CalendarDays, ChevronDown,
@@ -11,6 +12,13 @@ import {
 const initialLayers = { displacement: true, rainfall: false, slope: false };
 
 export default function ExplorerDashboard() {
+  const section = useRef<HTMLElement>(null);
+  const filterButton = useRef<HTMLButtonElement>(null);
+  const filterPanel = useRef<HTMLElement>(null);
+  const wasOpen = useRef(false);
+  const { scrollYProgress: arrival } = useScroll({ target: section, offset: ["start end", "start 25%"] });
+  const arrivalY = useTransform(arrival, [0, 1], [28, 0]);
+  const arrivalOpacity = useTransform(arrival, [0, 0.65, 1], [0.35, 0.9, 1]);
   const [layers, setLayers] = useState(initialLayers);
   const [dateIndex, setDateIndex] = useState(3);
   const [mobilePanel, setMobilePanel] = useState(false);
@@ -22,22 +30,42 @@ export default function ExplorerDashboard() {
   const metricIcons = [<Activity key="activity" size={17} />, <Mountain key="mountain" size={17} />, <Users key="users" size={17} />];
   const toggleLayer = (key: keyof typeof initialLayers) =>
     setLayers((current) => ({ ...current, [key]: !current[key] }));
+  useEffect(() => {
+    if (mobilePanel) {
+      filterPanel.current?.focus();
+      document.body.classList.add("mobile-panel-active");
+    } else {
+      document.body.classList.remove("mobile-panel-active");
+      if (wasOpen.current) filterButton.current?.focus();
+    }
+    wasOpen.current = mobilePanel;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobilePanel(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.classList.remove("mobile-panel-active");
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobilePanel]);
 
   return (
-    <section className="explorer-section" id="explorador">
+    <section ref={section} className="explorer-section" id="explorador" tabIndex={-1} aria-labelledby="explorer-title">
+      <div className="explorer-signal" aria-hidden="true" />
       <header className="app-header">
         <a className="brand" href="#inicio"><span className="brand-mark"><Satellite size={17} /></span><span>TOBARU <i>WORKTEAM</i></span></a>
         <div className="header-center"><span className="live-dot" /> ENTORNO DE DEMOSTRACIÓN</div>
-        <div className="header-actions"><button className="header-icon" aria-label="Buscar"><Search size={17} /></button><button className="avatar">TW</button><button className="mobile-menu" onClick={() => setMobilePanel(!mobilePanel)} aria-label="Abrir filtros">{mobilePanel ? <X size={18} /> : <Menu size={18} />}</button></div>
+        <div className="header-actions"><button type="button" className="header-icon" aria-label="Buscar"><Search size={17} /></button><button type="button" className="avatar" aria-label="Perfil de Tobaru Workteam">TW</button><button ref={filterButton} type="button" className="mobile-menu" onClick={() => setMobilePanel(!mobilePanel)} aria-label={mobilePanel ? "Cerrar filtros" : "Abrir filtros"} aria-expanded={mobilePanel} aria-controls="explorer-filters">{mobilePanel ? <X size={18} /> : <Menu size={18} />}</button></div>
       </header>
 
       <div className="explorer-layout">
-        <aside className={`side-panel ${mobilePanel ? "side-panel-open" : ""}`}>
+        {mobilePanel && <button type="button" className="panel-backdrop" onClick={() => setMobilePanel(false)} aria-label="Cerrar filtros" />}
+        <aside ref={filterPanel} id="explorer-filters" className={`side-panel ${mobilePanel ? "side-panel-open" : ""}`} aria-label="Filtros del explorador" tabIndex={-1}>
           <div className="panel-heading">
             <div><p className="eyebrow">ÁREA DE ANÁLISIS</p><h2>Explorador</h2></div>
-            <button className="quiet-icon" aria-label="Ajustes"><SlidersHorizontal size={16} /></button>
+            <button type="button" className="quiet-icon" aria-label="Ajustes"><SlidersHorizontal size={16} /></button>
           </div>
-          <button className="area-select"><span className="area-icon"><MapPin size={17} /></span><span><small>REGIÓN SELECCIONADA</small><strong>Zona piloto <em>· por definir</em></strong></span><ChevronDown size={15} /></button>
+          <button type="button" className="area-select"><span className="area-icon"><MapPin size={17} /></span><span><small>REGIÓN SELECCIONADA</small><strong>Zona piloto <em>· por definir</em></strong></span><ChevronDown size={15} /></button>
           <div className="panel-divider" />
           <div className="section-label"><span>CAPAS DEL MAPA</span><Layers3 size={15} /></div>
           <LayerToggle active={layers.displacement} onClick={() => toggleLayer("displacement")} icon={<Activity size={16} />} title="Movimiento del terreno" detail="NISAR · demostración" color="cyan" />
@@ -45,17 +73,17 @@ export default function ExplorerDashboard() {
           <LayerToggle active={layers.slope} onClick={() => toggleLayer("slope")} icon={<Mountain size={16} />} title="Pendiente del terreno" detail="Fuente pendiente" color="amber" />
           <div className="panel-divider" />
           <div className="section-label"><span>FECHA DE OBSERVACIÓN</span><CalendarDays size={15} /></div>
-          <button className="date-select"><span>{formattedDate}</span><ChevronDown size={15} /></button>
+          <button type="button" className="date-select"><span>{formattedDate}</span><ChevronDown size={15} /></button>
           <div className="date-note">Fechas simuladas para la propuesta visual</div>
           <div className="panel-divider" />
           <div className="source-card"><span className="source-icon"><Satellite size={17} /></span><div><strong>Fuente del análisis</strong><p>NISAR · producto por confirmar</p></div><ChevronRight size={14} /></div>
           <div className="side-foot"><span className="demo-dot" /> Los datos de esta vista son de demostración.</div>
         </aside>
 
-        <main className="dashboard-main">
+        <motion.div className="dashboard-main" style={{ y: arrivalY, opacity: arrivalOpacity }}>
           <div className="dashboard-title-row">
-            <div><div className="breadcrumb">TOBARU <ChevronRight size={12} /> EXPLORADOR</div><h1>Panorama territorial</h1><p>Explora observaciones y contexto del área seleccionada.</p></div>
-            <button className="outline-button"><LocateFixed size={15} /> Centrar mapa</button>
+            <div><div className="breadcrumb">TOBARU <ChevronRight size={12} /> EXPLORADOR</div><h1 id="explorer-title">Panorama territorial</h1><p>Explora observaciones y contexto del área seleccionada.</p></div>
+            <button type="button" className="outline-button"><LocateFixed size={15} /> Centrar mapa</button>
           </div>
 
           <div className="metrics-grid">
@@ -63,7 +91,7 @@ export default function ExplorerDashboard() {
           </div>
 
           <section className="map-card" aria-label="Mapa de demostración">
-            <div className="map-topline"><div className="map-place"><MapPin size={14} /><span>Región piloto <i>· ubicación por definir</i></span></div><div className="map-tools"><span className="map-demo"><span className="demo-dot" /> MAPA DEMO</span><button aria-label="Capas"><Layers3 size={16} /></button><button aria-label="Pantalla completa">⛶</button></div></div>
+            <div className="map-topline"><div className="map-place"><MapPin size={14} /><span>Región piloto <i>· ubicación por definir</i></span></div><div className="map-tools"><span className="map-demo"><span className="demo-dot" /> MAPA DEMO</span><button type="button" aria-label="Capas"><Layers3 size={16} /></button><button type="button" aria-label="Pantalla completa">⛶</button></div></div>
             <div className={`map-visual ${layers.rainfall ? "show-rainfall" : ""} ${layers.slope ? "show-slope" : ""}`}>
               <div className="map-grid" />
               <svg className="terrain-lines" viewBox="0 0 1100 580" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -88,23 +116,23 @@ export default function ExplorerDashboard() {
             </div>
             <div className="timeline">
               <div className="timeline-heading"><div><strong>Serie temporal</strong><span>Fechas simuladas · no representan la frecuencia real de NISAR</span></div><span className="timeline-current">{activeObservation.label} · {activeObservation.date.slice(0, 4)}</span></div>
-              <div className="timeline-track"><input aria-label="Seleccionar fecha de observación" type="range" min="0" max="5" value={dateIndex} onChange={(event) => setDateIndex(Number(event.target.value))} style={{ "--range-progress": `${(dateIndex / 5) * 100}%` } as React.CSSProperties} /><div className="timeline-labels">{dateLabels.map((date, index) => <button key={date} className={index === dateIndex ? "is-current" : ""} onClick={() => setDateIndex(index)}>{date}</button>)}</div></div>
+              <div className="timeline-track"><input aria-label="Seleccionar fecha de observación" aria-valuetext={`${activeObservation.label} de ${activeObservation.date.slice(0, 4)}`} type="range" min="0" max={dateLabels.length - 1} value={dateIndex} onChange={(event) => setDateIndex(Number(event.target.value))} style={{ "--range-progress": `${(dateIndex / (dateLabels.length - 1)) * 100}%` } as React.CSSProperties} /><div className="timeline-labels">{dateLabels.map((date, index) => <button type="button" key={date} className={index === dateIndex ? "is-current" : ""} aria-pressed={index === dateIndex} aria-label={`Mostrar observación del ${date}`} onClick={() => setDateIndex(index)}>{date}</button>)}</div></div>
             </div>
           </section>
 
           <div className="below-grid">
-            <section className="detail-card"><div className="card-heading"><div><p className="eyebrow">DETALLE DE LA OBSERVACIÓN</p><h2>Ladera norte</h2></div><button className="quiet-icon" aria-label="Más detalles"><ArrowDownRight size={17} /></button></div><div className="observation-value"><strong>+ {activeObservation.value.toFixed(1)}</strong><span>{activeObservation.unit}</span><span className="observation-badge"><ArrowUpRight size={13} /> cambio observado</span></div><p className="detail-copy">Valor ilustrativo para mostrar el diseño. La unidad, el método y los umbrales se definirán según el producto y la validación.</p><div className="detail-meta"><span>FUENTE <b>{activeObservation.source}</b></span><span>FECHA <b>{activeObservation.label} {activeObservation.date.slice(0, 4)}</b></span></div></section>
-            <section className="review-card"><div className="review-icon"><Activity size={17} /></div><p className="eyebrow">ESTADO DE LA EVIDENCIA</p><h2>Revisión requerida</h2><p>Una variación observada necesita contexto y validación local. No es una alerta ni predice por sí sola un deslizamiento.</p><button className="text-link">Ver metodología <ChevronRight size={14} /></button></section>
+            <section className="detail-card"><div className="card-heading"><div><p className="eyebrow">DETALLE DE LA OBSERVACIÓN</p><h2>Ladera norte</h2></div><button type="button" className="quiet-icon" aria-label="Más detalles"><ArrowDownRight size={17} /></button></div><div className="observation-value" aria-live="polite"><strong>+ {activeObservation.value.toFixed(1)}</strong><span>{activeObservation.unit}</span><span className="observation-badge"><ArrowUpRight size={13} /> cambio observado</span></div><p className="detail-copy">Valor ilustrativo para mostrar el diseño. La unidad, el método y los umbrales se definirán según el producto y la validación.</p><div className="detail-meta"><span>FUENTE <b>{activeObservation.source}</b></span><span>FECHA <b>{activeObservation.label} {activeObservation.date.slice(0, 4)}</b></span></div></section>
+            <section className="review-card"><div className="review-icon"><Activity size={17} /></div><p className="eyebrow">ESTADO DE LA EVIDENCIA</p><h2>Revisión requerida</h2><p>Una variación observada necesita contexto y validación local. No es una alerta ni predice por sí sola un deslizamiento.</p><button type="button" className="text-link">Ver metodología <ChevronRight size={14} /></button></section>
           </div>
           <footer className="app-footer"><span>TOBARU WORKTEAM <i>· PROTOTIPO VISUAL</i></span><span>DATOS SIMULADOS PARA DEMOSTRACIÓN</span></footer>
-        </main>
+        </motion.div>
       </div>
     </section>
   );
 }
 
 function LayerToggle({ active, onClick, icon, title, detail, color }: { active: boolean; onClick: () => void; icon: React.ReactNode; title: string; detail: string; color: string }) {
-  return <button className="layer-toggle" onClick={onClick} aria-pressed={active}><span className={`layer-icon ${color}`}>{icon}</span><span className="layer-copy"><strong>{title}</strong><small>{detail}</small></span><span className={`switch ${active ? "switch-on" : ""}`}><i /></span></button>;
+  return <button type="button" className="layer-toggle" onClick={onClick} aria-pressed={active}><span className={`layer-icon ${color}`}>{icon}</span><span className="layer-copy"><strong>{title}</strong><small>{detail}</small></span><span className={`switch ${active ? "switch-on" : ""}`} aria-hidden="true"><i /></span></button>;
 }
 
 function MetricCard({ label, value, suffix, trend, icon, accent }: { label: string; value: string; suffix: string; trend: string; icon: React.ReactNode; accent: string }) {

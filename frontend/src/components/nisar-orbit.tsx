@@ -2,11 +2,14 @@
 
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Line, useTexture } from "@react-three/drei";
-import { useReducedMotion } from "framer-motion";
-import { SRGBColorSpace, type Group } from "three";
+import { Line } from "@react-three/drei";
+import type { Group } from "three";
+import NisarModel from "./nisar-model";
+import NisarRadar from "./nisar-radar";
+import type { MotionValue } from "framer-motion";
 
-const RADIUS = 1.28;
+// Distances/speeds are illustrative, with enough separation to read the orbit.
+const RADIUS = 1.22;
 
 function arc(start: number, end: number, segments: number): [number, number, number][] {
   return Array.from({ length: segments + 1 }, (_, index) => {
@@ -15,37 +18,31 @@ function arc(start: number, end: number, segments: number): [number, number, num
   });
 }
 
-export default function NisarOrbit() {
+export default function NisarOrbit({ playing, progress }: { playing: boolean; progress: MotionValue<number> }) {
   const moving = useRef<Group>(null);
-  const reducedMotion = useReducedMotion();
-  const texture = useTexture("/nisar-side-tilt.png", (image) => {
-    image.colorSpace = SRGBColorSpace;
-  });
   const orbit = useMemo(() => arc(0, Math.PI * 2, 160), []);
-  const trail = useMemo(() => [
-    arc(-0.65, -0.4, 20),
-    arc(-0.4, -0.18, 20),
-    arc(-0.18, 0, 20),
-  ], []);
+  const trail = useMemo(() => Array.from({ length: 16 }, (_, index) =>
+    arc(-0.72 + index * 0.045, -0.72 + (index + 1) * 0.045, 4)), []);
 
   useFrame((_, delta) => {
-    if (moving.current && !reducedMotion) {
-      moving.current.rotation.z += Math.min(delta, 0.05) * 0.11;
+    if (moving.current && playing) {
+      moving.current.rotation.z = (moving.current.rotation.z + Math.min(delta, 0.1) * 0.14) % (Math.PI * 2);
     }
   });
 
   return (
-    <group rotation={[1.05, 0.35, -0.45]}>
-      <Line points={orbit} color="#a9d8e6" lineWidth={0.6} transparent opacity={0.13} depthWrite={false} />
+    <group rotation={[0.18, 1.0, -0.42]}>
+      <Line points={orbit} color="#97b5c6" lineWidth={0.65} transparent opacity={0.12} depthWrite={false} />
       <group ref={moving} rotation={[0, 0, 1.5]}>
+        <NisarRadar radius={RADIUS} playing={playing} progress={progress} />
         {trail.map((points, index) => (
-          <Line key={index} points={points} color="#b5eaff" lineWidth={1}
-            transparent opacity={0.12 + index * 0.14} depthWrite={false} />
+          <Line key={index} points={points} color="#c8e3f2" lineWidth={1.15}
+            transparent opacity={0.025 + (index / 15) ** 2 * 0.5} depthWrite={false} />
         ))}
-        {/* The image remains a temporary visual until the spacecraft model phase. */}
-        <sprite position={[RADIUS, 0, 0]} scale={[0.28, 0.242, 1]}>
-          <spriteMaterial map={texture} transparent alphaTest={0.03} depthTest depthWrite={false} />
-        </sprite>
+        {/* Local -X points toward Earth and +Y follows the orbit tangent. */}
+        <group position={[RADIUS, 0, 0]} scale={0.145}>
+          <NisarModel />
+        </group>
       </group>
     </group>
   );
