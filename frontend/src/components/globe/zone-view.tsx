@@ -159,7 +159,8 @@ export default function ZoneView() {
   const level: AttentionLevel = assessment?.level ?? (zone?.event ? "moderada" : "baja");
   const colombia = zone?.country === "CO";
   const mapBbox = active?.bbox ?? (zone ? zoneBbox(zone) : null);
-  const padding = wide ? { top: 90, right: 560, bottom: 90, left: 70 } : { top: 70, right: 30, bottom: Math.round(window.innerHeight * 0.55), left: 30 };
+  // el mapa ocupa solo el área visible (a la izquierda del panel o encima de la hoja)
+  const padding = wide ? { top: 80, right: 60, bottom: 70, left: 60 } : { top: 60, right: 24, bottom: 30, left: 24 };
 
   return (
     <div ref={wrapper} className="zone-layer">
