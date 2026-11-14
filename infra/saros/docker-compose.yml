@@ -42,7 +42,9 @@ services:
     image: spaceapps2-api:latest
     restart: unless-stopped
     environment:
-      SAROS_DB_HOST: postgres
+      # `postgres` is already aliased to Orivia's separate `orivia` database
+      # on the shared proxy network. Use SAROS's existing database container.
+      SAROS_DB_HOST: spaceapps2-postgres
       SAROS_DB_PORT: "5432"
       SAROS_DB_NAME: ${SAROS_POSTGRES_DB:-spaceapps2}
       SAROS_DB_USER: ${SAROS_POSTGRES_USER:-spaceapps2_admin}

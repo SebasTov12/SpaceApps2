@@ -1,6 +1,6 @@
 # SAROS en Orivia
 
-El proyecto Compose `spaceapps2` empaqueta los servicios de SAROS: frontend Next.js, API Flask, PostgreSQL y predictor NISAR ONNX. Cada servicio corre en su contenedor; Compose coordina su arranque y sus redes. Caddy sigue siendo el proxy compartido de Orivia y se conecta al frontend y a la API por la red privada externa.
+El proyecto Compose `spaceapps2` empaqueta los servicios de SAROS: frontend Next.js, API Flask, PostgreSQL y predictor NISAR ONNX. Cada servicio corre en su contenedor; Compose coordina su arranque y sus redes. La API conecta con `spaceapps2-postgres`: el alias genérico `postgres` en la red compartida pertenece a la base distinta `orivia`. Caddy sigue siendo el proxy compartido de Orivia y se conecta al frontend y a la API por la red privada externa.
 
 ## Preparación
 
