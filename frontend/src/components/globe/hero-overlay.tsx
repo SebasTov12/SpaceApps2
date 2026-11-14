@@ -27,7 +27,7 @@ const copy = {
 const fold = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Capa ligera sobre el planeta: último evento, cifras y buscador de zonas. */
-export default function HeroOverlay({ progress }: { progress: MotionValue<number> }) {
+export default function HeroOverlay({ progress: _progress }: { progress: MotionValue<number> }) {
   const { lang } = useI18n();
   const c = copy[lang];
   const [sites, setSites] = useState<SiteSummary[]>([]);
@@ -35,9 +35,6 @@ export default function HeroOverlay({ progress }: { progress: MotionValue<number
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const input = useRef<HTMLInputElement>(null);
-  // aparece cuando el planeta ya subió un poco (no compite con el nombre al cargar)
-  const cardOpacity = useTransform(progress, [0.25, 0.6], [0, 1]);
-  const cardY = useTransform(progress, [0.25, 0.6], [20, 0]);
 
   useEffect(() => {
     loadSites().then((list) => {
@@ -87,21 +84,6 @@ export default function HeroOverlay({ progress }: { progress: MotionValue<number
       <button type="button" className="hero-search-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
         <Search size={16} /> <span>{c.search}</span> <kbd>/</kbd>
       </button>
-
-      <motion.div className="hero-latest" style={{ opacity: cardOpacity, y: cardY }}>
-        {featured && featuredZone && (
-          <button type="button" className="hero-latest-card" onClick={() => focusZone(featuredZone.id)}>
-            <span className="hero-latest-pulse" style={{ background: levelInfo[featured.level ?? "moderada"].color }} />
-            <span className="hero-latest-text">
-              <small>{c.latest}</small>
-              <strong>{featured.accelerating ? c.accel : riskKinds[featuredZone.kind][lang]} · {featuredZone.place[lang]}</strong>
-              <em>{levelInfo[featured.level ?? "moderada"].label[lang]}</em>
-            </span>
-            <span className="hero-latest-go">{c.view} <ArrowRight size={14} /></span>
-          </button>
-        )}
-        <p className="hero-stats">{c.stats(riskZones.length, colombia, high)} · {c.hint}</p>
-      </motion.div>
 
       <AnimatePresence>
         {open && (
