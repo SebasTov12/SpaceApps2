@@ -78,8 +78,8 @@ html body .metric-card,html body .map-card,html body .detail-card,html body .rev
   .ticker-item{font-size:12px}
 }
 
-/* ---------- Logotipo SAROS: grande al cargar, luego centrado detrás del planeta ---------- */
-.hero-wordmark{position:absolute;z-index:1;left:0;right:0;top:50%;translate:0 -50%;display:grid;justify-items:center;pointer-events:none;transform-origin:50% 50%;transition:opacity .8s ease}
+/* ---------- Logotipo SAROS: grande al cargar, luego desaparece fluidamente tras el planeta ---------- */
+.hero-wordmark{position:absolute;z-index:1;left:0;right:0;top:50%;translate:0 -50%;display:grid;justify-items:center;pointer-events:none;transform-origin:50% 50%;will-change:transform,opacity,filter}
 .wordmark-title{position:relative;margin:0;display:flex;align-items:center;gap:.06em;font-family:var(--font-display);font-weight:900;font-size:clamp(68px,13vw,200px);line-height:.95;letter-spacing:.12em;background:linear-gradient(180deg,#ffffff 0%,#d9e6ff 38%,#7890cf 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 14px 45px rgba(0,212,255,.32)) drop-shadow(0 0 80px rgba(139,92,246,.25));user-select:none}
 .wordmark-title span{position:relative;display:inline-block}
 .wm-star{position:absolute;color:#00d4ff;filter:drop-shadow(0 0 16px #00d4ff) drop-shadow(0 0 6px #ffffff)}
