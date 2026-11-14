@@ -55,7 +55,6 @@
 .swipe-before{right:12px}.swipe-after{left:12px}
 .swipe-dates{position:absolute;z-index:3;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:10px;font-size:10px;color:#cfe0e1}
 .swipe-dates span{padding:4px 9px;border-radius:6px;background:rgba(7,16,25,.78)}
-.swipe-dates span:first-child:after{content:" ·  antes"}.swipe-dates span:last-child:after{content:" ·  después"}
 
 .live-legend{z-index:3;min-width:230px;max-width:280px}
 .legend-bar{display:block;height:9px;border-radius:5px;margin:2px 0 0}

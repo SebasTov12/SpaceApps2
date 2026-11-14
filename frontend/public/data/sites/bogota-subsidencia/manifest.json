@@ -1,0 +1,190 @@
+{
+  "id": "bogota-subsidencia",
+  "name": "Sabana que se hunde",
+  "place": "Bogotá, Colombia",
+  "lat": 4.66,
+  "lon": -74.12,
+  "bbox": [
+    -74.24,
+    4.55,
+    -74.0,
+    4.77
+  ],
+  "change": "deformation",
+  "changeLabel": "Subsidencia",
+  "product": "GUNW",
+  "metric": "Desplazamiento acumulado en línea de vista",
+  "unit": "cm",
+  "range": [
+    -10,
+    2
+  ],
+  "colormap": "diverging",
+  "story": "Los suelos lacustres de la sabana y la extracción de agua subterránea hacen que el occidente de Bogotá se hunda poco a poco; el radar mide ese movimiento con precisión de centímetros.",
+  "en": {
+    "name": "Sinking savanna",
+    "place": "Bogotá, Colombia",
+    "changeLabel": "Subsidence",
+    "metric": "Cumulative line-of-sight displacement",
+    "story": "Lake-bed soils and groundwater pumping make western Bogotá slowly sink; radar measures it to the centimetre.",
+    "unit": "cm"
+  },
+  "pilot": false,
+  "country": "CO",
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/bogota-subsidencia/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/bogota-subsidencia/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/bogota-subsidencia/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/bogota-subsidencia/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/bogota-subsidencia/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/bogota-subsidencia/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/bogota-subsidencia/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/bogota-subsidencia/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/bogota-subsidencia/change.png",
+    "range": [
+      -10,
+      3.0
+    ],
+    "unit": "cm"
+  },
+  "legend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10,
+      2
+    ],
+    "diverging": true
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10,
+      3.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Desplazamiento máximo",
+      "labelEn": "Peak displacement",
+      "value": "-9.2",
+      "unit": "cm",
+      "unitEn": "cm",
+      "note": "Alejándose del satélite",
+      "noteEn": "Moving away from the satellite"
+    },
+    {
+      "label": "Área con más de 3 cm",
+      "labelEn": "Area beyond 3 cm",
+      "value": "328.3",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "Al final del periodo",
+      "noteEn": "At the end of the period"
+    },
+    {
+      "label": "Ritmo en el punto máximo",
+      "labelEn": "Rate at the peak",
+      "value": "-3.3",
+      "unit": "cm/mes",
+      "unitEn": "cm/month",
+      "note": "Promedio del periodo",
+      "noteEn": "Period average"
+    }
+  ],
+  "assessment": {
+    "level": "alta",
+    "rate": {
+      "recent": -2.91,
+      "early": -3.07,
+      "unit": "cm/mes",
+      "unitEn": "cm/month"
+    },
+    "accelerating": false,
+    "current": -9.2,
+    "projection": {
+      "d30": -12.12,
+      "d90": -17.94,
+      "unit": "cm"
+    },
+    "hotspots": [
+      {
+        "lat": 4.68415,
+        "lon": -74.0361,
+        "value": 2.58
+      },
+      {
+        "lat": 4.65128,
+        "lon": -74.0,
+        "value": 2.5
+      },
+      {
+        "lat": 4.66805,
+        "lon": -74.0234,
+        "value": 2.42
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GUNW",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
+  },
+  "generated": "2026-11-14T17:50:21+00:00"
+}

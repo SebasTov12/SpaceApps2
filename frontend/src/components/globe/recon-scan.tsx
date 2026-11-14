@@ -106,6 +106,10 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     }
     const found = globeState.revealed.size;
     const finished = scan.progress >= 1 && lastEmit.current.progress < 1;
+    // al terminar el barrido, el planeta gira hacia el último evento (Colombia) y lo destaca
+    if (finished && globeState.featured && globeState.zoom === 0 && !globeState.focus) {
+      globeState.focus = globeState.featured;
+    }
     if (found !== lastEmit.current.found || finished || (scan.progress < 1 && t - lastEmit.current.at > 0.12)) {
       lastEmit.current = { found, at: t, progress: scan.progress };
       emit<ReconEvent>(GLOBE_RECON, { progress: scan.progress, found });

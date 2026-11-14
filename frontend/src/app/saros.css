@@ -171,3 +171,112 @@ html body .earth-stage[data-zoomed="true"] .earth-orbit{translate:calc(-50% - 16
   html body .scroll-cue{bottom:44px}
   html body .scene-motion-toggle{bottom:44px}
 }
+
+/* ---------- Vista de zona v2: mapa a pantalla completa + panel en dos vistas ---------- */
+html body .earth-stage[data-mapview="true"] .earth-orbit{opacity:0!important;transition:opacity .9s ease,translate 1.4s cubic-bezier(.22,1,.36,1)}
+.zone-stage-map{position:absolute;inset:0;z-index:5;pointer-events:auto;background:#060914}
+.zone-stage-map .nisar-map{position:absolute;inset:0 540px 0 0}
+.zone-stage-map .zone-legend{position:absolute;z-index:4;left:20px;bottom:56px;width:220px;padding:10px 12px;border-radius:12px;background:rgba(7,11,24,.82);border:1px solid var(--saros-line);backdrop-filter:blur(10px);pointer-events:none}
+.zone-stage-map .zone-legend strong{display:block;margin-bottom:6px;font-size:10px;font-weight:600;letter-spacing:.06em;color:#dfe8fb}
+.zone-stage-map .swipe-dates{position:absolute;z-index:4;top:70px;bottom:auto;left:calc((100% - 540px) / 2);transform:translateX(-50%);align-items:flex-start}
+.zone-back{position:absolute;z-index:8;top:18px;left:18px;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid var(--saros-line);border-radius:24px;background:rgba(7,11,24,.8);backdrop-filter:blur(10px);color:#e8f1ff;font-size:13px;font-weight:500;pointer-events:auto}
+.zone-back:hover{border-color:rgba(0,212,255,.5)}
+html body .zone-panel{z-index:7;top:18px;bottom:52px}
+.zone-grab{display:none}
+.zone-level{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;padding:9px 12px;border-radius:12px;background:color-mix(in srgb,var(--level) 12%,transparent);border:1px solid color-mix(in srgb,var(--level) 35%,transparent);font-size:12px;font-weight:600;color:var(--level)}
+.zone-level i{width:9px;height:9px;border-radius:50%;background:var(--level);box-shadow:0 0 10px var(--level)}
+.zone-level b{display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:3px 8px;border-radius:20px;background:rgba(244,63,94,.15);color:#fda4af;font-size:10px;font-weight:600}
+.zone-tabs{display:flex;gap:4px;margin-top:14px;padding:4px;border-radius:12px;background:rgba(255,255,255,.04)}
+.zone-tabs button{flex:1;padding:9px;border:0;border-radius:9px;background:transparent;color:var(--saros-muted);font-size:13px;font-weight:600;transition:background .25s,color .25s}
+.zone-tabs button.is-active{background:linear-gradient(90deg,rgba(139,92,246,.4),rgba(0,212,255,.32));color:#fff}
+.zone-simple section{margin-top:16px}
+.zone-simple h3{display:flex;align-items:center;gap:7px;margin:0 0 6px;font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#9fd8ff}
+.zone-simple p{margin:0;font-size:13px;line-height:1.6;color:#d3dcf2}
+.zone-simple b{color:#fff}
+.zone-muted{margin-top:6px!important;font-size:11px!important;color:#7f90b3!important;line-height:1.5}
+.zone-advice{margin:0;padding:0;list-style:none;display:grid;gap:7px}
+.zone-advice li{position:relative;padding:9px 10px 9px 30px;border-radius:10px;background:rgba(255,255,255,.04);font-size:12.5px;line-height:1.5;color:#dfe6f7}
+.zone-advice li::before{content:"";position:absolute;left:11px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--saros-trust);box-shadow:0 0 8px var(--saros-trust)}
+.zone-advice li:last-child::before{background:var(--saros-tech);box-shadow:0 0 8px var(--saros-tech)}
+.zone-slider{display:grid;gap:8px;margin-top:14px;font-size:11px;color:var(--saros-muted)}
+.zone-slider input{width:100%;height:5px;margin:0;border-radius:5px;appearance:none;background:linear-gradient(90deg,#8b5cf6,#00d4ff var(--range-progress),rgba(255,255,255,.1) var(--range-progress))}
+.zone-slider input::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #00d4ff;box-shadow:0 0 12px rgba(0,212,255,.6);cursor:grab}
+.zone-slider input::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #00d4ff;cursor:grab}
+.zone-slider-ends{display:flex;justify-content:space-between;font-size:10px}
+.zone-slider-ends i{font-style:normal}
+.zone-trend{margin-top:14px;padding:12px;border-radius:14px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15)}
+.zone-trend strong{display:flex;align-items:center;gap:6px;font-size:12px;color:#bdeaff}
+.zone-trend dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 0}
+.zone-trend dt{font-size:10px;color:var(--saros-muted)}
+.zone-trend dd{margin:2px 0 0;font-family:var(--font-display);font-size:14px;color:#fff}
+.zone-flag-inline{font-size:9px;font-weight:700;letter-spacing:.1em;color:#f59e0b}
+.zone-flag-inline.is-real{color:#10b981}
+.zone-source span{display:inline-flex;align-items:center;gap:6px}
+.zone-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+
+@media(max-width:900px){
+  html body .zone-panel{top:auto;left:0;right:0;bottom:0;max-height:56vh;border-radius:22px 22px 0 0;padding-top:10px}
+  .zone-grab{display:block;width:44px;height:5px;margin:0 auto 10px;border-radius:5px;background:rgba(255,255,255,.25)}
+  .zone-back{top:auto;bottom:calc(56vh + 12px);left:12px;padding:9px 14px}
+  .zone-stage-map .nisar-map{inset:0 0 56vh 0}
+  .zone-stage-map .zone-legend{left:12px;top:12px;bottom:auto;width:180px}
+  .zone-stage-map .swipe-dates{top:auto;bottom:calc(56vh + 16px);left:auto;right:12px;transform:none}
+}
+
+/* ---------- Inicio con más luz: nebulosas suaves detrás del planeta ---------- */
+html body .earth-stage{background:
+  radial-gradient(ellipse 60% 45% at 50% 58%,rgba(0,212,255,.16),transparent 70%),
+  radial-gradient(ellipse 45% 40% at 18% 30%,rgba(139,92,246,.22),transparent 72%),
+  radial-gradient(ellipse 40% 35% at 85% 22%,rgba(0,140,255,.16),transparent 72%),
+  radial-gradient(ellipse at 50% 92%,rgba(64,72,190,.38) 0,rgba(11,15,31,.6) 40%,#070b18 78%)}
+html body .space-stars{opacity:1;filter:brightness(1.35)}
+
+/* ---------- Capa del inicio: buscador, último evento y cifras ---------- */
+.hero-overlay{position:absolute;inset:0;z-index:6;pointer-events:none}
+.earth-stage[data-zoomed="true"] .hero-overlay{opacity:0;transition:opacity .4s}
+.hero-search-btn{position:absolute;top:52px;right:20px;display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 14px;border:1px solid rgba(0,212,255,.3);border-radius:24px;background:rgba(9,13,30,.72);backdrop-filter:blur(12px);color:#e8f1ff;font-size:13px;font-weight:500;pointer-events:auto;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.hero-search-btn:hover{border-color:rgba(0,212,255,.6);background:rgba(15,22,48,.85)}
+.hero-search-btn svg{color:var(--saros-tech)}
+.hero-search-btn kbd{padding:1px 6px;border-radius:5px;border:1px solid var(--saros-line);font-family:var(--font-ui);font-size:11px;color:var(--saros-muted)}
+.hero-latest{position:absolute;left:20px;bottom:56px;display:grid;gap:8px;max-width:min(430px,calc(100% - 40px));pointer-events:auto}
+.hero-latest-card{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:linear-gradient(135deg,rgba(20,28,58,.82),rgba(10,14,32,.82));backdrop-filter:blur(14px);color:#e8f1ff;text-align:left;box-shadow:0 14px 40px rgba(0,0,0,.4);transition:border-color .25s,transform .25s}
+.hero-latest-card:hover{border-color:rgba(0,212,255,.45);transform:translateY(-2px)}
+.hero-latest-pulse{flex-shrink:0;width:12px;height:12px;border-radius:50%;animation:hud-ping 1.3s ease-out infinite}
+@keyframes hud-ping{0%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}100%{box-shadow:0 0 0 14px rgba(255,255,255,0)}}
+.hero-latest-text{display:grid;gap:2px;flex:1;min-width:0}
+.hero-latest-text small{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9fd8ff}
+.hero-latest-text strong{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-latest-text em{font-style:normal;font-size:11px;color:var(--saros-muted)}
+.hero-latest-go{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;font-size:12px;font-weight:600;color:var(--saros-tech)}
+.hero-stats{margin:0;padding-left:4px;font-size:11px;color:#8ea0c4}
+
+/* Buscador */
+.search-backdrop{position:fixed;inset:0;z-index:60;display:flex;justify-content:center;align-items:flex-start;padding:12vh 16px 16px;background:rgba(4,6,15,.55);backdrop-filter:blur(6px);pointer-events:auto}
+.search-panel{width:min(620px,100%);max-height:70vh;display:flex;flex-direction:column;border:1px solid rgba(0,212,255,.25);border-radius:18px;background:rgba(10,14,32,.96);box-shadow:0 30px 90px rgba(0,0,0,.6);overflow:hidden}
+.search-input{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--saros-line);color:var(--saros-tech)}
+.search-input input{flex:1;border:0;outline:none;background:transparent;color:#fff;font-size:15px}
+.search-input input::placeholder{color:#6f80a6}
+.search-input button{display:grid;place-items:center;width:30px;height:30px;border:0;border-radius:8px;background:rgba(255,255,255,.06);color:#c9d4ee}
+.search-results{flex:1;overflow-y:auto;margin:0;padding:8px;list-style:none}
+.search-group{margin:10px 8px 6px;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#7f90b3}
+.search-results button{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 10px;border:0;border-radius:10px;background:transparent;color:#e8f1ff;text-align:left}
+.search-results button.is-active{background:rgba(0,212,255,.12)}
+.search-results i{width:10px;height:10px;border-radius:50%}
+.search-results span{display:grid;gap:2px;min-width:0}
+.search-results strong{font-size:14px;font-weight:600}
+.search-results small{font-size:12px;color:var(--saros-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-results em{font-style:normal;font-size:11px;color:#9fb0d1}
+.search-results b{font-size:9px;letter-spacing:.08em}
+.search-empty{padding:18px;text-align:center;color:var(--saros-muted)}
+
+@media(max-width:720px){
+  .hero-search-btn{top:46px;right:12px;min-height:44px;padding:0 12px}
+  .hero-search-btn span,.hero-search-btn kbd{display:none}
+  .hero-latest{left:12px;right:12px;bottom:84px;max-width:none}
+  .hero-stats{display:none}
+  .search-backdrop{padding:8vh 10px 10px}
+  .search-results em{display:none}
+}
+
+html body .earth-stage[data-zoomed="true"] .ticker-dock{opacity:0!important;pointer-events:none!important;transition:opacity .4s}
+html body .hero-latest{bottom:96px}

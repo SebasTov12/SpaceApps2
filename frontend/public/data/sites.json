@@ -35,7 +35,9 @@
         "unitEn": "mm",
         "note": "Alejándose del satélite",
         "noteEn": "Moving away from the satellite"
-      }
+      },
+      "level": "alta",
+      "accelerating": true
     },
     {
       "id": "cdmx-subsidencia",
@@ -72,7 +74,9 @@
         "unitEn": "cm",
         "note": "Alejándose del satélite",
         "noteEn": "Moving away from the satellite"
-      }
+      },
+      "level": "alta",
+      "accelerating": false
     },
     {
       "id": "sylhet-inundacion",
@@ -109,7 +113,9 @@
         "unitEn": "km²",
         "note": "2026-08-02",
         "noteEn": "2026-08-02"
-      }
+      },
+      "level": "moderada",
+      "accelerating": false
     },
     {
       "id": "jakobshavn-glaciar",
@@ -146,7 +152,9 @@
         "unitEn": "m/day",
         "note": "2026-08-02",
         "noteEn": "2026-08-02"
-      }
+      },
+      "level": "moderada",
+      "accelerating": false
     },
     {
       "id": "rondonia-deforestacion",
@@ -183,7 +191,165 @@
         "unitEn": "km²",
         "note": "2026-08-02",
         "noteEn": "2026-08-02"
-      }
+      },
+      "level": "alta",
+      "accelerating": false
+    },
+    {
+      "id": "bogota-subsidencia",
+      "name": "Sabana que se hunde",
+      "place": "Bogotá, Colombia",
+      "lat": 4.66,
+      "lon": -74.12,
+      "bbox": [
+        -74.24,
+        4.55,
+        -74.0,
+        4.77
+      ],
+      "change": "deformation",
+      "changeLabel": "Subsidencia",
+      "product": "GUNW",
+      "unit": "cm",
+      "story": "Los suelos lacustres de la sabana y la extracción de agua subterránea hacen que el occidente de Bogotá se hunda poco a poco; el radar mide ese movimiento con precisión de centímetros.",
+      "pilot": false,
+      "en": {
+        "name": "Sinking savanna",
+        "place": "Bogotá, Colombia",
+        "changeLabel": "Subsidence",
+        "metric": "Cumulative line-of-sight displacement",
+        "story": "Lake-bed soils and groundwater pumping make western Bogotá slowly sink; radar measures it to the centimetre.",
+        "unit": "cm"
+      },
+      "mode": "demo",
+      "headline": {
+        "label": "Desplazamiento máximo",
+        "labelEn": "Peak displacement",
+        "value": "-9.2",
+        "unit": "cm",
+        "unitEn": "cm",
+        "note": "Alejándose del satélite",
+        "noteEn": "Moving away from the satellite"
+      },
+      "level": "alta",
+      "accelerating": false
+    },
+    {
+      "id": "la-mojana-inundacion",
+      "name": "La Mojana inundada",
+      "place": "La Mojana, Sucre y Bolívar, Colombia",
+      "lat": 8.55,
+      "lon": -74.75,
+      "bbox": [
+        -75.05,
+        8.3,
+        -74.45,
+        8.8
+      ],
+      "change": "backscatter",
+      "changeLabel": "Inundación",
+      "product": "GCOV",
+      "unit": "dB",
+      "story": "Tras la ruptura del dique de Cara de Gato en 2021, La Mojana sufrió inundaciones prolongadas. El radar delimita el agua aunque el cielo esté cubierto.",
+      "pilot": false,
+      "en": {
+        "name": "Flooded La Mojana",
+        "place": "La Mojana, Sucre & Bolívar, Colombia",
+        "changeLabel": "Flooding",
+        "metric": "HH backscatter",
+        "story": "After the Cara de Gato dike breach in 2021, La Mojana suffered long floods. Radar maps the water even under full cloud cover.",
+        "unit": "dB"
+      },
+      "mode": "demo",
+      "headline": {
+        "label": "Área sin bosque al inicio",
+        "labelEn": "Cleared area at start",
+        "value": "2030",
+        "unit": "km²",
+        "unitEn": "km²",
+        "note": "2026-08-02",
+        "noteEn": "2026-08-02"
+      },
+      "level": "moderada",
+      "accelerating": false
+    },
+    {
+      "id": "caqueta-deforestacion",
+      "name": "Arco de deforestación",
+      "place": "Caquetá, Colombia",
+      "lat": 1.35,
+      "lon": -74.85,
+      "bbox": [
+        -75.1,
+        1.15,
+        -74.6,
+        1.55
+      ],
+      "change": "backscatter",
+      "changeLabel": "Deforestación",
+      "product": "GCOV",
+      "unit": "dB",
+      "story": "El piedemonte amazónico de Caquetá concentra buena parte de la deforestación del país. La señal HV del radar cae donde el bosque se tala.",
+      "pilot": false,
+      "en": {
+        "name": "Deforestation arc",
+        "place": "Caquetá, Colombia",
+        "changeLabel": "Deforestation",
+        "metric": "HV backscatter",
+        "story": "The Amazon foothills of Caquetá concentrate much of the country's deforestation. Radar HV signal drops where forest is cleared.",
+        "unit": "dB"
+      },
+      "mode": "demo",
+      "headline": {
+        "label": "Área sin bosque al inicio",
+        "labelEn": "Cleared area at start",
+        "value": "310",
+        "unit": "km²",
+        "unitEn": "km²",
+        "note": "2026-08-02",
+        "noteEn": "2026-08-02"
+      },
+      "level": "alta",
+      "accelerating": false
+    },
+    {
+      "id": "nevado-ruiz",
+      "name": "Volcán Nevado del Ruiz",
+      "place": "Caldas y Tolima, Colombia",
+      "lat": 4.892,
+      "lon": -75.324,
+      "bbox": [
+        -75.42,
+        4.8,
+        -75.22,
+        4.98
+      ],
+      "change": "deformation",
+      "changeLabel": "Volcán",
+      "product": "GUNW",
+      "unit": "mm",
+      "story": "El Ruiz, responsable de la tragedia de Armero en 1985, se vigila de forma permanente. Cuando el magma se acumula, el suelo se infla unos milímetros y el radar lo detecta.",
+      "pilot": false,
+      "en": {
+        "name": "Nevado del Ruiz volcano",
+        "place": "Caldas & Tolima, Colombia",
+        "changeLabel": "Volcano",
+        "metric": "Cumulative line-of-sight displacement",
+        "story": "The Ruiz, behind the 1985 Armero tragedy, is monitored permanently. When magma accumulates the ground inflates a few millimetres and radar detects it.",
+        "unit": "mm"
+      },
+      "mode": "demo",
+      "headline": {
+        "label": "Desplazamiento máximo",
+        "labelEn": "Peak displacement",
+        "value": "+31.9",
+        "unit": "mm",
+        "unitEn": "mm",
+        "note": "Elevación (hacia el satélite)",
+        "noteEn": "Uplift (toward the satellite)"
+      },
+      "level": "moderada",
+      "accelerating": false
     }
   ]
 }

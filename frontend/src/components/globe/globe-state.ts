@@ -26,6 +26,8 @@ export const globeState = {
   flashes: new Map<string, number>(),
   /** Visibilidad extra del haz de radar (0–1), además de la del scroll. */
   beam: 0,
+  /** Zona destacada al terminar el reconocimiento (último evento). */
+  featured: null as string | null,
   /** Zona a la que el usuario pidió llevar el planeta. */
   focus: null as string | null,
   /** Acercamiento de la cámara a una zona: 0 = vista general, 1 = zona abierta. */

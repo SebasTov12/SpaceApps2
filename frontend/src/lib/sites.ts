@@ -25,11 +25,28 @@ export type SiteSummary = {
   story: string;
   pilot: boolean;
   en?: SiteEnglish;
+  country?: string;
+  level?: AttentionLevel;
+  accelerating?: boolean;
   mode: "demo" | "real";
   headline: SiteStat;
 };
 
 export type Legend = { colors: string[]; range: [number, number]; diverging: boolean };
+
+export type AttentionLevel = "baja" | "moderada" | "alta";
+
+/** Evaluación para prevención calculada en el pipeline (o por el backend). No es una probabilidad. */
+export type Assessment = {
+  level: AttentionLevel;
+  rate: { recent: number; early: number; unit: string; unitEn: string };
+  accelerating: boolean;
+  current: number;
+  projection: { d30: number; d90: number; unit: string };
+  hotspots: { lat: number; lon: number; value: number }[];
+  basis: string;
+  basisEn: string;
+};
 
 export type SiteManifest = Omit<SiteSummary, "mode" | "headline"> & {
   metric: string;
@@ -42,6 +59,7 @@ export type SiteManifest = Omit<SiteSummary, "mode" | "headline"> & {
   changeLegend: Legend;
   stats: SiteStat[];
   source: { mode: "demo" | "real"; product: string; granules: string[]; note: string; noteEn?: string };
+  assessment?: Assessment;
   generated: string;
 };
 

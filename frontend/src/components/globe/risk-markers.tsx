@@ -74,6 +74,8 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
   const color = riskKinds[zone.kind].color;
   const position = useMemo(() => spherePosition(zone.lat, zone.lon, 1.002 + RELIEF * terrain), [zone.lat, zone.lon, terrain]);
   const size = zone.siteId ? 0.013 : 0.0095;
+  // en pantallas táctiles el área de toque es mayor
+  const hitScale = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches ? 5 : 3.5;
   const pillarHeight = zone.siteId ? 0.075 : 0.05;
   const uniforms = useMemo(() => ({ uColor: { value: new Color(color) }, uOpacity: { value: 0 } }), [color]);
 
@@ -98,7 +100,8 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     node.visible = true;
     if (revealAt.current === null) revealAt.current = t;
     const appear = clamp01((t - revealAt.current) / 0.8);
-    const emphasis = (hover ? 1.35 : 1) * (selected ? 1.25 : 1);
+    const featured = globeState.featured === zone.id;
+    const emphasis = (hover ? 1.35 : 1) * (selected || featured ? 1.25 : 1);
     node.scale.setScalar(Math.max(0.001, easeOutBack(appear)) * emphasis);
 
     // pasada del haz: la columna se alarga un instante y sale un anillo suave
@@ -147,12 +150,16 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
           <meshBasicMaterial color="#e6fbff" transparent opacity={0} side={DoubleSide} depthWrite={false} toneMapped={false} />
         </mesh>
         {/* cúpula iluminada por la escena: se integra con el relieve */}
+        {/* zona de toque invisible, mucho mayor que el punto: fácil de pulsar con el dedo */}
         <mesh
-          rotation={[Math.PI / 2, 0, 0]}
           onClick={(event) => { event.stopPropagation(); select(); }}
           onPointerOver={(event) => { event.stopPropagation(); setHover(true); document.body.style.cursor = "pointer"; }}
           onPointerOut={() => { setHover(false); document.body.style.cursor = ""; }}
         >
+          <sphereGeometry args={[size * hitScale, 12, 8]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+        </mesh>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
           <sphereGeometry args={[size, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.55} roughness={0.35} metalness={0.2} />
         </mesh>

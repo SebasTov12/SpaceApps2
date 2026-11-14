@@ -64,7 +64,7 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
           <meshPhongMaterial map={day} normalMap={normal} normalScale={new Vector2(0.55, 0.55)}
             displacementMap={height} displacementScale={RELIEF}
             specularMap={specular} specular="#263b4e" shininess={55}
-            emissive="#142f52" emissiveIntensity={0.32} />
+            emissive="#163a66" emissiveIntensity={0.42} />
         </mesh>
         {/* Zonas de riesgo; giran con la superficie */}
         <RiskMarkers />
@@ -178,7 +178,8 @@ function Sunlight({ progress }: { progress: MotionValue<number> }) {
   const sun = useRef<DirectionalLight>(null);
   useFrame(() => {
     const reveal = Math.min(1, Math.max(0, progress.get()));
-    if (ambient.current) ambient.current.intensity = 0.5 + reveal * 0.5;
+    // más luz: el planeta se lee mejor sobre el fondo oscuro
+    if (ambient.current) ambient.current.intensity = 0.85 + reveal * 0.45;
     if (sun.current) {
       sun.current.position.set(-3 + reveal * 1.4, 4 - reveal * 1.5, 3 + reveal * 3.5);
       sun.current.intensity = 2.25 - reveal * 0.2;
@@ -186,7 +187,8 @@ function Sunlight({ progress }: { progress: MotionValue<number> }) {
   });
   return (
     <>
-      <ambientLight ref={ambient} intensity={0.45} />
+      <ambientLight ref={ambient} intensity={0.85} />
+      <hemisphereLight args={["#bfe6ff", "#2a1a55", 0.55]} />
       <directionalLight ref={sun} position={[-3, 4, 3]} intensity={2.1} color="#fff5e8" />
       <directionalLight position={[3, -2, -4]} intensity={0.3} color="#7197bd" />
     </>

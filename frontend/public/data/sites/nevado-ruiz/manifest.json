@@ -1,0 +1,195 @@
+{
+  "id": "nevado-ruiz",
+  "name": "Volcán Nevado del Ruiz",
+  "place": "Caldas y Tolima, Colombia",
+  "lat": 4.892,
+  "lon": -75.324,
+  "bbox": [
+    -75.42,
+    4.8,
+    -75.22,
+    4.98
+  ],
+  "change": "deformation",
+  "changeLabel": "Volcán",
+  "product": "GUNW",
+  "metric": "Desplazamiento acumulado en línea de vista",
+  "unit": "mm",
+  "range": [
+    -10,
+    40
+  ],
+  "colormap": "diverging",
+  "story": "El Ruiz, responsable de la tragedia de Armero en 1985, se vigila de forma permanente. Cuando el magma se acumula, el suelo se infla unos milímetros y el radar lo detecta.",
+  "en": {
+    "name": "Nevado del Ruiz volcano",
+    "place": "Caldas & Tolima, Colombia",
+    "changeLabel": "Volcano",
+    "metric": "Cumulative line-of-sight displacement",
+    "story": "The Ruiz, behind the 1985 Armero tragedy, is monitored permanently. When magma accumulates the ground inflates a few millimetres and radar detects it.",
+    "unit": "mm"
+  },
+  "pilot": false,
+  "country": "CO",
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/nevado-ruiz/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/nevado-ruiz/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/nevado-ruiz/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/nevado-ruiz/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/nevado-ruiz/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/nevado-ruiz/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/nevado-ruiz/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/nevado-ruiz/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/nevado-ruiz/change.png",
+    "range": [
+      -10,
+      3.0
+    ],
+    "unit": "mm"
+  },
+  "legend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10,
+      40
+    ],
+    "diverging": true
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10,
+      3.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Desplazamiento máximo",
+      "labelEn": "Peak displacement",
+      "value": "+31.9",
+      "unit": "mm",
+      "unitEn": "mm",
+      "note": "Elevación (hacia el satélite)",
+      "noteEn": "Uplift (toward the satellite)"
+    },
+    {
+      "label": "Área con más de 10 mm",
+      "labelEn": "Area beyond 10 mm",
+      "value": "30.6",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "Al final del periodo",
+      "noteEn": "At the end of the period"
+    },
+    {
+      "label": "Ritmo en el punto máximo",
+      "labelEn": "Rate at the peak",
+      "value": "11.4",
+      "unit": "mm/mes",
+      "unitEn": "mm/month",
+      "note": "Promedio del periodo",
+      "noteEn": "Period average"
+    }
+  ],
+  "assessment": {
+    "level": "moderada",
+    "rate": {
+      "recent": 14.87,
+      "early": 15.85,
+      "unit": "mm/mes",
+      "unitEn": "mm/month"
+    },
+    "accelerating": false,
+    "current": 31.85,
+    "projection": {
+      "d30": 46.72,
+      "d90": 76.47,
+      "unit": "mm"
+    },
+    "hotspots": [
+      {
+        "lat": 4.89,
+        "lon": -75.32084,
+        "value": 11.9
+      },
+      {
+        "lat": 4.87826,
+        "lon": -75.33365,
+        "value": 7.91
+      },
+      {
+        "lat": 4.9023,
+        "lon": -75.33309,
+        "value": 7.7
+      },
+      {
+        "lat": 4.9023,
+        "lon": -75.30858,
+        "value": 7.36
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GUNW",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
+  },
+  "generated": "2026-11-14T17:50:26+00:00"
+}

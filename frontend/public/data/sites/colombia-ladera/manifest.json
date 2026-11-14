@@ -30,6 +30,7 @@
     "unit": "mm"
   },
   "pilot": true,
+  "country": "CO",
   "dates": [
     "2026-08-02",
     "2026-08-14",
@@ -143,6 +144,46 @@
       "noteEn": "Period average"
     }
   ],
+  "assessment": {
+    "level": "alta",
+    "rate": {
+      "recent": -26.54,
+      "early": -10.7,
+      "unit": "mm/mes",
+      "unitEn": "mm/month"
+    },
+    "accelerating": true,
+    "current": -56.48,
+    "projection": {
+      "d30": -83.02,
+      "d90": -136.11,
+      "unit": "mm"
+    },
+    "hotspots": [
+      {
+        "lat": 7.88485,
+        "lon": -72.4933,
+        "value": 21.42
+      },
+      {
+        "lat": 7.8912,
+        "lon": -72.48492,
+        "value": 13.86
+      },
+      {
+        "lat": 7.8785,
+        "lon": -72.50168,
+        "value": 13.51
+      },
+      {
+        "lat": 7.82836,
+        "lon": -72.4876,
+        "value": 6.86
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
   "source": {
     "mode": "demo",
     "product": "NISAR L2 GUNW",
@@ -150,5 +191,5 @@
     "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
     "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
   },
-  "generated": "2026-11-14T15:15:09+00:00"
+  "generated": "2026-11-14T17:50:10+00:00"
 }

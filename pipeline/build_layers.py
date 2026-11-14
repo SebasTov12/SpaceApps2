@@ -180,12 +180,31 @@ def demo_rondonia(g, dates):
     return frames, None
 
 
+def demo_volcano(g, dates):
+    """Inflación de un volcán (fuente de Mogi): el suelo se eleva en forma de domo."""
+    depth = 3.0
+    r2 = g["x"] ** 2 + (g["y"] * 1.1) ** 2
+    dome = depth ** 3 / (r2 + depth ** 2) ** 1.5
+    frames = []
+    for k, d in enumerate(dates):
+        t = k / (len(dates) - 1)
+        pulse = t ** 1.3 + 0.12 * math.sin(t * math.pi * 1.5)
+        noise = smooth_noise(dome.shape, 35, 800 + k) * 1.6 * (k > 0)
+        frames.append(36 * pulse * dome + noise)
+    return frames, None
+
+
 DEMO = {
     "colombia-ladera": demo_colombia,
     "cdmx-subsidencia": demo_cdmx,
     "sylhet-inundacion": demo_sylhet,
     "jakobshavn-glaciar": demo_jakobshavn,
     "rondonia-deforestacion": demo_rondonia,
+    # plantillas reutilizables para otros sitios (campo "template" en sites.json)
+    "subsidence": demo_cdmx,
+    "flood": demo_sylhet,
+    "deforestation": demo_rondonia,
+    "volcano": demo_volcano,
 }
 
 # ---------------------------------------------------------------------------
@@ -361,10 +380,14 @@ def compute_stats(site, frames, grid):
     d0, d1 = site["dates"][0], site["dates"][-1]
     if site["change"] == "deformation":
         threshold = 10 if unit == "mm" else 3
-        moving = np.nansum(last <= -threshold) * px
-        rate = np.nanmin(last) / max(1, days_between(d0, d1)) * 30
+        peak = float(last.flat[np.nanargmax(np.abs(np.nan_to_num(last)))])
+        moving = np.nansum(np.abs(last) >= threshold) * px
+        rate = peak / max(1, days_between(d0, d1)) * 30
+        away = peak < 0
         return [
-            stat("Desplazamiento máximo", "Peak displacement", f"{np.nanmin(last):.1f}", unit, "Alejándose del satélite", "Moving away from the satellite"),
+            stat("Desplazamiento máximo", "Peak displacement", f"{peak:+.1f}", unit,
+                 "Alejándose del satélite" if away else "Elevación (hacia el satélite)",
+                 "Moving away from the satellite" if away else "Uplift (toward the satellite)"),
             stat(f"Área con más de {threshold} {unit}", f"Area beyond {threshold} {unit}", f"{moving:.1f}", "km²", "Al final del periodo", "At the end of the period"),
             stat("Ritmo en el punto máximo", "Rate at the peak", f"{rate:.1f}", f"{unit}/mes", "Promedio del periodo", "Period average", f"{unit}/month"),
         ]
@@ -387,6 +410,81 @@ def compute_stats(site, frames, grid):
     ]
 
 
+def assess(site, frames, grid, dates):
+    """
+    Evaluación para prevención (sin probabilidades): ritmo reciente vs. inicial, aceleración,
+    nivel de atención, proyección si la tendencia continúa y puntos a vigilar.
+    """
+    stack = np.stack([np.nan_to_num(f, nan=np.nan) for f in frames])
+    days = np.array([days_between(dates[0], d) for d in dates], dtype=float)
+    n = len(dates)
+    k = max(1, n // 3)
+
+    def per_month(series, i0, i1):
+        dt = max(1.0, days[i1] - days[i0])
+        return (series[i1] - series[i0]) / dt * 30
+
+    if site["change"] == "backscatter":
+        thr = -15 if site["id"] not in ("rondonia-deforestacion", "caqueta-deforestacion") else -15.5
+        series = np.array([np.nansum(f < thr) * grid["pixel_km2"] for f in frames])
+        unit = "km²"
+    elif site["change"] == "velocity":
+        series = np.array([np.nanpercentile(f, 99) for f in frames])
+        unit = site["unit"]
+    else:
+        last = np.nan_to_num(frames[-1])
+        idx = np.unravel_index(np.argmax(np.abs(last)), last.shape)
+        series = stack[:, idx[0], idx[1]]
+        unit = site["unit"]
+
+    clip = (lambda v: max(0.0, v)) if unit == "km²" else (lambda v: v)
+    recent = per_month(series, n - 1 - k, n - 1)
+    early = per_month(series, 0, k)
+    accelerating = bool(abs(recent) > 1.3 * abs(early) and abs(recent) > 1e-6)
+
+    if site["change"] == "deformation":
+        high, medium = (15, 5) if unit == "mm" else (2, 0.8)
+        mag = abs(recent)
+    elif "inundacion" in site["id"] or site.get("template") == "flood":
+        high, medium = 50, 15
+        # agua que crece = atención alta; agua en retroceso = suelos saturados, atención moderada
+        mag = recent if recent > 0 else abs(recent) * 0.06
+    elif site["change"] == "backscatter":
+        high, medium = 10, 3   # km² de bosque perdido al mes
+        mag = recent
+    else:
+        high, medium = 8, 3
+        mag = abs(recent)
+    level = "alta" if mag >= high else "moderada" if mag >= medium else "baja"
+    if accelerating and level == "moderada":
+        level = "alta"
+
+    # puntos a vigilar: celdas con el cambio reciente más rápido, separadas entre sí
+    hotspots = []
+    if site["change"] != "velocity":
+        delta = np.abs(np.nan_to_num(stack[-1] - stack[max(0, n - 1 - k)]))
+        order = np.argsort(delta, axis=None)[::-1]
+        rows, cols = delta.shape
+        for flat in order[:4000]:
+            r, c = divmod(int(flat), cols)
+            lat, lon = float(grid["lat"][r, c]), float(grid["lon"][r, c])
+            if all(abs(lat - h["lat"]) + abs(lon - h["lon"]) > (site["bbox"][2] - site["bbox"][0]) * 0.12 for h in hotspots):
+                hotspots.append({"lat": round(lat, 5), "lon": round(lon, 5), "value": round(float(delta[r, c]), 2)})
+            if len(hotspots) == 4:
+                break
+
+    return {
+        "level": level,
+        "rate": {"recent": round(float(recent), 2), "early": round(float(early), 2), "unit": f"{unit}/mes", "unitEn": f"{unit}/month"},
+        "accelerating": accelerating,
+        "current": round(float(series[-1]), 2),
+        "projection": {"d30": round(float(clip(series[-1] + recent)), 2), "d90": round(float(clip(series[-1] + recent * 3)), 2), "unit": unit},
+        "hotspots": hotspots,
+        "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+        "basisEn": "Trend of the latest acquisitions (linear projection, not a probability).",
+    }
+
+
 def change_range(site):
     if site["change"] == "deformation":
         return site["range"][0], abs(site["range"][0]) * 0.3
@@ -405,7 +503,7 @@ def build_site(site, mode, global_dates):
         source_mode = "real"
     else:
         dates = global_dates
-        frames, _ = DEMO[site["id"]](grid, dates)
+        frames, _ = DEMO[site.get("template", site["id"])](grid, dates)
     site = {**site, "dates": dates}
 
     out_dir = OUT / "sites" / site["id"]
@@ -433,16 +531,19 @@ def build_site(site, mode, global_dates):
     }, separators=(",", ":")), encoding="utf-8")
 
     stats = compute_stats(site, frames, grid)
+    assessment = assess(site, frames, grid, dates)
     manifest = {
         **{k: site[k] for k in ("id", "name", "place", "lat", "lon", "bbox", "change", "changeLabel", "product", "metric", "unit", "range", "colormap", "story")},
         "en": {**site.get("en", {}), "unit": "m/day" if site["unit"] == "m/día" else site["unit"]},
         "pilot": site.get("pilot", False),
+        "country": site.get("country", ""),
         "dates": dates,
         "layers": layers,
         "changeLayer": {"url": f"/data/sites/{site['id']}/change.png", "range": [cmin, cmax], "unit": site["unit"]},
         "legend": {"colors": COLORMAPS[site["colormap"]], "range": site["range"], "diverging": diverging},
         "changeLegend": {"colors": COLORMAPS["change"], "range": [cmin, cmax], "diverging": True},
         "stats": stats,
+        "assessment": assessment,
         "source": {
             "mode": source_mode,
             "product": f"NISAR L2 {site['product']}",
@@ -457,7 +558,7 @@ def build_site(site, mode, global_dates):
     (out_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"  {site['id']:<24} {source_mode:<5} {len(dates)} fechas  {cols}x{rows}px")
     return {k: manifest[k] for k in ("id", "name", "place", "lat", "lon", "bbox", "change", "changeLabel", "product", "unit", "story", "pilot", "en")} | {
-        "mode": source_mode, "headline": stats[0]}
+        "mode": source_mode, "headline": stats[0], "level": assessment["level"], "accelerating": assessment["accelerating"]}
 
 
 def main():
