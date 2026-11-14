@@ -49,7 +49,8 @@ function Planet({ onReady, playing, quality, children }: { onReady: () => void; 
 
     if (!playing) return;
     const step = Math.min(delta, 0.1);
-    if (surface.current) surface.current.rotation.y += step * 0.04;
+    // con una zona abierta la Tierra deja de girar: la zona se queda en el centro durante la zambullida
+    if (surface.current) surface.current.rotation.y += step * 0.04 * (1 - globeState.zoom);
     if (clouds.current) clouds.current.rotation.y += step * 0.006;
   });
   // más subdivisiones para que el relieve desplazado se vea sobresalir

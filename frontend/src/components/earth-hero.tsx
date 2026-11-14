@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
 import ZoneView from "@/components/globe/zone-view";
 import HeroOverlay from "@/components/globe/hero-overlay";
+import SpaceDepth, { OrbitRings } from "@/components/space-depth";
 import SarosHeroChrome, { SarosWordmark } from "@/components/saros-hero-chrome";
 
 const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
@@ -48,9 +49,11 @@ export default function EarthHero() {
           <SpaceBackdrop />
         </motion.div>
         <div className="space-dust" aria-hidden="true" />
+        <SpaceDepth />
         {/* Logotipo SAROS detrás del planeta */}
         <SarosWordmark progress={progress} departure={departure} />
         <motion.div className="earth-orbit" style={{ y, scale, rotate, opacity }}>
+          <OrbitRings />
           <EarthGlobe progress={progress} playing={playing} />
         </motion.div>
         <motion.div className="explorer-bridge" style={{ opacity: bridgeOpacity }} aria-hidden="true">

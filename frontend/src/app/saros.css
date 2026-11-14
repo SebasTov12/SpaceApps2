@@ -304,3 +304,38 @@ html body .hero-latest{bottom:96px}
   .zone-explore button,.zone-explore a{min-height:38px;padding:0 11px;font-size:12px}
 }
 @media(max-width:900px){html body .zone-stage-map .swipe-dates{bottom:calc(56vh + 64px)}}
+
+/* ---------- Paso del planeta al mapa: bruma atmosférica ---------- */
+.zone-haze{position:absolute;inset:0;z-index:5;pointer-events:none;
+  background:radial-gradient(ellipse 60% 55% at calc((100% - 540px) / 2) 50%,rgba(214,236,255,.95) 0,rgba(150,196,240,.75) 32%,rgba(62,104,170,.45) 62%,rgba(10,18,40,0) 88%)}
+.zone-stage-map{will-change:opacity,filter,transform;transform-origin:calc((100% - 540px) / 2) 50%}
+@media(max-width:900px){
+  .zone-haze{background:radial-gradient(ellipse 80% 45% at 50% 22%,rgba(214,236,255,.95) 0,rgba(150,196,240,.75) 32%,rgba(62,104,170,.45) 62%,rgba(10,18,40,0) 88%)}
+  .zone-stage-map{transform-origin:50% 22%}
+}
+
+/* ---------- Profundidad del espacio (inicio menos vacío, sin paneles) ---------- */
+.space-depth{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.space-milkyway{position:absolute;left:-20%;top:18%;width:140%;height:34%;rotate:-14deg;filter:blur(38px);opacity:.55;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(170,150,255,.20),transparent 70%),
+    radial-gradient(ellipse 30% 40% at 28% 46%,rgba(120,190,255,.22),transparent 70%),
+    radial-gradient(ellipse 26% 36% at 72% 54%,rgba(255,190,160,.12),transparent 70%),
+    linear-gradient(90deg,transparent,rgba(160,180,255,.12) 30%,rgba(190,170,255,.16) 55%,rgba(130,200,255,.1) 75%,transparent)}
+.space-galaxy{position:absolute;border-radius:50%;filter:blur(3px);
+  background:radial-gradient(ellipse at center,rgba(255,244,230,.95) 0,rgba(200,180,255,.45) 18%,rgba(120,150,255,.15) 45%,transparent 70%)}
+.space-twinkles{position:absolute;inset:0;width:100%;height:100%}
+.space-twinkles circle{animation:space-twinkle ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes space-twinkle{0%,100%{opacity:.15}50%{opacity:1}}
+.space-meteor{position:absolute;width:150px;height:1.5px;border-radius:2px;opacity:0;rotate:-28deg;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(200,235,255,.9));animation:space-meteor 24s linear infinite}
+@keyframes space-meteor{0%{opacity:0;translate:0 0}1.5%{opacity:1}5%{opacity:0;translate:-340px 180px}100%{opacity:0;translate:-340px 180px}}
+.orbit-rings{position:absolute;left:50%;top:50%;width:150%;height:150%;translate:-50% -50%;z-index:0;pointer-events:none;overflow:visible;opacity:.9}
+.orbit-ring{transform-origin:0 0}
+.orbit-ring-a{animation:ring-spin 120s linear infinite}
+.orbit-ring-b{animation:ring-spin 80s linear infinite reverse}
+.orbit-ring-c{animation:ring-spin 60s linear infinite}
+@keyframes ring-spin{to{transform:rotate(360deg)}}
+.earth-stage[data-zoomed="true"] .orbit-rings{opacity:0;transition:opacity .5s}
+.earth-stage[data-playing="false"] .orbit-ring,.earth-stage[data-playing="false"] .space-twinkles circle,.earth-stage[data-playing="false"] .space-meteor{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){.orbit-ring,.space-twinkles circle,.space-meteor{animation:none}}
+@media(max-width:720px){.space-galaxy{display:none}.orbit-rings{width:135%;height:135%}}

@@ -7,6 +7,9 @@ import { useI18n } from "@/lib/i18n";
 import type { Bbox } from "@/lib/sites";
 
 export type MapMode = "single" | "swipe" | "change";
+/** Ajustes de la vista 3D: exageración del relieve, edificios, inclinación y acercamiento. */
+export type Scene3D = { exaggeration: number; buildings: boolean; pitch: number; zoom: number };
+const DEFAULT_SCENE: Scene3D = { exaggeration: 1.35, buildings: false, pitch: 68, zoom: 13.4 };
 
 type NisarMapProps = {
   bbox: Bbox;
@@ -21,11 +24,15 @@ type NisarMapProps = {
   /** Cambia para pedir que el mapa vuelva a encuadrar el sitio. */
   recenterKey: number;
   /** Arranca en proyección de globo sobre este punto y vuela hasta el sitio (transición desde el planeta). */
-  intro?: { lat: number; lon: number; screen?: () => { x: number; y: number; r: number } | null };
-  /** Se llama cuando el mapa ya se colocó igual que el planeta y empieza el vuelo (para el fundido). */
+  intro?: { lat: number; lon: number };
+  /** Con "intro": se llama cuando la imagen satelital ya cargó (el mapa puede aparecer sin verse vacío). */
   onReady?: () => void;
+  /** Con "intro": al pasar a true el mapa termina de acercarse hasta la zona. */
+  reveal?: boolean;
   /** Vista 3D a ras de suelo: relieve, cámara inclinada y colores naturales. */
   terrain?: boolean;
+  /** Cómo se ve la vista 3D según el tipo de lugar (montaña, ciudad, llanura). */
+  scene?: Scene3D;
   /** Imagen de fondo: Esri (alta resolución) o Sentinel-2 sin nubes 2024 (EOX). */
   basemap?: "esri" | "s2";
   /** Puntos a vigilar (tendencia más rápida). */
@@ -92,6 +99,35 @@ function addNisarLayer(map: MapLibreMap, url: string, bbox: Bbox, opacity: numbe
   map.addLayer({ id: "aoi", type: "line", source: "aoi", paint: { "line-color": "#79d3d3", "line-width": 1.5, "line-dasharray": [3, 2], "line-opacity": 0.85 } });
 }
 
+/** Cielo y bruma de horizonte de la vista 3D (tonos de la identidad SAROS). */
+const SKY = {
+  "sky-color": "#0d1a3a", "horizon-color": "#9cc8ef", "fog-color": "#c6dcf2",
+  "sky-horizon-blend": 0.55, "horizon-fog-blend": 0.7, "fog-ground-blend": 0.35, "atmosphere-blend": 0.6,
+} as never;
+
+/** Capas de la vista 3D: sombreado del relieve y edificios (solo se cargan la primera vez que se usan). */
+function prepare3D(map: MapLibreMap, scene: Scene3D) {
+  if (!map.getSource("dem-shade")) {
+    map.addSource("dem-shade", { type: "raster-dem", tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
+    map.addLayer({
+      id: "hillshade", type: "hillshade", source: "dem-shade", layout: { visibility: "none" },
+      paint: { "hillshade-exaggeration": 0.45, "hillshade-shadow-color": "#0b1530", "hillshade-highlight-color": "#fff6e0", "hillshade-accent-color": "#24324f" },
+    }, "nisar");
+  }
+  if (scene.buildings && !map.getSource("omt")) {
+    map.addSource("omt", { type: "vector", url: "https://tiles.openfreemap.org/planet", attribution: "© OpenStreetMap · OpenFreeMap" });
+    map.addLayer({
+      id: "buildings", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 13, layout: { visibility: "none" },
+      paint: {
+        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6], 0, "#c9d6e8", 40, "#9fb6d6", 120, "#7d9cc8"],
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+        "fill-extrusion-opacity": 0.88,
+      },
+    }, "hotspots-glow");
+  }
+}
+
 function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opacity: number) {
   if (!map || !map.getSource("nisar")) return;
   (map.getSource("nisar") as ImageSource).updateImage({ url: url || EMPTY_PNG, coordinates: corners(bbox) });
@@ -100,7 +136,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
   aoi?.setData?.(outline(bbox));
 }
 
-export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, terrain = false, basemap = "esri" }: NisarMapProps) {
+export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, basemap = "esri", scene = DEFAULT_SCENE }: NisarMapProps) {
   const { t } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
@@ -162,11 +198,9 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
       // copiado por scripts/copy-maplibre-worker.mjs (predev / prebuild)
       setWorkerUrl("/maplibre-gl-worker.mjs");
       const start = initial.current;
-      // con "intro" el mapa nace como globo sobre la zona y luego vuela hasta ella
-      const style: StyleSpecification = start.intro ? { ...baseStyle, projection: { type: "globe" } } : baseStyle;
-      const view = start.intro
-        ? { center: [start.intro.lon, start.intro.lat] as [number, number], zoom: 1.7 }
-        : { bounds: start.bbox, fitBoundsOptions: { padding: 40 } };
+      // con "intro" el mapa se precarga oculto un poco más alejado; aparece cuando ya tiene imagen
+      const style: StyleSpecification = baseStyle;
+      const view = { bounds: start.bbox, fitBoundsOptions: { padding: start.intro ? paddingRef.current : 40 } };
       const common = { style, ...view, attributionControl: false as const, maxZoom: 16, maxPitch: 80 };
       let main: MapLibreMap;
       try {
@@ -225,45 +259,49 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   useEffect(() => {
     if (!ready) return;
     const bottomUrl = mode === "swipe" && beforeUrl ? beforeUrl : layerUrl;
-    updateNisarLayer(mapRef.current, bottomUrl, bbox, opacity);
-    updateNisarLayer(afterMapRef.current, layerUrl, bbox, opacity);
-  }, [ready, mode, layerUrl, beforeUrl, bbox, opacity]);
+    // en la vista 3D la capa del radar queda suave para que se vea el terreno y los edificios
+    const layerOpacity = terrain ? Math.min(opacity, 0.38) : opacity;
+    updateNisarLayer(mapRef.current, bottomUrl, bbox, layerOpacity);
+    updateNisarLayer(afterMapRef.current, layerUrl, bbox, layerOpacity);
+  }, [ready, mode, layerUrl, beforeUrl, bbox, opacity, terrain]);
 
   const onReadyRef = useRef(onReady);
   useEffect(() => {
     onReadyRef.current = onReady;
   });
 
-  // Encuadrar el sitio al cambiarlo o al pulsar "Centrar"
+  // Entrada desde el planeta: alejar un poco, esperar a que carguen las teselas y avisar
+  const introDone = useRef(false);
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map) return;
-    const intro = initial.current.intro;
-    const first = !flewIn.current && !!intro;
-    flewIn.current = true;
-    if (first && intro) {
-      // El mapa nace con el mismo tamaño y posición que el planeta 3D: el fundido entre ambos no se nota
-      const globe = intro.screen?.();
-      if (globe && globe.r > 20) {
-        const rect = map.getContainer().getBoundingClientRect();
-        const dx = globe.x - (rect.left + rect.width / 2);
-        const dy = globe.y - (rect.top + rect.height / 2);
-        const zoom = Math.log2((2 * Math.PI * globe.r * Math.cos((intro.lat * Math.PI) / 180)) / 512);
-        map.jumpTo({
-          center: [intro.lon, intro.lat], zoom: Math.max(0, zoom),
-          padding: { left: Math.max(0, 2 * dx), right: Math.max(0, -2 * dx), top: Math.max(0, 2 * dy), bottom: Math.max(0, -2 * dy) },
-        });
-      }
+    if (!ready || !map || introDone.current || !initial.current.intro) return;
+    introDone.current = true;
+    map.jumpTo({ zoom: map.getZoom() - 1.8 });
+    let fired = false;
+    const fire = () => {
+      if (fired) return;
+      fired = true;
       onReadyRef.current?.();
-    }
-    // vuelo continuo: arranca con velocidad (sigue el movimiento de la cámara 3D) y frena suave al llegar
-    map.fitBounds(bbox, {
-      padding: paddingRef.current, duration: first ? 3800 : 1600, curve: 1.42, essential: true,
-      easing: first ? (x: number) => 1 - Math.pow(1 - x, 2.4) : undefined,
-    });
-  }, [ready, bbox, recenterKey]);
+    };
+    map.once("idle", fire);
+    const timer = setTimeout(fire, 2200);
+    return () => clearTimeout(timer);
+  }, [ready]);
 
-  // Vista 3D a ras de suelo: relieve exagerado, cámara inclinada y colores naturales
+  // Encuadrar el sitio: al revelarse (vuelo de llegada), al cambiar de sitio o al pulsar "Centrar"
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !reveal) return;
+    const first = !flewIn.current && !!initial.current.intro;
+    flewIn.current = true;
+    map.fitBounds(bbox, {
+      padding: paddingRef.current, duration: first ? 2600 : 1600, essential: true,
+      // la llegada continúa el movimiento de la cámara 3D y frena suave
+      easing: first ? (x: number) => 1 - Math.pow(1 - x, 3) : undefined,
+    });
+  }, [ready, reveal, bbox, recenterKey]);
+
+  // Vista 3D a ras de suelo: relieve con sombras, cielo con bruma, edificios en ciudades y giro lento de dron
   const terrainOn = useRef(false);
   useEffect(() => {
     const map = mapRef.current;
@@ -273,19 +311,38 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     for (const m of [map, after]) {
       if (!m) continue;
       try {
-        m.setTerrain(terrain ? { source: "dem", exaggeration: 1.5 } : null);
+        if (terrain) prepare3D(m, scene);
+        m.setTerrain(terrain ? { source: "dem", exaggeration: scene.exaggeration } : null);
+        m.setLayoutProperty("hillshade", "visibility", terrain ? "visible" : "none");
+        if (m.getLayer("buildings")) m.setLayoutProperty("buildings", "visibility", terrain && scene.buildings ? "visible" : "none");
+        m.setSky(terrain ? SKY : { "atmosphere-blend": 0 } as never);
       } catch {
         /* sin relieve: la vista inclinada sigue funcionando */
       }
-      m.setPaintProperty("imagery", "raster-saturation", terrain ? 0 : -0.45);
+      m.setPaintProperty("imagery", "raster-saturation", terrain ? 0.05 : -0.45);
       m.setPaintProperty("imagery", "raster-brightness-max", terrain ? 1 : 0.78);
+      m.setPaintProperty("imagery", "raster-contrast", terrain ? 0.12 : 0.05);
     }
     const target = pick ?? { lon: (bbox[0] + bbox[2]) / 2, lat: (bbox[1] + bbox[3]) / 2 };
+    let orbit: ReturnType<typeof setTimeout> | undefined;
+    const stopOrbit = () => map.stop();
     if (terrain) {
-      map.flyTo({ center: [target.lon, target.lat], zoom: 14.2, pitch: 74, bearing: map.getBearing() - 35, padding: paddingRef.current, duration: 4200, curve: 1.3, essential: true });
+      map.flyTo({ center: [target.lon, target.lat], zoom: scene.zoom, pitch: scene.pitch, bearing: map.getBearing() - 30, padding: paddingRef.current, duration: 3600, curve: 1.25, essential: true });
+      // al llegar, la cámara gira despacio alrededor del punto hasta que el usuario toque el mapa
+      map.once("moveend", () => {
+        if (!terrainOn.current) return;
+        orbit = setTimeout(() => map.easeTo({ bearing: map.getBearing() + 70, duration: 40000, easing: (x) => x, essential: true }), 400);
+        map.getCanvas().addEventListener("pointerdown", stopOrbit, { once: true });
+        map.getCanvas().addEventListener("wheel", stopOrbit, { once: true });
+      });
     } else {
       map.fitBounds(bbox, { padding: paddingRef.current, pitch: 0, bearing: 0, duration: 2200, essential: true });
     }
+    return () => {
+      clearTimeout(orbit);
+      map.getCanvas().removeEventListener("pointerdown", stopOrbit);
+      map.getCanvas().removeEventListener("wheel", stopOrbit);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, terrain]);
 

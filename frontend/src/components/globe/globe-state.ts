@@ -32,8 +32,10 @@ export const globeState = {
   focus: null as string | null,
   /** Acercamiento de la cámara a una zona: 0 = vista general, 1 = zona abierta. */
   zoom: 0,
-  /** Posición y radio del planeta en pantalla (px), para que el mapa nazca alineado con él. */
-  screen: { x: 0, y: 0, r: 0 },
+  /** Zona abierta ahora mismo (la cámara la sigue para dejarla en el centro del área del mapa). */
+  selected: null as string | null,
+  /** Zambullida de la cámara hacia la zona (0–1), justo antes de que aparezca el mapa. */
+  dive: 0,
   /** Tiempo del reloj de la escena, para que la interfaz calcule "hace X s". */
   clock: 0,
 };
@@ -55,6 +57,7 @@ export const emit = <T,>(name: string, detail: T) => window.dispatchEvent(new Cu
 /** Cierra la zona abierta y aleja la cámara. */
 export function closeZone() {
   globeState.focus = null;
+  globeState.dive = 0;
   emit(GLOBE_SELECT, null);
 }
 

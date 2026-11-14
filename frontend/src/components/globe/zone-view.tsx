@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
-import type { MapMode } from "@/components/nisar-map";
+import type { MapMode, Scene3D } from "@/components/nisar-map";
 import { adviceNote, levelInfo, recommendations, trendSentence } from "@/lib/insights";
 import { LanguageToggle, useI18n } from "@/lib/i18n";
 import { riskKindInfo, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
@@ -58,7 +58,21 @@ const sectorIcons: Record<SectorKey, LucideIcon> = {
   agriculture: Wheat, livestock: Beef, mining: Pickaxe, housing: House, roads: Route, forest: Trees, water: Droplets, commerce: Store, fishing: Fish,
 };
 
-const MAP_DELAY = 650; // ms: la cámara 3D ya casi llegó; el mapa carga detrás y se funde cuando está alineado
+const MAP_DELAY = 250;   // ms: el mapa empieza a cargar oculto mientras la cámara 3D se acerca
+const MIN_APPROACH = 950; // ms: la zambullida empieza cuando la cámara ya llegó cerca
+const HAZE_PEAK = 480;    // ms tras la zambullida: la bruma tapa el cambio y aparece el mapa
+
+/** Vista 3D según el tipo de lugar: montañas con relieve marcado, ciudades con edificios, llanuras casi planas. */
+function sceneFor(kind: RiskZone["kind"]): Scene3D {
+  switch (kind) {
+    case "subsidence": return { exaggeration: 1, buildings: true, pitch: 62, zoom: 15.2 };
+    case "flood": return { exaggeration: 1.1, buildings: false, pitch: 55, zoom: 12.6 };
+    case "volcano": return { exaggeration: 1.25, buildings: false, pitch: 70, zoom: 12.4 };
+    case "deforestation": return { exaggeration: 1.2, buildings: false, pitch: 62, zoom: 13 };
+    case "glacier": return { exaggeration: 1.3, buildings: false, pitch: 66, zoom: 12.2 };
+    default: return { exaggeration: 1.45, buildings: false, pitch: 70, zoom: 13.6 };
+  }
+}
 
 function zoneBbox(zone: RiskZone): Bbox {
   return [zone.lon - 0.18, zone.lat - 0.14, zone.lon + 0.18, zone.lat + 0.14];
@@ -73,6 +87,10 @@ export default function ZoneView() {
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [mapVisible, setMapVisible] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [diving, setDiving] = useState(false);
+  const openedAt = useRef(0);
+  const readyHandled = useRef(false);
+  const revealTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [terrain, setTerrain] = useState(false);
   const [basemap, setBasemap] = useState<"esri" | "s2">("esri");
   const [tab, setTab] = useState<"simple" | "analysis">("simple");
@@ -106,8 +124,15 @@ export default function ZoneView() {
       setTab("simple");
       setMapVisible(false);
       setMapReady(false);
+      setDiving(false);
       setTerrain(false);
+      revealTimers.current.forEach(clearTimeout);
+      revealTimers.current = [];
+      readyHandled.current = false;
+      openedAt.current = performance.now();
       globeState.zoom = id ? 1 : 0;
+      globeState.dive = 0;
+      globeState.selected = id;
       const stage = wrapper.current?.closest(".earth-stage") as HTMLElement | null;
       if (stage) {
         stage.dataset.zoomed = id ? "true" : "false";
@@ -176,15 +201,31 @@ export default function ZoneView() {
   const assessment = active?.assessment;
   const level: AttentionLevel = assessment?.level ?? (zone?.event ? "moderada" : "baja");
   const colombia = zone?.country === "CO";
+  // El mapa ya tiene imagen: la cámara se zambulle, sube la bruma y en su punto máximo aparece el mapa
   const onMapReady = useCallback(() => {
-    setMapReady(true);
-    const stage = wrapper.current?.closest(".earth-stage") as HTMLElement | null;
-    if (stage) stage.dataset.mapview = "true";
+    if (readyHandled.current) return;
+    readyHandled.current = true;
+    const wait = Math.max(0, MIN_APPROACH - (performance.now() - openedAt.current));
+    revealTimers.current.push(setTimeout(() => {
+      globeState.dive = 1;
+      setDiving(true);
+      revealTimers.current.push(setTimeout(() => {
+        setMapReady(true);
+        const stage = wrapper.current?.closest(".earth-stage") as HTMLElement | null;
+        if (stage) stage.dataset.mapview = "true";
+      }, HAZE_PEAK));
+    }, wait));
+  }, []);
+  useEffect(() => () => revealTimers.current.forEach(clearTimeout), []);
+  // precargar el mapa (y MapLibre) cuando la página ya está quieta: abrir una zona es inmediato
+  useEffect(() => {
+    const id = setTimeout(() => { void import("@/components/nisar-map"); void import("maplibre-gl"); }, 2500);
+    return () => clearTimeout(id);
   }, []);
   // si el mapa no llega a estar listo (red lenta o error), igual se muestra
   useEffect(() => {
     if (!mapVisible || mapReady) return;
-    const fallback = setTimeout(onMapReady, 4500);
+    const fallback = setTimeout(onMapReady, 2600);
     return () => clearTimeout(fallback);
   }, [mapVisible, mapReady, onMapReady]);
   const impacts = useMemo(() => (zone ? sectorImpacts(zone.id, zone.kind) : []), [zone]);
@@ -203,10 +244,23 @@ export default function ZoneView() {
         </ul>
       </nav>
 
-      {/* Mapa de la zona a pantalla completa: nace como globo y vuela hasta el lugar */}
+      {/* Bruma atmosférica: tapa el paso del planeta 3D al mapa durante la zambullida */}
+      <AnimatePresence>
+        {zone && diving && (
+          <motion.div key={`haze-${zone.id}`} className="zone-haze" aria-hidden="true"
+            initial={{ opacity: 0 }} animate={{ opacity: [0, 0.92, 0] }} exit={{ opacity: 0 }}
+            transition={{ duration: 1.7, times: [0, 0.3, 1], ease: "easeInOut" }} />
+        )}
+      </AnimatePresence>
+
+      {/* Mapa de la zona: se precarga oculto y aparece cuando ya tiene imagen */}
       <AnimatePresence>
         {zone && mapVisible && mapBbox && (siteId ? active : true) && (
-          <motion.div key={`map-${zone.id}`} className="zone-stage-map" data-ready={mapReady} initial={{ opacity: 0 }} animate={{ opacity: mapReady ? 1 : 0 }} exit={{ opacity: 0, transition: { duration: 0.6 } }} transition={{ duration: 0.75, ease: [0.4, 0, 0.2, 1] }}>
+          <motion.div key={`map-${zone.id}`} className="zone-stage-map" data-ready={mapReady}
+            initial={{ opacity: 0, scale: 1.08, filter: "blur(18px) saturate(0.6)" }}
+            animate={mapReady ? { opacity: 1, scale: 1, filter: "blur(0px) saturate(1)" } : { opacity: 0, scale: 1.08, filter: "blur(18px) saturate(0.6)" }}
+            exit={{ opacity: 0, scale: 1.04, filter: "blur(12px) saturate(0.6)", transition: { duration: 0.6 } }}
+            transition={{ duration: 1.25, ease: [0.22, 1, 0.36, 1] }}>
             <NisarMap
               bbox={mapBbox}
               layerUrl={layerUrl}
@@ -216,9 +270,11 @@ export default function ZoneView() {
               pick={active ? pick : { lon: zone.lon, lat: zone.lat }}
               onPick={active ? setPick : () => undefined}
               recenterKey={0}
-              intro={{ lat: zone.lat, lon: zone.lon, screen: () => globeState.screen }}
+              intro={{ lat: zone.lat, lon: zone.lon }}
               onReady={onMapReady}
+              reveal={mapReady}
               terrain={terrain}
+              scene={sceneFor(zone.kind)}
               basemap={basemap}
               hotspots={assessment?.hotspots}
               splitValue={split}
