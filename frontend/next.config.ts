@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // build autocontenido para la imagen Docker (infra/tenua)
+  // build autocontenido para la imagen Docker (infra/saros)
   output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,

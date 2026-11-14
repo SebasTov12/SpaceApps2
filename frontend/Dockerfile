@@ -1,4 +1,4 @@
-# Imagen del frontend para infra/tenua (Next standalone sobre Node 24 Alpine).
+# Imagen del frontend SAROS (Next standalone sobre Node 24 Alpine).
 FROM node:24.14.0-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -6,7 +6,10 @@ RUN npm ci
 
 FROM node:24.14.0-alpine AS build
 WORKDIR /app
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NODE_OPTIONS=--max-old-space-size=768
+ARG NEXT_PUBLIC_SAROS_API=https://saros.tobaru.xyz
+ENV NEXT_PUBLIC_SAROS_API=$NEXT_PUBLIC_SAROS_API
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # "prebuild" copia el worker de MapLibre a public/ antes de compilar

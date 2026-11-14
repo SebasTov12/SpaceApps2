@@ -40,11 +40,11 @@ export const FOOTPRINT_LOCAL = new Vector3(Math.sqrt(OVER_RELIEF ** 2 - 0.165 **
 export type DetectEvent = { id: string; source: "scan" | "pass"; visible: boolean };
 export type ReconEvent = { progress: number; found: number };
 
-export const GLOBE_DETECT = "tenua:detect";
-export const GLOBE_RECON = "tenua:recon";
-export const GLOBE_SELECT = "tenua:zone-select";
+export const GLOBE_DETECT = "saros:detect";
+export const GLOBE_RECON = "saros:recon";
+export const GLOBE_SELECT = "saros:zone-select";
 /** Pedir que se abra un sitio con datos (lo usan el cintillo y otros componentes). */
-export const SITE_EVENT = "tenua:site";
+export const SITE_EVENT = "saros:site";
 
 export const emit = <T,>(name: string, detail: T) => window.dispatchEvent(new CustomEvent<T>(name, { detail }));
 

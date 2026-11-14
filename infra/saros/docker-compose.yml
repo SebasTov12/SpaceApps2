@@ -1,0 +1,192 @@
+name: spaceapps2
+
+services:
+  saros:
+    container_name: spaceapps2-saros
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SAROS_API: ${SAROS_API_PUBLIC_URL:-https://saros.tobaru.xyz}
+    image: spaceapps2-saros:latest
+    restart: unless-stopped
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      saros_private: {}
+      orivia_private:
+        aliases:
+          - saros
+
+  api:
+    container_name: spaceapps2-api
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    image: spaceapps2-api:latest
+    restart: unless-stopped
+    environment:
+      SAROS_DB_HOST: postgres
+      SAROS_DB_PORT: "5432"
+      SAROS_DB_NAME: ${SAROS_POSTGRES_DB:-spaceapps2}
+      SAROS_DB_USER: ${SAROS_POSTGRES_USER:-spaceapps2_admin}
+      SAROS_DB_PASSWORD: ${SAROS_POSTGRES_PASSWORD:?Set SAROS_POSTGRES_PASSWORD in the server .env}
+      SAROS_MODEL_URL: http://predictor:8001
+      SAROS_PREDICTION_TOKEN: ${SAROS_PREDICTION_TOKEN:?Set SAROS_PREDICTION_TOKEN in the server .env}
+      SAROS_MAX_REQUEST_BYTES: ${ML_MAX_REQUEST_BYTES:-33554432}
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      predictor:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    init: true
+    networks:
+      saros_private: {}
+      orivia_private:
+        aliases:
+          - spaceapps2-api
+
+  postgres:
+    container_name: spaceapps2-postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SAROS_POSTGRES_DB:-spaceapps2}
+      POSTGRES_USER: ${SAROS_POSTGRES_USER:-spaceapps2_admin}
+      POSTGRES_PASSWORD: ${SAROS_POSTGRES_PASSWORD:?Set SAROS_POSTGRES_PASSWORD in the server .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - saros_private
+
+  predictor:
+    container_name: spaceapps2-model
+    build:
+      context: ../../ml/nisar_change
+      dockerfile: Dockerfile.inference
+    image: spaceapps2-nisar-model:latest
+    restart: unless-stopped
+    environment:
+      MODEL_PATH: /models/nisar-change/best.onnx
+      ML_THRESHOLD: ${ML_THRESHOLD:-0.5}
+      ML_MAX_REQUEST_BYTES: ${ML_MAX_REQUEST_BYTES:-33554432}
+      ML_MAX_PIXELS: ${ML_MAX_PIXELS:-262144}
+    volumes:
+      - ../../models/nisar-change:/models/nisar-change:ro
+    expose:
+      - "8001"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    init: true
+    networks:
+      saros_private:
+        aliases:
+          - nisar-model
+
+  trainer:
+    profiles: [training]
+    build:
+      context: ../../ml/nisar_change
+      dockerfile: Dockerfile
+    image: spaceapps2-nisar-trainer:latest
+    environment:
+      ML_MANIFEST: ${ML_MANIFEST:-./data/filtered/manifest.parquet}
+      ML_OUTPUT_DIR: /workspace/models/nisar-change
+      ML_INPUT_CHANNELS: ${ML_INPUT_CHANNELS:-2}
+      ML_BASE_CHANNELS: ${ML_BASE_CHANNELS:-16}
+      ML_BATCH_SIZE: ${ML_BATCH_SIZE:-4}
+      ML_EPOCHS: ${ML_EPOCHS:-30}
+      ML_LEARNING_RATE: ${ML_LEARNING_RATE:-0.0003}
+      ML_DEVICE: ${ML_DEVICE:-auto}
+      ML_THRESHOLD: ${ML_THRESHOLD:-0.5}
+      ML_RANDOM_SEED: ${ML_RANDOM_SEED:-42}
+      ML_SPLIT_STRATEGY: ${ML_SPLIT_STRATEGY:-spatiotemporal}
+    volumes:
+      - ../../data:/workspace/data:ro
+      - ../../models:/workspace/models
+    init: true
+    restart: "no"
+
+  processor:
+    profiles: [processing]
+    build:
+      context: ../..
+      dockerfile: pipeline/Dockerfile
+    image: spaceapps2-nisar-processor:latest
+    working_dir: /workspace
+    entrypoint: ["python"]
+    command: ["scripts/filter_nisar_colombia.py"]
+    user: "1000:1000"
+    environment:
+      EARTHDATA_USERNAME: ${EARTHDATA_USERNAME:-}
+      EARTHDATA_PASSWORD: ${EARTHDATA_PASSWORD:-}
+      EARTHDATA_AUTH_STRATEGY: ${EARTHDATA_AUTH_STRATEGY:-environment}
+      NISAR_PROCESSING_LEVEL: ${NISAR_PROCESSING_LEVEL:-GUNW}
+      NISAR_PRODUCT_SHORT_NAME: ${NISAR_PRODUCT_SHORT_NAME:-}
+      NISAR_DATA_MATURITY: ${NISAR_DATA_MATURITY:-}
+      NISAR_START_DATE: ${NISAR_START_DATE:-}
+      NISAR_END_DATE: ${NISAR_END_DATE:-}
+      NISAR_FILTERED_DIR: /workspace/data/filtered
+      NISAR_COLOMBIA_BBOX: ${NISAR_COLOMBIA_BBOX:--82.5,-5,-66.5,14}
+    volumes:
+      - ../../data:/workspace/data
+      - ../../pipeline/data:/workspace/pipeline/data
+      - ../../frontend/public/data:/workspace/frontend/public/data
+    init: true
+    restart: "no"
+
+networks:
+  saros_private:
+    internal: true
+  orivia_private:
+    external: true
+    name: ${ORIVIA_DOCKER_NETWORK:-orivia-server_orivia_private}
+
+volumes:
+  postgres_data:
+    name: spaceapps2_postgres_data
+    external: true

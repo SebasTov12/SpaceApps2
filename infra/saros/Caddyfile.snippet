@@ -1,0 +1,7 @@
+saros.tobaru.xyz {
+	encode zstd gzip
+
+	@api path /health /ready /api/*
+	reverse_proxy @api spaceapps2-api:8000
+	reverse_proxy saros:3000
+}

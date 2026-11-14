@@ -39,7 +39,7 @@ MATURITY_LABEL = {"V1": "VALIDATED", "PROVISIONAL_V1": "PROVISIONAL", "BETA_V1":
 
 def cmr_get(path: str, params: dict):
     url = f"{CMR}/{path}?{urllib.parse.urlencode(params)}"
-    request = urllib.request.Request(url, headers={"User-Agent": "tenua-nisar-pipeline"})
+    request = urllib.request.Request(url, headers={"User-Agent": "saros-nisar-pipeline"})
     with urllib.request.urlopen(request, timeout=90) as response:
         return int(response.headers.get("CMR-Hits", 0)), json.load(response)["feed"]["entry"]
 

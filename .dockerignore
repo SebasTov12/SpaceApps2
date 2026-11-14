@@ -1,0 +1,12 @@
+.git
+.venv
+.env
+.env.*
+!.env.example
+data
+models
+pipeline/data
+frontend/node_modules
+frontend/.next
+**/__pycache__
+**/*.py[cod]

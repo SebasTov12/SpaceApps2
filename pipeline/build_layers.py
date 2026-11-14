@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Genera las capas que consume el explorador de TENUA (frontend/public/data).
+Genera las capas que consume el explorador de SAROS (frontend/public/data).
 
 Para cada sitio de sites.json produce:
   sites/<id>/<fecha>.png   capa coloreada de cada adquisición

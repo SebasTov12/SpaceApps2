@@ -134,8 +134,8 @@ export type Dictionary = typeof es;
 type I18n = { lang: Lang; setLang: (lang: Lang) => void; t: Dictionary };
 const I18nContext = createContext<I18n>({ lang: "es", setLang: () => {}, t: dictionary.es });
 
-const STORAGE_KEY = "tenua-lang";
-const CHANGE_EVENT = "tenua-lang-change";
+const STORAGE_KEY = "saros-lang";
+const CHANGE_EVENT = "saros-lang-change";
 
 // El idioma vive en localStorage; useSyncExternalStore lo lee sin desajustes de hidratación.
 function readLang(): Lang {
