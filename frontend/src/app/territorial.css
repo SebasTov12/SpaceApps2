@@ -1,0 +1,20 @@
+.territorial-impact{overflow-wrap:anywhere;background:linear-gradient(135deg,rgba(139,92,246,.09),rgba(80,180,190,.04))}
+.territorial-impact summary{cursor:pointer;min-height:44px;padding:10px 0;font-size:12px;font-weight:600;color:#dce7f7;line-height:1.5}
+.territorial-impact summary::marker{color:#a89be6}
+.territorial-badge{display:inline-block;margin-left:9px;padding:2px 7px;border:1px solid #a89be64d;border-radius:20px;font-size:9px;letter-spacing:.12em;color:#b8b3e6;vertical-align:middle}
+.territorial-impact>strong{margin-top:22px;padding-top:14px;border-top:1px solid #adc4e21a;letter-spacing:.02em}
+.territorial-impact label{display:block;margin-top:16px;font-size:12px;color:#c3cbe3}
+.territorial-impact select,.territorial-retry{font:inherit;font-size:12px;min-height:44px;padding:10px 12px;background:#111e30;color:#edf2ff;border:1px solid #9eafcd40;border-radius:9px}
+.territorial-impact select{display:block;width:100%;margin:8px 0 14px}
+.territorial-impact select:focus-visible,.territorial-impact summary:focus-visible{outline:2px solid #9ce2df;outline-offset:3px;border-radius:5px}
+.territorial-impact .zone-stats strong{font-size:20px;color:#edf6ff;display:block;font-variant-numeric:tabular-nums}
+.territorial-impact .zone-stats em{color:#a5b4ce}
+.territorial-impact>details{margin-top:16px;border-top:1px solid #adc4e21a}
+.territorial-impact li{font-size:12px;line-height:1.7;margin-bottom:8px;color:#c3cbe3}
+.territorial-impact .territorial-provenance{margin-top:16px;font-size:11px;color:#a7b6ce}
+.territorial-retry{margin-top:12px}
+.territorial-alert{border-left:2px solid #8acbd1;padding:10px 12px;margin-top:10px;background:#94bce309;border-radius:0 8px 8px 0}
+.territorial-alert[data-severity="watch"]{border-color:#e8c078}
+.territorial-alert[data-severity="warning"]{border-color:#ef9a8a}
+.territorial-alert small{display:block;font-size:10px;color:#a7b6ce;margin-top:8px}
+@media(max-width:420px){.territorial-impact .zone-stats{grid-template-columns:1fr}.territorial-impact .zone-stats small{min-height:0}.territorial-impact .zone-stats div{display:grid;grid-template-columns:1fr auto;gap:5px}.territorial-impact .zone-stats em{grid-column:1/-1}}

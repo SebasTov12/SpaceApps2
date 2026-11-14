@@ -30,6 +30,7 @@
     "unit": "m/day"
   },
   "pilot": false,
+  "country": "",
   "dates": [
     "2026-08-02",
     "2026-08-14",
@@ -142,6 +143,25 @@
       "noteEn": "Seasonal slowdown"
     }
   ],
+  "assessment": {
+    "level": "moderada",
+    "rate": {
+      "recent": -3.77,
+      "early": -3.9,
+      "unit": "m/día/mes",
+      "unitEn": "m/día/month"
+    },
+    "accelerating": false,
+    "current": 22.77,
+    "projection": {
+      "d30": 19.0,
+      "d90": 11.46,
+      "unit": "m/día"
+    },
+    "hotspots": [],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
   "source": {
     "mode": "demo",
     "product": "NISAR L2 GOFF",
@@ -149,5 +169,5 @@
     "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
     "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
   },
-  "generated": "2026-11-14T15:15:13+00:00"
+  "generated": "2026-11-14T17:50:16+00:00"
 }

@@ -1,0 +1,194 @@
+{
+  "id": "caqueta-deforestacion",
+  "name": "Arco de deforestación",
+  "place": "Caquetá, Colombia",
+  "lat": 1.35,
+  "lon": -74.85,
+  "bbox": [
+    -75.1,
+    1.15,
+    -74.6,
+    1.55
+  ],
+  "change": "backscatter",
+  "changeLabel": "Deforestación",
+  "product": "GCOV",
+  "metric": "Retrodispersión HV",
+  "unit": "dB",
+  "range": [
+    -22,
+    -8
+  ],
+  "colormap": "forest",
+  "story": "El piedemonte amazónico de Caquetá concentra buena parte de la deforestación del país. La señal HV del radar cae donde el bosque se tala.",
+  "en": {
+    "name": "Deforestation arc",
+    "place": "Caquetá, Colombia",
+    "changeLabel": "Deforestation",
+    "metric": "HV backscatter",
+    "story": "The Amazon foothills of Caquetá concentrate much of the country's deforestation. Radar HV signal drops where forest is cleared.",
+    "unit": "dB"
+  },
+  "pilot": false,
+  "country": "CO",
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/caqueta-deforestacion/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/caqueta-deforestacion/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/caqueta-deforestacion/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/caqueta-deforestacion/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/caqueta-deforestacion/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/caqueta-deforestacion/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/caqueta-deforestacion/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/caqueta-deforestacion/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/caqueta-deforestacion/change.png",
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "unit": "dB"
+  },
+  "legend": {
+    "colors": [
+      "#8a5a2b",
+      "#c79a5b",
+      "#e6d6a2",
+      "#9cc98a",
+      "#3f8f52",
+      "#1d5c34"
+    ],
+    "range": [
+      -22,
+      -8
+    ],
+    "diverging": false
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Área sin bosque al inicio",
+      "labelEn": "Cleared area at start",
+      "value": "310",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-08-02",
+      "noteEn": "2026-08-02"
+    },
+    {
+      "label": "Área sin bosque al final",
+      "labelEn": "Cleared area at end",
+      "value": "409",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-10-25",
+      "noteEn": "2026-10-25"
+    },
+    {
+      "label": "Cambio neto",
+      "labelEn": "Net change",
+      "value": "+99",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "Umbral -15 dB",
+      "noteEn": "Threshold -15 dB"
+    }
+  ],
+  "assessment": {
+    "level": "alta",
+    "rate": {
+      "recent": 15.78,
+      "early": 39.5,
+      "unit": "km²/mes",
+      "unitEn": "km²/month"
+    },
+    "accelerating": false,
+    "current": 408.98,
+    "projection": {
+      "d30": 424.76,
+      "d90": 456.31,
+      "unit": "km²"
+    },
+    "hotspots": [
+      {
+        "lat": 1.36754,
+        "lon": -74.72256,
+        "value": 9.92
+      },
+      {
+        "lat": 1.41246,
+        "lon": -74.8883,
+        "value": 9.55
+      },
+      {
+        "lat": 1.31842,
+        "lon": -74.95794,
+        "value": 8.67
+      },
+      {
+        "lat": 1.31,
+        "lon": -75.02061,
+        "value": 8.51
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GCOV",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
+  },
+  "generated": "2026-11-14T17:50:24+00:00"
+}

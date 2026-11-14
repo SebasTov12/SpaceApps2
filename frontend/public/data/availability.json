@@ -1,5 +1,5 @@
 {
-  "checked": "2026-11-14T15:14:35+00:00",
+  "checked": "2026-11-14T17:47:47+00:00",
   "source": "NASA CMR · ASF DAAC",
   "sites": [
     {
@@ -111,6 +111,101 @@
         }
       ],
       "latest": "NISAR_L2_PR_GCOV_034_068_D_094_2005_SHSH_A_20261028T222703_20261028T222737_P05036_N_F_J_001"
+    },
+    {
+      "id": "bogota-subsidencia",
+      "product": "GUNW",
+      "total": 30,
+      "maturities": [
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GUNW_PROVISIONAL_V1",
+          "count": 30,
+          "first": "2026-06-17",
+          "last": "2026-10-08"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GUNW_032_119_A_004_033_4000_SH_20261008T103008_20261008T103044_20261020T103008_20261020T103044_P05023_N_F_J_001"
+    },
+    {
+      "id": "la-mojana-inundacion",
+      "product": "GCOV",
+      "total": 48,
+      "maturities": [
+        {
+          "maturity": "VALIDATED",
+          "shortName": "NISAR_L2_GCOV_V1",
+          "count": 4,
+          "first": "2026-10-24",
+          "last": "2026-11-01"
+        },
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GCOV_PROVISIONAL_V1",
+          "count": 38,
+          "first": "2026-06-17",
+          "last": "2026-10-20"
+        },
+        {
+          "maturity": "BETA",
+          "shortName": "NISAR_L2_GCOV_BETA_V1",
+          "count": 6,
+          "first": "2025-10-29",
+          "last": "2026-01-09"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GCOV_034_119_A_006_2005_DHDH_M_20261101T103117_20261101T103152_P05036_N_F_J_001"
+    },
+    {
+      "id": "caqueta-deforestacion",
+      "product": "GCOV",
+      "total": 42,
+      "maturities": [
+        {
+          "maturity": "VALIDATED",
+          "shortName": "NISAR_L2_GCOV_V1",
+          "count": 2,
+          "first": "2026-10-27",
+          "last": "2026-10-29"
+        },
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GCOV_PROVISIONAL_V1",
+          "count": 37,
+          "first": "2025-11-03",
+          "last": "2026-10-17"
+        },
+        {
+          "maturity": "BETA",
+          "shortName": "NISAR_L2_GCOV_BETA_V1",
+          "count": 3,
+          "first": "2025-11-03",
+          "last": "2026-01-14"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GCOV_034_083_D_088_2005_SHSH_A_20261029T232158_20261029T232233_P05036_N_F_J_001"
+    },
+    {
+      "id": "nevado-ruiz",
+      "product": "GUNW",
+      "total": 35,
+      "maturities": [
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GUNW_PROVISIONAL_V1",
+          "count": 30,
+          "first": "2026-06-17",
+          "last": "2026-10-05"
+        },
+        {
+          "maturity": "BETA",
+          "shortName": "NISAR_L2_GUNW_BETA_V1",
+          "count": 5,
+          "first": "2025-10-29",
+          "last": "2025-12-28"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GUNW_032_083_D_086_033_2000_SH_20261005T232051_20261005T232129_20261017T232051_20261017T232129_P05023_N_F_J_001"
     }
   ]
 }

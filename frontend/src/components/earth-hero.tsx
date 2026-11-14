@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
 import ZoneView from "@/components/globe/zone-view";
+import HeroOverlay from "@/components/globe/hero-overlay";
 import SarosHeroChrome, { SarosWordmark } from "@/components/saros-hero-chrome";
 
 const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
@@ -70,6 +71,8 @@ export default function EarthHero() {
         </button>
         {/* Zona elegida: acercamiento y panel con su información */}
         <ZoneView />
+        {/* Último evento, cifras y buscador de zonas */}
+        <HeroOverlay progress={progress} />
         {/* Cintillo de titulares (arriba → abajo con el scroll) */}
         <SarosHeroChrome progress={progress} departure={departure} />
         <a href="#zonas" className="scroll-cue" aria-label="Bajar hasta el planeta"

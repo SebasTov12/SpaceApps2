@@ -32,15 +32,16 @@
         20
       ],
       "colormap": "diverging",
-      "story": "Zona piloto de SAROS. Las laderas andinas se mueven lentamente antes de fallar; el radar mide milímetros de desplazamiento aunque haya nubes.",
+      "story": "Zona piloto de SAROS. El radar permite estudiar deformación del terreno y contrastarla con la exposición territorial; esta demostración no predice deslizamientos.",
       "pilot": true,
       "en": {
         "name": "Andean hillside",
         "place": "Norte de Santander, Colombia",
         "changeLabel": "Landslide",
         "metric": "Cumulative line-of-sight displacement",
-        "story": "SAROS's pilot area. Andean slopes creep slowly before they fail; the radar measures millimetres of movement even through clouds."
-      }
+        "story": "SAROS pilot area. Radar helps study ground deformation alongside territorial exposure; this demonstration does not predict landslides."
+      },
+      "country": "CO"
     },
     {
       "id": "cdmx-subsidencia",
@@ -71,7 +72,8 @@
         "changeLabel": "Subsidence",
         "metric": "Cumulative line-of-sight displacement",
         "story": "Groundwater pumping makes parts of the city sink several centimetres per year, damaging streets, pipes and buildings."
-      }
+      },
+      "country": ""
     },
     {
       "id": "sylhet-inundacion",
@@ -102,7 +104,8 @@
         "changeLabel": "Flooding",
         "metric": "HH backscatter",
         "story": "After the monsoon, water in the haor wetlands recedes. Calm water reflects the radar away from the satellite and looks dark."
-      }
+      },
+      "country": ""
     },
     {
       "id": "jakobshavn-glaciar",
@@ -133,7 +136,8 @@
         "changeLabel": "Glacier flow",
         "metric": "Ice velocity",
         "story": "One of the fastest glaciers on Earth. Tracking image offsets between radar passes measures how many metres per day the ice advances."
-      }
+      },
+      "country": ""
     },
     {
       "id": "rondonia-deforestacion",
@@ -164,6 +168,139 @@
         "changeLabel": "Deforestation",
         "metric": "HV backscatter",
         "story": "Forests return strong cross-polarised (HV) signal. When they are cleared the signal drops, so radar sees deforestation even under Amazon clouds."
+      },
+      "country": ""
+    },
+    {
+      "id": "bogota-subsidencia",
+      "name": "Sabana que se hunde",
+      "place": "Bogotá, Colombia",
+      "country": "CO",
+      "lat": 4.66,
+      "lon": -74.12,
+      "bbox": [
+        -74.24,
+        4.55,
+        -74.0,
+        4.77
+      ],
+      "change": "deformation",
+      "changeLabel": "Subsidencia",
+      "product": "GUNW",
+      "template": "subsidence",
+      "metric": "Desplazamiento acumulado en línea de vista",
+      "unit": "cm",
+      "range": [
+        -10,
+        2
+      ],
+      "colormap": "diverging",
+      "story": "Los suelos lacustres de la sabana y la extracción de agua subterránea hacen que el occidente de Bogotá se hunda poco a poco; el radar mide ese movimiento con precisión de centímetros.",
+      "en": {
+        "name": "Sinking savanna",
+        "place": "Bogotá, Colombia",
+        "changeLabel": "Subsidence",
+        "metric": "Cumulative line-of-sight displacement",
+        "story": "Lake-bed soils and groundwater pumping make western Bogotá slowly sink; radar measures it to the centimetre."
+      }
+    },
+    {
+      "id": "la-mojana-inundacion",
+      "name": "La Mojana inundada",
+      "place": "La Mojana, Sucre y Bolívar, Colombia",
+      "country": "CO",
+      "lat": 8.55,
+      "lon": -74.75,
+      "bbox": [
+        -75.05,
+        8.3,
+        -74.45,
+        8.8
+      ],
+      "change": "backscatter",
+      "changeLabel": "Inundación",
+      "product": "GCOV",
+      "template": "flood",
+      "metric": "Retrodispersión HH",
+      "unit": "dB",
+      "range": [
+        -24,
+        -2
+      ],
+      "colormap": "water",
+      "story": "Tras la ruptura del dique de Cara de Gato en 2021, La Mojana sufrió inundaciones prolongadas. El radar delimita el agua aunque el cielo esté cubierto.",
+      "en": {
+        "name": "Flooded La Mojana",
+        "place": "La Mojana, Sucre & Bolívar, Colombia",
+        "changeLabel": "Flooding",
+        "metric": "HH backscatter",
+        "story": "After the Cara de Gato dike breach in 2021, La Mojana suffered long floods. Radar maps the water even under full cloud cover."
+      }
+    },
+    {
+      "id": "caqueta-deforestacion",
+      "name": "Arco de deforestación",
+      "place": "Caquetá, Colombia",
+      "country": "CO",
+      "lat": 1.35,
+      "lon": -74.85,
+      "bbox": [
+        -75.1,
+        1.15,
+        -74.6,
+        1.55
+      ],
+      "change": "backscatter",
+      "changeLabel": "Deforestación",
+      "product": "GCOV",
+      "template": "deforestation",
+      "metric": "Retrodispersión HV",
+      "unit": "dB",
+      "range": [
+        -22,
+        -8
+      ],
+      "colormap": "forest",
+      "story": "El piedemonte amazónico de Caquetá concentra buena parte de la deforestación del país. La señal HV del radar cae donde el bosque se tala.",
+      "en": {
+        "name": "Deforestation arc",
+        "place": "Caquetá, Colombia",
+        "changeLabel": "Deforestation",
+        "metric": "HV backscatter",
+        "story": "The Amazon foothills of Caquetá concentrate much of the country's deforestation. Radar HV signal drops where forest is cleared."
+      }
+    },
+    {
+      "id": "nevado-ruiz",
+      "name": "Volcán Nevado del Ruiz",
+      "place": "Caldas y Tolima, Colombia",
+      "country": "CO",
+      "lat": 4.892,
+      "lon": -75.324,
+      "bbox": [
+        -75.42,
+        4.8,
+        -75.22,
+        4.98
+      ],
+      "change": "deformation",
+      "changeLabel": "Volcán",
+      "product": "GUNW",
+      "template": "volcano",
+      "metric": "Desplazamiento acumulado en línea de vista",
+      "unit": "mm",
+      "range": [
+        -10,
+        40
+      ],
+      "colormap": "diverging",
+      "story": "El Ruiz, responsable de la tragedia de Armero en 1985, se vigila de forma permanente. Cuando el magma se acumula, el suelo se infla unos milímetros y el radar lo detecta.",
+      "en": {
+        "name": "Nevado del Ruiz volcano",
+        "place": "Caldas & Tolima, Colombia",
+        "changeLabel": "Volcano",
+        "metric": "Cumulative line-of-sight displacement",
+        "story": "The Ruiz, behind the 1985 Armero tragedy, is monitored permanently. When magma accumulates the ground inflates a few millimetres and radar detects it."
       }
     }
   ]

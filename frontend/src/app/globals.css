@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./saros.css";
 @import "./explorer-data.css";
+@import "./territorial.css";
 
 :root{--ink:#071019;--panel:#0b151e;--panel-2:#101d28;--line:rgba(163,190,202,.13);--muted:#80919b;--text:#e7eff1;--cyan:#79d3d3;--cyan-2:#40aaa8;--amber:#e8b36b;--font-sans:Arial,Helvetica,sans-serif;color-scheme:dark}
 @theme inline{--color-background:var(--ink);--color-foreground:var(--text);--font-sans:Arial,Helvetica,sans-serif}

@@ -97,6 +97,42 @@ async function fromStaticData(): Promise<Headline[]> {
     });
   }
 
+  // Alertas de prevención (nivel de atención calculado de la tendencia; no son alertas oficiales)
+  for (const m of manifests) {
+    const a = m?.assessment;
+    if (!m || !a || a.level === "baja") continue;
+    const name = { es: m.changeLabel, en: m.en?.changeLabel ?? m.changeLabel };
+    items.push({
+      id: `alert-${m.id}`,
+      kind: m.change,
+      severity: a.level === "alta" ? "alta" : "media",
+      title: a.accelerating
+        ? { es: `Movimiento acelerado detectado · ${name.es}: ${Math.abs(a.rate.recent)} ${a.rate.unit}`, en: `Accelerating movement detected · ${name.en}: ${Math.abs(a.rate.recent)} ${a.rate.unitEn}` }
+        : { es: `${a.level === "alta" ? "Atención alta" : "Atención moderada"} · ${name.es}: ${Math.abs(a.rate.recent)} ${a.rate.unit}`, en: `${a.level === "alta" ? "High attention" : "Moderate attention"} · ${name.en}: ${Math.abs(a.rate.recent)} ${a.rate.unitEn}` },
+      place: { es: m.place, en: m.en?.place ?? m.place },
+      time: m.dates[m.dates.length - 1] + "T12:00:00Z",
+      source: "SAROS · tendencia",
+      demo: m.source.mode !== "real",
+      siteId: m.id,
+    });
+  }
+
+  // Referencias: qué pasó y dónde (hechos documentados)
+  for (const zone of riskZones) {
+    if (!zone.event) continue;
+    items.push({
+      id: `event-${zone.id}`,
+      kind: zone.kind,
+      severity: "info",
+      title: { es: `${zone.event.date.slice(0, 4)} · ${zone.event.es}`, en: `${zone.event.date.slice(0, 4)} · ${zone.event.en}` },
+      place: zone.place,
+      time: zone.event.date,
+      source: "Referencia histórica",
+      demo: false,
+      siteId: zone.id,
+    });
+  }
+
   items.push({
     id: "watch",
     kind: "data",
