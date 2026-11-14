@@ -1,0 +1,79 @@
+/* Interfaz sobre el globo 3D: reconocimiento, detecciones del haz, ficha de zona y datos de misión. */
+
+.earth-render.is-draggable{cursor:grab;touch-action:pan-y}
+.earth-render.is-draggable:active{cursor:grabbing}
+
+.globe-hud{position:absolute;inset:0;z-index:4;pointer-events:none;color:#d8e6e8}
+.hud-panel{position:absolute;pointer-events:auto;padding:16px 18px;border:1px solid rgba(121,211,211,.18);border-radius:14px;background:rgba(6,14,22,.62);backdrop-filter:blur(14px) saturate(1.2);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.hud-eyebrow{display:flex;align-items:center;gap:7px;color:#79d3d3;font-size:10px;font-weight:600;letter-spacing:.16em}
+.hud-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hud-lang{transform:scale(.88);transform-origin:right center}
+
+/* Reconocimiento */
+.hud-recon{top:24px;left:24px;width:290px}
+.hud-status{display:flex;align-items:center;gap:8px;margin:12px 0 8px;font-size:12px;color:#b9cbcd}
+.hud-status i{width:7px;height:7px;border-radius:50%;background:#e8b36b;box-shadow:0 0 10px #e8b36b;animation:hud-blink 1s ease-in-out infinite}
+.hud-status.is-active i{background:#5fd39f;box-shadow:0 0 10px #5fd39f;animation-duration:2.4s}
+@keyframes hud-blink{50%{opacity:.35}}
+.hud-progress{height:3px;border-radius:3px;background:rgba(121,211,211,.12);overflow:hidden}
+.hud-progress span{display:block;height:100%;background:linear-gradient(90deg,#40aaa8,#bdf3ef);transform-origin:0 50%;transition:transform .15s linear}
+.hud-count{display:grid;grid-template-columns:auto auto 1fr;align-items:baseline;gap:6px;margin-top:14px}
+.hud-count strong{font-size:40px;line-height:1;font-weight:500;letter-spacing:-.04em;color:#f0f7f7}
+.hud-count span{font-size:14px;color:#7f939a}
+.hud-count small{grid-column:1/-1;font-size:11px;color:#9fb1b6;letter-spacing:.02em}
+.hud-kinds{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.hud-kind{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:20px;background:rgba(255,255,255,.05);font-size:10px;color:#c3d3d6}
+.hud-kind i{width:7px;height:7px;border-radius:50%}
+.hud-kind b{font-weight:600;color:#eef6f6}
+.hud-list-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:12px;padding:8px 10px;border:1px solid rgba(121,211,211,.16);border-radius:8px;background:rgba(255,255,255,.03);color:#b9cbcd;font-size:11px}
+.hud-list-toggle svg{transition:transform .2s}.hud-list-toggle svg.is-open{transform:rotate(180deg)}
+.hud-list{max-height:220px;overflow-y:auto;margin:8px 0 0;padding:0;list-style:none;display:grid;gap:2px;scrollbar-width:thin}
+.hud-list button,.hud-feed button{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;width:100%;padding:7px 8px;border:0;border-radius:7px;background:transparent;text-align:left;color:#d3e1e3;font-size:11px}
+.hud-list button:hover,.hud-feed button:hover,.hud-list button.is-selected{background:rgba(121,211,211,.1)}
+.hud-list i,.hud-feed i{width:8px;height:8px;border-radius:50%}
+.hud-list small,.hud-feed small{font-size:10px;color:#80949a;white-space:nowrap}
+
+/* Detecciones del haz */
+.hud-feed{top:24px;right:24px;width:300px}
+.hud-feed ul{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:2px}
+.hud-feed span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hud-feed strong{font-weight:600;color:#f0f7f7;margin-right:4px}
+.hud-empty{margin:12px 0 2px;font-size:11px;color:#80949a;line-height:1.5}
+
+/* Aviso de pasada */
+.hud-toast{position:absolute;top:28px;left:0;right:0;margin:0 auto;width:max-content;max-width:min(520px,calc(100% - 40px));display:flex;align-items:center;gap:10px;padding:10px 16px;border:1px solid rgba(189,243,239,.35);border-radius:30px;background:rgba(6,20,28,.82);backdrop-filter:blur(12px);font-size:12px;color:#d8eef0;box-shadow:0 0 30px rgba(121,211,211,.2)}
+.hud-toast strong{color:#fff}
+.hud-toast-pulse{flex-shrink:0;width:10px;height:10px;border-radius:50%;animation:hud-ping 1.1s ease-out infinite}
+@keyframes hud-ping{0%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}100%{box-shadow:0 0 0 12px rgba(255,255,255,0)}}
+
+/* Ficha de zona */
+.hud-card{right:24px;bottom:86px;width:330px}
+.hud-close{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:8px;background:rgba(255,255,255,.06);color:#b9cbcd}
+.hud-kind-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.hud-card h3{margin:8px 0 4px;font-size:20px;font-weight:500;letter-spacing:-.03em;color:#f0f7f7}
+.hud-place{margin:0;font-size:11px;color:#8ea2a8}
+.hud-info{margin:12px 0 14px;font-size:12px;line-height:1.6;color:#c3d3d6}
+.hud-open{width:100%;min-height:40px;border:1px solid rgba(121,211,211,.45);border-radius:9px;background:rgba(64,170,168,.22);color:#e2f7f5;font-size:12px;font-weight:600}
+.hud-open:hover{background:rgba(64,170,168,.34)}
+.hud-nodata{margin:0;padding:9px 11px;border-radius:8px;background:rgba(232,179,107,.08);color:#e5c897;font-size:11px;line-height:1.5}
+
+/* Datos de misión */
+.hud-telemetry{position:absolute;left:24px;bottom:24px;max-width:calc(100% - 140px);display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;pointer-events:none;font-size:11px;color:#9fb1b6}
+.hud-telemetry b{font-weight:500;color:#79d3d3;margin-right:4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.hud-hint{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:rgba(6,14,22,.55);color:#cfe0e1}
+.hud-note{font-size:10px;color:#6f8188}
+
+@media(max-width:1100px){
+  .hud-feed{display:none}
+  .hud-card{left:24px;right:auto;bottom:86px}
+}
+@media(max-width:720px){
+  .hud-recon{top:12px;left:12px;right:12px;width:auto;padding:12px 14px}
+  .hud-count strong{font-size:28px}
+  .hud-kinds{display:none}
+  .hud-status{margin:8px 0 6px}
+  .hud-toast{top:auto;bottom:118px}
+  .hud-card{left:12px;right:12px;width:auto;bottom:112px}
+  .hud-telemetry{left:0;right:0;bottom:70px;max-width:none;justify-content:center}
+  .hud-telemetry>span:not(.hud-hint){display:none}
+}

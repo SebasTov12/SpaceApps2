@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Line } from "@react-three/drei";
 import type { Group } from "three";
 import NisarModel from "./nisar-model";
 import NisarRadar from "./nisar-radar";
 import type { MotionValue } from "framer-motion";
+import { globeState } from "./globe/globe-state";
 
 // Distances/speeds are illustrative, with enough separation to read the orbit.
 const RADIUS = 1.22;
@@ -23,6 +24,14 @@ export default function NisarOrbit({ playing, progress }: { playing: boolean; pr
   const orbit = useMemo(() => arc(0, Math.PI * 2, 160), []);
   const trail = useMemo(() => Array.from({ length: 16 }, (_, index) =>
     arc(-0.72 + index * 0.045, -0.72 + (index + 1) * 0.045, 4)), []);
+
+  // La huella del haz se calcula desde este grupo (detección de zonas)
+  useEffect(() => {
+    globeState.orbit = moving.current;
+    return () => {
+      globeState.orbit = null;
+    };
+  }, []);
 
   useFrame((_, delta) => {
     if (moving.current && playing) {

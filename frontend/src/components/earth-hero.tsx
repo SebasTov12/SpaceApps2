@@ -5,6 +5,7 @@ import { ChevronDown, Pause, Play } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
+import GlobeHud from "@/components/globe/globe-hud";
 
 const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
   ssr: false,
@@ -37,6 +38,7 @@ export default function EarthHero() {
   const revealScale = useTransform(progress, [0, 0.8, 1], [1.48, 0.94, 0.94]);
   const scale = useTransform(() => revealScale.get() * (1 + departure.get() * 0.16));
   const opacity = useTransform(departure, [0, 0.8], [1, 0.15]);
+  const hudOpacity = useTransform(departure, [0, 0.45], [1, 0]);
   const bridgeOpacity = useTransform(progress, [0.5, 1], [0, 1]);
   const rotate = useTransform(progress, [0, 1], [-4, 0]);
   const starsY = useTransform(progress, [0, 1], ["0%", "-8%"]);
@@ -64,6 +66,7 @@ export default function EarthHero() {
           title={paused ? "Reanudar animación orbital" : "Pausar animación orbital"}>
           {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
         </button>
+        <GlobeHud fade={hudOpacity} />
         <a href="#explorador" className="scroll-cue" aria-label="Ir al explorador">
           <ChevronDown size={22} />
         </a>

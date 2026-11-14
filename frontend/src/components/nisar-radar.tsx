@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { AdditiveBlending, DoubleSide, type MeshBasicMaterial, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
+import { globeState } from "./globe/globe-state";
 
 // Artistic side-looking footprint; not an acquisition polygon or live telemetry.
 // The surface is sampled on a sphere so the swath never becomes a flat decal.
@@ -58,7 +59,8 @@ export default function NisarRadar({ radius, playing, progress }: {
 
   useFrame((_, delta) => {
     if (playing) elapsed.current += Math.min(delta, 0.1);
-    const reveal = Math.min(1, Math.max(0, (progress.get() - 0.12) / 0.38));
+    // visible por el scroll o desde que empieza el reconocimiento
+    const reveal = Math.max(globeState.beam, Math.min(1, Math.max(0, (progress.get() - 0.12) / 0.38)));
     const visibility = reveal * reveal * (3 - 2 * reveal);
     if (beam.current) {
       beam.current.uniforms.time.value = elapsed.current;

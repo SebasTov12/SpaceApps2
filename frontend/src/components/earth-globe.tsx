@@ -5,7 +5,9 @@ import { useProgress, useTexture } from "@react-three/drei";
 import { type MotionValue } from "framer-motion";
 import { Component, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import NisarOrbit from "@/components/nisar-orbit";
-import SiteMarkers from "@/components/site-markers";
+import RiskMarkers from "@/components/globe/risk-markers";
+import ReconScan from "@/components/globe/recon-scan";
+import { globeState } from "@/components/globe/globe-state";
 import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight, type DirectionalLight, type Group } from "three";
 
 type SceneQuality = "compact" | "full";
@@ -22,7 +24,25 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
   });
   useEffect(onReady, [onReady]);
 
+  const userGroup = useRef<Group>(null);
+  useEffect(() => {
+    globeState.userGroup = userGroup.current;
+    return () => {
+      globeState.userGroup = null;
+    };
+  }, []);
+
   useFrame((_, delta) => {
+    // Rotación del usuario (arrastre, inercia y giro hacia una zona), suavizada
+    const user = globeState.user;
+    if (!user.dragging && Math.abs(user.velocity) > 1e-5) {
+      user.targetYaw += user.velocity;
+      user.velocity *= 0.93;
+    }
+    user.yaw += (user.targetYaw - user.yaw) * 0.075;
+    user.pitch += (user.targetPitch - user.pitch) * 0.075;
+    userGroup.current?.rotation.set(user.pitch, user.yaw, 0);
+
     if (!playing) return;
     const step = Math.min(delta, 0.1);
     if (surface.current) surface.current.rotation.y += step * 0.04;
@@ -31,6 +51,7 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
   const earthSegments: [number, number] = quality === "compact" ? [72, 36] : [128, 64];
   const shellSegments: [number, number] = quality === "compact" ? [56, 28] : [96, 48];
   return (
+    <group ref={userGroup}>
     <group rotation={[-0.25, 0, -0.08]}>
       <group ref={surface} rotation={[0, -Math.PI / 2 + 65 * Math.PI / 180, 0]}>
         <mesh>
@@ -39,8 +60,8 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
             specularMap={specular} specular="#263b4e" shininess={55}
             emissive="#142f52" emissiveIntensity={0.32} />
         </mesh>
-        {/* Sitios monitoreados por TENUA; giran con la superficie */}
-        <SiteMarkers />
+        {/* Zonas de riesgo; giran con la superficie */}
+        <RiskMarkers />
         <group ref={clouds}>
         {/* A faint offset veil gives cloud systems depth without heavy shadow maps. */}
         <mesh scale={1.0015} rotation={[0, 0.006, 0.003]}>
@@ -114,6 +135,7 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
         />
       </mesh>
     </group>
+    </group>
   );
 }
 
@@ -172,8 +194,38 @@ export default function EarthGlobe({ progress, playing }: { progress: MotionValu
     return window.matchMedia("(max-width: 760px)").matches || memory <= 4 ? "compact" : "full";
   });
   const showScene = useCallback(() => setReady(true), []);
+
+  // Girar el planeta arrastrando. Se escucha en window para no robar los clics de R3F.
+  const startDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const user = globeState.user;
+    let lastX = event.clientX;
+    let lastY = event.clientY;
+    user.dragging = true;
+    user.moved = 0;
+    user.velocity = 0;
+    const move = (e: PointerEvent) => {
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      user.moved += Math.abs(dx) + Math.abs(dy);
+      user.targetYaw += dx * 0.006;
+      user.targetPitch = Math.max(-1.2, Math.min(1.2, user.targetPitch + dy * 0.004));
+      user.velocity = dx * 0.003;
+    };
+    const end = () => {
+      user.dragging = false;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+  }, []);
   return (
-    <div className="earth-render" role="img" aria-label="Tierra tridimensional en rotación, con NISAR en órbita y un barrido radar ilustrativo; no representa una adquisición real">
+    <div className="earth-render is-draggable" onPointerDown={startDrag} role="group" aria-label="Globo interactivo: arrastra para girar la Tierra; NISAR orbita y su radar ilustrativo detecta zonas de riesgo. La lista de zonas está en el panel de reconocimiento.">
       <SceneBoundary>
         {!ready && <div className="earth-static" />}
         <SceneLoading ready={ready} />
@@ -186,6 +238,7 @@ export default function EarthGlobe({ progress, playing }: { progress: MotionValu
           <Suspense fallback={null}>
             <Planet onReady={showScene} playing={playing} quality={quality} />
             <NisarOrbit playing={playing} progress={progress} />
+            <ReconScan ready={ready} progress={progress} />
           </Suspense>
         </Canvas>
       </SceneBoundary>
