@@ -81,6 +81,17 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
 
   return (
     <div className="hero-overlay">
+      <button
+        type="button"
+        className="hero-search-btn"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        aria-label={c.search}
+        title={`${c.search} (/)`}
+      >
+        <Search size={16} />
+      </button>
+
       <AnimatePresence>
         {open && (
           <motion.div className="search-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)}>
