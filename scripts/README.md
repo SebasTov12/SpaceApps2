@@ -45,6 +45,14 @@ python scripts/connect_earthdata.py --anonymous
 
 La cuenta Earthdata se requiere para descargar o abrir los productos. Para NISAR, el acceso S3 directo requiere ejecutar en AWS us-west-2 y usar el endpoint S3 indicado en `.env`; desde un equipo local debe usarse acceso HTTPS/Earthdata. Este script de conexión solo consulta metadatos, no descarga datos.
 
+Para descargar una cadena corta y de geometría consistente del piloto (se eligen pares GUNW consecutivos del GeoJSON de Colombia-ladera), primero revisa la selección y el tamaño sin descargar:
+
+```sh
+docker compose --env-file .env -f infra/saros/docker-compose.yml --profile processing run --rm processor scripts/download_nisar_colombia.py --dry-run
+```
+
+Configura el Earthdata Login en `.env` del servidor y quita `--dry-run` para descargar. El script usa el acceso HTTPS de `earthaccess`, mantiene los HDF5 en `pipeline/data/colombia-ladera/` y escribe `download-manifest.json`. Con dos pares consecutivos, después revisa los archivos y ejecuta `python pipeline/build_layers.py --real --site colombia-ladera`; reconstruye el frontend para servir las capas nuevas. Los GUNW provisionales son observaciones reales, pero no constituyen etiquetas para entrenar el detector.
+
 El script lee `.env` si existe. `NISAR_PRODUCT_SHORT_NAME`, `NISAR_DATA_MATURITY`, `NISAR_START_DATE` y `NISAR_END_DATE` son filtros opcionales; vacíos significa consultar todos los productos NISAR devueltos por ASF. `NISAR_COLOMBIA_BBOX` permite cambiar la caja. Los nombres de producto válidos incluyen colecciones como `NISAR_L2_GCOV_V1` o `NISAR_L2_GUNW_V1`; elegir un solo producto/madurez hace comparaciones más coherentes.
 
 Para inspeccionar el flujo con un límite pequeño:
