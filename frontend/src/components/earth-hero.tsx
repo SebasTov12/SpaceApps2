@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
 import GlobeHud from "@/components/globe/globe-hud";
+import SarosHeroChrome, { SarosWordmark } from "@/components/saros-hero-chrome";
 
 const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
   ssr: false,
@@ -44,12 +45,14 @@ export default function EarthHero() {
   const starsY = useTransform(progress, [0, 1], ["0%", "-8%"]);
 
   return (
-    <section ref={section} id="inicio" className="earth-scroll" aria-label="La Tierra y la órbita de NISAR">
+    <section ref={section} id="inicio" className="earth-scroll" aria-label="SAROS: la Tierra y la órbita de NISAR">
       <div className="earth-stage" data-playing={playing}>
         <motion.div className="space-backdrop" aria-hidden="true" style={{ y: starsY }}>
           <SpaceBackdrop />
         </motion.div>
         <div className="space-dust" aria-hidden="true" />
+        {/* Logotipo SAROS detrás del planeta */}
+        <SarosWordmark progress={progress} departure={departure} />
         <motion.div className="earth-orbit" style={{ y, scale, rotate, opacity }}>
           <EarthGlobe progress={progress} playing={playing} />
         </motion.div>
@@ -67,6 +70,8 @@ export default function EarthHero() {
           {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
         </button>
         <GlobeHud fade={hudOpacity} />
+        {/* Navbar SAROS y cintillo de titulares (arriba → abajo con el scroll) */}
+        <SarosHeroChrome progress={progress} departure={departure} />
         <a href="#explorador" className="scroll-cue" aria-label="Ir al explorador">
           <ChevronDown size={22} />
         </a>

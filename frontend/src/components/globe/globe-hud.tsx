@@ -4,7 +4,7 @@ import { AnimatePresence, motion, type MotionValue } from "framer-motion";
 import { ChevronDown, Crosshair, Hand, Radar, Satellite, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SITE_EVENT } from "@/components/explorer-dashboard";
-import { LanguageToggle, useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { riskKinds, riskZones, type RiskKind, type RiskZone } from "@/lib/risk-zones";
 import { formatCoord } from "@/lib/sites";
 import { GLOBE_DETECT, GLOBE_RECON, GLOBE_SELECT, focusZone, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
@@ -130,7 +130,6 @@ export default function GlobeHud({ fade }: { fade: MotionValue<number> }) {
       <section className="hud-panel hud-recon" aria-label={c.recon}>
         <header className="hud-head">
           <span className="hud-eyebrow"><Radar size={13} /> {c.recon}</span>
-          <LanguageToggle className="hud-lang" />
         </header>
         <p className={`hud-status ${done ? "is-active" : ""}`} aria-live="polite">
           <i />{done ? c.active : scanning ? `${c.scanning} ${Math.round(recon.progress * 100)}%` : c.waiting}

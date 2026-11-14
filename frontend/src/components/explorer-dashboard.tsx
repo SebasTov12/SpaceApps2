@@ -8,6 +8,7 @@ import {
   LocateFixed, MapPin, Menu, Mountain, MousePointerClick, Satellite, Snowflake, Trees, X,
 } from "lucide-react";
 import TimeSeriesChart from "@/components/time-series-chart";
+import SarosLogo from "@/components/saros-logo";
 import type { MapMode } from "@/components/nisar-map";
 import { LanguageToggle, useI18n } from "@/lib/i18n";
 import {
@@ -149,7 +150,7 @@ export default function ExplorerDashboard() {
     <section ref={section} className="explorer-section" id="explorador" tabIndex={-1} aria-labelledby="explorer-title">
       <div className="explorer-signal" aria-hidden="true" />
       <header className="app-header">
-        <a className="brand" href="#inicio"><span className="brand-mark"><Satellite size={17} /></span><span>TOBARU <i>WORKTEAM</i></span></a>
+        <SarosLogo size={30} tagline={false} />
         <div className="header-center"><span className="live-dot" /> {isDemo ? t.demoHeader : t.realHeader}</div>
         <div className="header-actions">
           <LanguageToggle />
@@ -232,7 +233,7 @@ export default function ExplorerDashboard() {
 
           <div className="dashboard-title-row">
             <div>
-              <div className="breadcrumb">TOBARU <span aria-hidden="true">›</span> {t.explorer.toUpperCase()} <span aria-hidden="true">›</span> {text(site).changeLabel.toUpperCase() || "…"}</div>
+              <div className="breadcrumb">SAROS <span aria-hidden="true">›</span> {t.explorer.toUpperCase()} <span aria-hidden="true">›</span> {text(site).changeLabel.toUpperCase() || "…"}</div>
               <h1 id="explorer-title">{manifest ? `${siteText.name} · ${siteText.place}` : t.loadingSite}</h1>
               <p>{siteText.story}</p>
             </div>
@@ -338,7 +339,7 @@ export default function ExplorerDashboard() {
               <p className="review-limit">{isDemo ? t.demoLimit : t.realLimit}</p>
             </section>
           </div>
-          <footer className="app-footer"><span>TOBARU WORKTEAM <i>{t.footerLeft}</i></span><span>{isDemo ? t.footerDemo : t.footerReal}</span></footer>
+          <footer className="app-footer"><span>SAROS · TOBARU WORKTEAM <i>{t.footerLeft}</i></span><span>{isDemo ? t.footerDemo : t.footerReal}</span></footer>
         </motion.div>
       </div>
     </section>

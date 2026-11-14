@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./saros.css";
 @import "./explorer-data.css";
 @import "./globe-hud.css";
 

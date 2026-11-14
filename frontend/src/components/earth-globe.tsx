@@ -7,6 +7,7 @@ import { Component, Suspense, useCallback, useEffect, useRef, useState, type Rea
 import NisarOrbit from "@/components/nisar-orbit";
 import RiskMarkers from "@/components/globe/risk-markers";
 import ReconScan from "@/components/globe/recon-scan";
+import CompanionSats from "@/components/globe/companion-sats";
 import { globeState } from "@/components/globe/globe-state";
 import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight, type DirectionalLight, type Group } from "three";
 
@@ -239,6 +240,7 @@ export default function EarthGlobe({ progress, playing }: { progress: MotionValu
             <Planet onReady={showScene} playing={playing} quality={quality} />
             <NisarOrbit playing={playing} progress={progress} />
             <ReconScan ready={ready} progress={progress} />
+            <CompanionSats playing={playing} />
           </Suspense>
         </Canvas>
       </SceneBoundary>

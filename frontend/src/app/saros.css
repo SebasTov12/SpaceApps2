@@ -1,0 +1,122 @@
+/*
+ * Identidad SAROS — "Observa · Analiza · Previene".
+ * Paleta: Espacio #0B0F1F · Tecnología #00D4FF · Análisis #8B5CF6 · Confianza #10B981 · Alerta #F59E0B
+ * Tipografía: Orbitron (títulos y logo) · Inter (texto e interfaz)
+ * Los selectores dobles (:root:root, html body) ganan a las reglas base de globals.css.
+ */
+:root:root{
+  --saros-space:#0b0f1f;
+  --saros-tech:#00d4ff;
+  --saros-analysis:#8b5cf6;
+  --saros-trust:#10b981;
+  --saros-alert:#f59e0b;
+  --saros-text:#e8f1ff;
+  --saros-muted:#93a4c3;
+  --saros-line:rgba(120,170,255,.14);
+  --saros-glass:rgba(11,15,31,.66);
+  --saros-gradient:linear-gradient(90deg,#8b5cf6,#00d4ff);
+  --font-display:var(--font-orbitron),"Orbitron",sans-serif;
+  --font-ui:var(--font-inter),"Inter",system-ui,sans-serif;
+  /* variables del equipo, alineadas con la paleta SAROS */
+  --ink:#0b0f1f;
+  --cyan:#00d4ff;
+  --cyan-2:#21a8d6;
+  --amber:#f59e0b;
+  --text:#e8f1ff;
+  --muted:#93a4c3;
+}
+html body{font-family:var(--font-ui);background:var(--saros-space)}
+html{background:var(--saros-space)}
+html body .earth-stage{background:radial-gradient(ellipse at 50% 92%,rgba(64,72,190,.32) 0,rgba(11,15,31,.6) 38%,#060914 75%)}
+html body .explorer-section{background:#0b0f1f}
+html body .app-header,html body .side-panel{background:#0d1226}
+html body .metric-card,html body .map-card,html body .detail-card,html body .review-card{background:linear-gradient(135deg,#111832,#0d1328)}
+
+/* ---------- Logo SAROS ---------- */
+.saros-logo{display:inline-flex;align-items:center;gap:10px;color:var(--saros-text);text-decoration:none}
+.saros-emblem{flex-shrink:0;display:block}
+.saros-word{display:grid;line-height:1}
+.saros-word b{font-family:var(--font-display);font-weight:700;letter-spacing:.14em;font-size:18px}
+.saros-word small{margin-top:4px;font-family:var(--font-ui);font-size:8px;font-weight:500;letter-spacing:.32em;color:var(--saros-muted)}
+.saros-star{color:var(--saros-tech)}
+.app-header .saros-logo b{font-size:15px}
+
+/* ---------- Hero: navbar, cintillo y logotipo detrás del planeta ---------- */
+.saros-chrome{position:absolute;inset:0;pointer-events:none;z-index:7}
+.saros-nav{position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 clamp(16px,3vw,40px);pointer-events:auto;background:linear-gradient(180deg,rgba(6,9,20,.92),rgba(6,9,20,.55));border-bottom:1px solid var(--saros-line);backdrop-filter:blur(14px)}
+.saros-nav nav{display:flex;gap:4px}
+.saros-nav nav a{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:500;color:#b9c6e4;transition:background .2s,color .2s}
+.saros-nav nav a:hover{background:rgba(0,212,255,.1);color:#fff}
+.saros-nav-actions{display:flex;align-items:center;gap:12px}
+.saros-cta{padding:10px 18px;border-radius:24px;background:var(--saros-gradient);color:#fff;font-size:13px;font-weight:600;box-shadow:0 6px 24px rgba(0,212,255,.25)}
+.saros-cta:hover{filter:brightness(1.1)}
+
+.ticker-dock{position:absolute;left:0;right:0;pointer-events:auto}
+.ticker-dock-top{top:64px}
+.ticker-dock-bottom{bottom:0}
+.ticker{display:flex;align-items:stretch;height:38px;background:rgba(8,12,28,.86);border-top:1px solid rgba(0,212,255,.18);border-bottom:1px solid rgba(0,212,255,.18);backdrop-filter:blur(12px);overflow:hidden}
+.ticker-label{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 16px;background:linear-gradient(90deg,#f59e0b,#f97316);color:#1a0f00;font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.14em;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%);padding-right:26px}
+.ticker-label i{width:8px;height:8px;border-radius:50%;background:#1a0f00;animation:ticker-live 1.2s ease-in-out infinite}
+@keyframes ticker-live{50%{opacity:.25}}
+.ticker-viewport{position:relative;flex:1;overflow:hidden;mask-image:linear-gradient(90deg,transparent,black 3%,black 97%,transparent)}
+.ticker-track{display:flex;width:max-content;height:100%;animation:ticker-scroll linear infinite}
+.ticker:hover .ticker-track{animation-play-state:paused}
+@keyframes ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:8px;height:100%;padding:0 6px 0 14px;border:0;background:none;color:#dfe8fb;font-size:13px;white-space:nowrap;cursor:pointer}
+.ticker-item:hover .ticker-title{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.ticker-item em{font-style:normal;color:#9fb0d1}
+.ticker-item small{font-size:10px;color:#7486aa;letter-spacing:.04em}
+.ticker-sev{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.1em}
+.sev-alta{background:rgba(245,158,11,.18);color:#fbbf24}
+.sev-media{background:rgba(139,92,246,.2);color:#c4b5fd}
+.sev-baja{background:rgba(16,185,129,.18);color:#6ee7b7}
+.sev-info{background:rgba(0,212,255,.15);color:#7dd3fc}
+.ticker-flag{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.1em;color:#10b981}
+.ticker-flag.is-demo{color:#f59e0b}
+.ticker-sep{color:var(--saros-tech);margin-left:8px;opacity:.7}
+.ticker-loading{display:flex;align-items:center;height:100%;padding:0 16px;font-size:12px;color:#7486aa}
+@media(prefers-reduced-motion:reduce){.ticker-track{animation:none}.ticker-viewport{overflow-x:auto}}
+
+.hero-wordmark{position:absolute;z-index:1;left:0;right:0;top:clamp(130px,19vh,210px);display:grid;justify-items:center;pointer-events:none;transform-origin:50% 30%}
+.wordmark-title{position:relative;margin:0;display:flex;font-family:var(--font-display);font-weight:800;font-size:clamp(64px,10.5vw,168px);line-height:.9;letter-spacing:.06em;background:linear-gradient(180deg,#ffffff 0%,#dfe7ff 45%,#9aa8d8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 8px 40px rgba(0,212,255,.25))}
+.wordmark-title span{position:relative}
+.wm-star{position:absolute;color:#00d4ff;filter:drop-shadow(0 0 12px #00d4ff)}
+.wm-a .wm-star{width:.24em;height:.24em;left:50%;bottom:.1em;transform:translateX(-50%)}
+.wm-o .wm-star{width:.34em;height:.34em;left:50%;top:50%;transform:translate(-50%,-50%)}
+.wordmark-orbit{position:absolute;left:-6%;right:-6%;top:-18%;width:112%;height:150%;opacity:.85}
+.wordmark-tagline{margin:18px 0 0;font-family:var(--font-ui);font-size:clamp(11px,1.1vw,15px);font-weight:500;letter-spacing:.5em;color:#c4cff0}
+.wordmark-claim{margin:10px 0 0;font-size:clamp(13px,1.2vw,17px);color:#93a4c3}
+.wordmark-claim em{font-style:normal;font-weight:600;background:var(--saros-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* deja sitio a navbar + cintillo arriba y al cintillo de abajo */
+html body .hud-recon,html body .hud-feed{top:118px}
+html body .hud-telemetry{bottom:58px}
+html body .hud-card{bottom:110px}
+html body .scroll-cue{bottom:56px}
+html body .scene-motion-toggle{bottom:54px}
+html body .hud-panel{border-color:rgba(0,212,255,.18);background:rgba(11,15,31,.66)}
+html body .hud-eyebrow{color:#00d4ff;font-family:var(--font-display);letter-spacing:.12em}
+html body .hud-count strong{font-family:var(--font-display);font-weight:600}
+
+@media(max-width:1100px){.saros-nav nav{display:none}}
+@media(max-width:720px){
+  .saros-nav{height:56px}
+  .saros-word small,.saros-nav .lang-toggle{display:none}
+  .saros-cta{padding:8px 12px;font-size:11px}
+  .ticker-dock-top{top:56px}
+  .ticker{height:34px}
+  .ticker-label{font-size:9px;padding:0 18px 0 10px}
+  .ticker-item{font-size:12px}
+  .hero-wordmark{top:96px}
+  .wordmark-tagline{letter-spacing:.3em}
+  .wordmark-claim{display:none}
+  html body .hud-recon{top:auto;bottom:96px;left:50%;right:auto;width:max-content;max-width:calc(100% - 24px);transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 14px;border-radius:30px}
+  html body .hud-recon .hud-head,html body .hud-recon .hud-progress,html body .hud-recon .hud-list-toggle,html body .hud-recon .hud-list,html body .hud-recon .hud-kinds,html body .hud-recon .hud-count small{display:none}
+  html body .hud-recon .hud-status{margin:0;font-size:11px}
+  html body .hud-recon .hud-count{margin:0;display:flex;align-items:baseline;gap:4px}
+  html body .hud-recon .hud-count strong{font-size:20px}
+  html body .hud-telemetry{bottom:46px}
+  html body .scroll-cue{bottom:44px}
+  html body .scene-motion-toggle{bottom:44px}
+  html body .hud-card{bottom:300px}
+}

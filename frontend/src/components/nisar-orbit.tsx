@@ -21,6 +21,8 @@ function arc(start: number, end: number, segments: number): [number, number, num
 
 export default function NisarOrbit({ playing, progress }: { playing: boolean; progress: MotionValue<number> }) {
   const moving = useRef<Group>(null);
+  const plane = useRef<Group>(null);
+  const time = useRef(0);
   const orbit = useMemo(() => arc(0, Math.PI * 2, 160), []);
   const trail = useMemo(() => Array.from({ length: 16 }, (_, index) =>
     arc(-0.72 + index * 0.045, -0.72 + (index + 1) * 0.045, 4)), []);
@@ -34,13 +36,19 @@ export default function NisarOrbit({ playing, progress }: { playing: boolean; pr
   }, []);
 
   useFrame((_, delta) => {
+    // El plano orbital precesa y oscila: la trayectoria cambia en vez de repetir siempre la misma línea
+    if (plane.current && playing) {
+      time.current += Math.min(delta, 0.1);
+      const t = time.current;
+      plane.current.rotation.set(0.18 + Math.sin(t * 0.045) * 0.42, 1.0 + t * 0.05, -0.42 + Math.cos(t * 0.031) * 0.25);
+    }
     if (moving.current && playing) {
       moving.current.rotation.z = (moving.current.rotation.z + Math.min(delta, 0.1) * 0.14) % (Math.PI * 2);
     }
   });
 
   return (
-    <group rotation={[0.18, 1.0, -0.42]}>
+    <group ref={plane} rotation={[0.18, 1.0, -0.42]}>
       <Line points={orbit} color="#97b5c6" lineWidth={0.65} transparent opacity={0.12} depthWrite={false} />
       <group ref={moving} rotation={[0, 0, 1.5]}>
         <NisarRadar radius={RADIUS} playing={playing} progress={progress} />

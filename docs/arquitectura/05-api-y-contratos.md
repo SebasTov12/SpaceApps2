@@ -17,6 +17,7 @@ Mantener Flask y el prefijo /api/v1. JSON, fechas UTC, errores consistentes, X-R
 | GET | /api/v1/areas/{id}/recommendations | Acciones y justificación |
 | POST | /api/v1/routes | Rutas de planificación a destino validado |
 | POST | /api/v1/admin/publications | Publicación restringida y auditada |
+| GET | /api/v1/headlines | Titulares del cintillo: últimas actualizaciones de afectaciones |
 
 ## Recursos de dominio
 
@@ -38,3 +39,23 @@ Recommendation: prioridad, acción, beneficiario/zona, motivo, fuentes, vigencia
 - Si falta cobertura, responder evaluación parcial o insuficiente.
 - Ollama solo explica una salida estructurada existente.
 
+
+## Titulares (cintillo del frontend)
+
+`GET /api/v1/headlines` devuelve `{ "headlines": Headline[] }`, del más reciente al más antiguo:
+
+```json
+{
+  "id": "asf-colombia-ladera-PROVISIONAL",
+  "kind": "deformation | backscatter | velocity | data",
+  "severity": "alta | media | baja | info",
+  "title": { "es": "…", "en": "…" },
+  "place": { "es": "…", "en": "…" },
+  "time": "2026-10-08",
+  "source": "NASA CMR · ASF DAAC",
+  "demo": false,
+  "siteId": "colombia-ladera"
+}
+```
+
+El frontend lo pide a `NEXT_PUBLIC_SAROS_API` (ver `frontend/src/lib/headlines.ts`). Mientras no exista, arma los titulares con las escenas NISAR reales publicadas en ASF (`availability.json`) y las cifras de cada sitio, marcadas como demo. Un titular nunca debe presentar una exposición como daño confirmado.
