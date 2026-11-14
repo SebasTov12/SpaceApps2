@@ -16,6 +16,10 @@
 | Integridad | web3.py 7, adaptador EVM opcional | Hashes de publicaciones |
 | Infraestructura | Docker Compose, Caddy 2 | Servicios y HTTPS |
 
+## Estado implementado en SpaceApps2
+
+El código presente es solo frontend: Next.js 16.4.6, React 19.3, TypeScript 5.9, Node.js 24.14 o superior, Tailwind CSS 4.3, Framer Motion 14 y Lucide React. La vista actual usa datos locales sintéticos en demo-dashboard.ts y todavía no consume una API ni productos NISAR reales. El backend Flask/PostgreSQL de la tabla anterior es el stack de referencia de Orivia; aún no está implementado en este repositorio.
+
 ## Dependencias y límites
 
 El frontend usa Next, React, TypeScript, Tailwind y plugins, ESLint, tsx, clsx, tailwind-merge, Lucide, Framer Motion, Three.js, React Three Fiber y Drei. `@types/three` aporta los tipos de desarrollo para TypeScript. Las versiones instaladas quedan declaradas en `frontend/package.json` y resueltas en `frontend/package-lock.json`.

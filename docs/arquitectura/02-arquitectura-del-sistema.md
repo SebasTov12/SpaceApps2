@@ -19,6 +19,10 @@
     Caddy: TLS y reverse proxy
     Docker Compose: frontend, API, base de datos y proxy
 
+## Estado actual del repositorio
+
+Ya existe un frontend Next.js con recorrido visual y explorador territorial. Sus métricas, observaciones, capas y ejemplos de exposición son sintéticos y están etiquetados como demostración. El repo aún no contiene API/backend ni pipeline NISAR; los workers, almacenamiento geoespacial y servicios de riesgo descritos abajo son la arquitectura objetivo.
+
 ## Capas
 
 ### Aplicación

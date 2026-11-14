@@ -1,0 +1,84 @@
+/*
+ * Tokens de diseño de TENUA.
+ * Se declaran en @theme para que existan como variables CSS (var(--color-text))
+ * y como utilidades de Tailwind (text-text, bg-surface, text-sm, rounded-lg...).
+ * "static" obliga a emitirlas todas aunque ninguna utilidad las use todavía.
+ */
+@theme static {
+  /* Tipografía: fuentes cargadas con next/font en app/layout.tsx */
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Escala de texto. 12px es el mínimo: nada por debajo de --text-xs. */
+  --text-xs: 0.75rem;     /* 12px — etiquetas, leyendas, notas de fuente */
+  --text-sm: 0.875rem;    /* 14px — texto de interfaz y controles */
+  --text-base: 1rem;      /* 16px — párrafos */
+  --text-lg: 1.125rem;    /* 18px — subtítulos de tarjeta */
+  --text-xl: 1.25rem;     /* 20px — títulos de panel */
+  --text-2xl: 1.5rem;     /* 24px — cifras de métricas */
+  --text-3xl: 1.875rem;   /* 30px — título de página */
+
+  /* Paleta TENUA (marca) */
+  --color-green: #a8dcc5;          /* verde principal */
+  --color-green-soft: #d7efe4;     /* verde suave */
+  --color-sky: #a9d8e8;            /* azul cielo */
+  --color-tech: #6fafc9;           /* azul tecnológico */
+  --color-white: #f5faf8;          /* blanco natural */
+  --color-ink: #244c55;            /* texto oscuro */
+
+  /* Superficies, de la más profunda a la más elevada */
+  --color-space: #eaf5f1;          /* fondo del hero */
+  --color-bg: #f5faf8;             /* fondo de la aplicación */
+  --color-surface: #ffffff;        /* cabecera y panel lateral */
+  --color-surface-sunken: #eef6f3; /* zonas hundidas: controles, línea de tiempo */
+  --color-surface-raised: #ffffff; /* tarjetas */
+  --color-surface-hover: #e6f3ee;
+
+  /* Bordes */
+  --color-line: rgba(36, 76, 85, 0.1);
+  --color-line-strong: rgba(36, 76, 85, 0.18);
+
+  /* Texto (contraste AA sobre blanco) */
+  --color-text: #244c55;
+  --color-text-secondary: #3d6770;
+  --color-text-muted: #587a82;
+
+  /* Acentos. Versiones "ink" oscurecidas para texto e iconos sobre fondo claro. */
+  --color-accent: #2f7f9c;         /* acción principal, observación NISAR */
+  --color-accent-strong: #6fafc9;
+  --color-accent-soft: #a9d8e8;
+  --color-success: #2e7d5e;
+  --color-info: #3f78b5;
+  --color-violet: #7660b3;
+  --color-warning: #a76a14;        /* datos demo, revisión pendiente */
+  --color-warning-soft: #fbecd4;
+  --color-danger: #b84a3e;
+
+  /* Prioridad relativa. Siempre acompañar con texto o icono, nunca solo color. */
+  --color-priority-low: #5fb894;
+  --color-priority-medium: #e0a54a;
+  --color-priority-high: #d46a5c;
+
+  /* Sombras suaves teñidas */
+  --shadow-sm: 0 1px 2px rgba(36, 76, 85, 0.06), 0 2px 8px rgba(36, 76, 85, 0.05);
+  --shadow-md: 0 4px 12px rgba(36, 76, 85, 0.07), 0 12px 32px rgba(36, 76, 85, 0.07);
+  --shadow-lg: 0 10px 24px rgba(36, 76, 85, 0.09), 0 24px 60px rgba(36, 76, 85, 0.1);
+
+  /* Radios */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* Movimiento */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 600ms;
+}
+
+:root {
+  color-scheme: light;
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent);
+}

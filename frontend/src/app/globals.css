@@ -1,4 +1,10 @@
+/*
+ * Punto de entrada de estilos. El orden importa:
+ * tokens → base → componentes UI → movimiento → estructura → secciones.
+ * Los estilos de cada área viven en src/styles; no añadir reglas aquí.
+ */
 @import "tailwindcss";
+<<<<<<< HEAD
 
 :root{--ink:#071019;--panel:#0b151e;--panel-2:#101d28;--line:rgba(163,190,202,.13);--muted:#80919b;--text:#e7eff1;--cyan:#79d3d3;--cyan-2:#40aaa8;--amber:#e8b36b;--font-sans:Arial,Helvetica,sans-serif;color-scheme:dark}
 @theme inline{--color-background:var(--ink);--color-foreground:var(--text);--font-sans:Arial,Helvetica,sans-serif}
@@ -66,3 +72,13 @@ button,a,input{font:inherit}button{color:inherit}a{color:inherit;text-decoration
 @media(max-width:720px){.earth-scroll{height:180svh}.earth-stage{min-height:560px}.hero-nav{top:19px;left:20px;right:20px}.hero-nav-link{font-size:7px}.hero-copy{top:23%;left:25px;max-width:290px}.hero-copy h1{font-size:clamp(43px,12vw,70px)}.hero-description{font-size:11px;max-width:260px}.earth-orbit{width:110vw;height:110vw;max-width:82vh;max-height:82vh}.nisar-orbit-plane{transform:rotate(-8deg) scaleX(.22) scaleY(.75)}.nisar-satellite-anchor{width:clamp(108px,31vw,150px)}.scroll-cue{bottom:25px;white-space:nowrap}.hero-coordinate,.hero-index{bottom:21px;font-size:7px}.app-header{height:58px;padding:0 16px}.header-center{font-size:7px;letter-spacing:.08em}.header-actions{gap:7px}.header-icon,.avatar{display:none}.mobile-menu{display:grid}.explorer-layout{display:block;min-height:calc(100vh - 58px)}.side-panel{display:none;position:fixed;z-index:19;top:58px;left:0;bottom:0;width:min(315px,88vw);overflow-y:auto;box-shadow:20px 0 50px rgba(0,0,0,.35)}.side-panel-open{display:flex}.dashboard-main{padding:22px 15px}.dashboard-title-row{align-items:center}.dashboard-title-row h1{font-size:21px}.dashboard-title-row p{font-size:9px;max-width:240px;line-height:1.5}.outline-button{font-size:0;padding:8px}.outline-button svg{width:16px;height:16px}.metrics-grid{gap:7px}.metric-card{padding:10px 9px;min-height:92px}.metric-card>p{font-size:6px;letter-spacing:.08em;max-width:78px;line-height:1.5}.metric-icon{right:7px;top:8px;width:23px;height:23px}.metric-icon svg{width:14px}.metric-number{gap:4px}.metric-number strong{font-size:18px}.metric-number span{font-size:7px}.metric-trend{font-size:7px}.map-visual{height:320px}.map-topline{padding-inline:9px}.map-place{font-size:8px}.map-place i{display:none}.map-tools{gap:5px}.map-demo{font-size:6px}.timeline{padding:11px 10px 9px}.timeline-heading>div{display:grid;gap:4px}.timeline-heading span{font-size:6px}.timeline-current{font-size:7px!important}.timeline-labels button{font-size:6px}.below-grid{grid-template-columns:1fr}.detail-card,.review-card{min-height:auto;padding:14px}.app-footer{font-size:6px;gap:12px}.map-disclaimer{left:auto;right:10px;transform:none;text-align:right;max-width:105px;white-space:normal;bottom:14px}.map-legend{left:9px;bottom:9px;padding:8px}.change-zone{font-size:6px;padding:5px 7px}.zone-one{left:37%}.label-one{left:14%}.label-two{left:59%}}
 @media(max-width:390px){.brand{font-size:9px}.brand i{font-size:7px}.header-center{max-width:105px}.dashboard-title-row{align-items:end}.dashboard-title-row h1{font-size:19px}.dashboard-title-row p{max-width:200px}.metric-number strong{font-size:16px}.metric-card{padding-inline:7px}.map-visual{height:280px}.map-label{font-size:6px}.timeline-labels button{font-size:5px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.scroll-cue svg{animation:none}}
+=======
+@import "../styles/tokens.css";
+@import "../styles/base.css";
+@import "../styles/components.css";
+@import "../styles/motion.css";
+@import "../styles/layout.css";
+@import "../styles/journey.css";
+@import "../styles/sections.css";
+@import "../styles/explorer.css";
+>>>>>>> 6dacbb3dcbc63f7749518b06c06170069ea30594

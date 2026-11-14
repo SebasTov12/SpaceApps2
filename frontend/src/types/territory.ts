@@ -7,6 +7,16 @@ export type DashboardMetric = {
   accent: "cyan" | "violet" | "amber";
 };
 
+/** Bloque del resumen para decisión (doc 06): qué cambió, exposición, economía y acción. */
+export type DecisionInsight = {
+  id: "change" | "social" | "economic" | "action";
+  eyebrow: string;
+  title: string;
+  points: string[];
+  source: string;
+  limitation: string;
+};
+
 export type ObservationPoint = {
   id: string;
   date: string;
