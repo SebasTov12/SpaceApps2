@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, useInView, useScroll, useSpring, useTransform } from "framer-motion";
-import { ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
@@ -73,14 +72,6 @@ export default function EarthHero() {
         <HeroOverlay progress={progress} />
         {/* Cintillo de titulares (arriba → abajo con el scroll) */}
         <SarosHeroChrome progress={progress} departure={departure} />
-        <a href="#zonas" className="scroll-cue" aria-label="Bajar hasta el planeta"
-          onClick={(event) => {
-            event.preventDefault();
-            const hero = section.current;
-            if (hero) window.scrollTo({ top: hero.offsetTop + (hero.offsetHeight - window.innerHeight) * 0.92, behavior: "smooth" });
-          }}>
-          <ChevronDown size={22} />
-        </a>
       </div>
     </section>
   );
