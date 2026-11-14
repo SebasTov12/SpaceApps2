@@ -6,7 +6,10 @@
 export type ChangeType = "deformation" | "backscatter" | "velocity";
 export type Bbox = [number, number, number, number];
 
-export type SiteStat = { label: string; value: string; unit: string; note: string };
+export type SiteStat = { label: string; labelEn?: string; value: string; unit: string; unitEn?: string; note: string; noteEn?: string };
+
+/** Textos del sitio en inglés (los de la raíz están en español). */
+export type SiteEnglish = { name: string; place: string; changeLabel: string; metric?: string; story: string; unit?: string };
 
 export type SiteSummary = {
   id: string;
@@ -21,6 +24,7 @@ export type SiteSummary = {
   unit: string;
   story: string;
   pilot: boolean;
+  en?: SiteEnglish;
   mode: "demo" | "real";
   headline: SiteStat;
 };
@@ -37,7 +41,7 @@ export type SiteManifest = Omit<SiteSummary, "mode" | "headline"> & {
   legend: Legend;
   changeLegend: Legend;
   stats: SiteStat[];
-  source: { mode: "demo" | "real"; product: string; granules: string[]; note: string };
+  source: { mode: "demo" | "real"; product: string; granules: string[]; note: string; noteEn?: string };
   generated: string;
 };
 
@@ -101,32 +105,73 @@ export function strongestChange(series: TimeSeries, change: ChangeType = "deform
   };
 }
 
-const MONTHS = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-export const shortDate = (iso: string) => `${iso.slice(8, 10)} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
-export const longDate = (iso: string) =>
-  new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(iso));
+const MONTHS = {
+  es: ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"],
+  en: ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
+};
+export const shortDate = (iso: string, lang: "es" | "en" = "es") => `${iso.slice(8, 10)} ${MONTHS[lang][Number(iso.slice(5, 7)) - 1]}`;
+export const longDate = (iso: string, lang: "es" | "en" = "es") =>
+  new Intl.DateTimeFormat(lang === "en" ? "en-US" : "es-CO", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(iso));
 
 export const formatCoord = (lat: number, lon: number) =>
   `${Math.abs(lat).toFixed(3)}° ${lat >= 0 ? "N" : "S"} · ${Math.abs(lon).toFixed(3)}° ${lon >= 0 ? "E" : "W"}`;
 
+type Explainer = { title: string; body: string; legendLow: string; legendHigh: string };
+
 /** Explicación en lenguaje simple de qué ve el radar en cada tipo de cambio. */
-export const radarExplainer: Record<ChangeType, { title: string; body: string; legendLow: string; legendHigh: string }> = {
-  deformation: {
-    title: "Interferometría (InSAR)",
-    body: "El radar compara la fase de la señal entre dos pasadas. Si el suelo se aleja del satélite unos milímetros, la fase cambia. Sumando pares consecutivos se obtiene el desplazamiento acumulado.",
-    legendLow: "Se aleja / se hunde",
-    legendHigh: "Se acerca / se eleva",
+export const radarExplainer: Record<"es" | "en", Record<ChangeType, Explainer>> = {
+  es: {
+    deformation: {
+      title: "Interferometría (InSAR)",
+      body: "El radar compara la fase de la señal entre dos pasadas. Si el suelo se aleja del satélite unos milímetros, la fase cambia. Sumando pares consecutivos se obtiene el desplazamiento acumulado.",
+      legendLow: "Se aleja / se hunde",
+      legendHigh: "Se acerca / se eleva",
+    },
+    backscatter: {
+      title: "Retrodispersión",
+      body: "Es cuánta energía del radar vuelve al satélite. El agua tranquila la refleja lejos y se ve oscura; el bosque la dispersa y se ve brillante. Una caída fuerte indica agua nueva o bosque talado.",
+      legendLow: "Poca señal (agua, suelo desnudo)",
+      legendHigh: "Mucha señal (vegetación, ciudad)",
+    },
+    velocity: {
+      title: "Seguimiento de desplazamientos",
+      body: "Se comparan pequeñas ventanas de la imagen entre dos pasadas para ver cuántos metros se movió la textura del hielo. Dividido por los días entre pasadas da la velocidad.",
+      legendLow: "Lento",
+      legendHigh: "Rápido",
+    },
   },
-  backscatter: {
-    title: "Retrodispersión",
-    body: "Es cuánta energía del radar vuelve al satélite. El agua tranquila la refleja lejos y se ve oscura; el bosque la dispersa y se ve brillante. Una caída fuerte indica agua nueva o bosque talado.",
-    legendLow: "Poca señal (agua, suelo desnudo)",
-    legendHigh: "Mucha señal (vegetación, ciudad)",
-  },
-  velocity: {
-    title: "Seguimiento de desplazamientos",
-    body: "Se comparan pequeñas ventanas de la imagen entre dos pasadas para ver cuántos metros se movió la textura del hielo. Dividido por los días entre pasadas da la velocidad.",
-    legendLow: "Lento",
-    legendHigh: "Rápido",
+  en: {
+    deformation: {
+      title: "Interferometry (InSAR)",
+      body: "The radar compares the signal phase between two passes. If the ground moves a few millimetres away from the satellite, the phase shifts. Adding consecutive pairs gives the cumulative displacement.",
+      legendLow: "Moving away / sinking",
+      legendHigh: "Moving closer / rising",
+    },
+    backscatter: {
+      title: "Backscatter",
+      body: "How much radar energy bounces back to the satellite. Calm water reflects it away and looks dark; forests scatter it and look bright. A sharp drop means new water or cleared forest.",
+      legendLow: "Low signal (water, bare soil)",
+      legendHigh: "High signal (vegetation, city)",
+    },
+    velocity: {
+      title: "Offset tracking",
+      body: "Small image windows are matched between two passes to see how many metres the ice texture moved. Dividing by the days between passes gives the speed.",
+      legendLow: "Slow",
+      legendHigh: "Fast",
+    },
   },
 };
+
+/** Escenas NISAR publicadas en ASF para cada sitio (pipeline/search_nisar.py, catálogo CMR). */
+export type Availability = {
+  checked: string;
+  source: string;
+  sites: {
+    id: string;
+    product: string;
+    total: number;
+    maturities: { maturity: string; shortName: string; count: number; first: string | null; last: string | null }[];
+    latest: string | null;
+  }[];
+};
+export const loadAvailability = () => getJson<Availability>("/data/availability.json");

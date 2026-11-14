@@ -21,6 +21,14 @@
   ],
   "colormap": "diverging",
   "story": "Zona piloto de TENUA. Las laderas andinas se mueven lentamente antes de fallar; el radar mide milímetros de desplazamiento aunque haya nubes.",
+  "en": {
+    "name": "Andean hillside",
+    "place": "Norte de Santander, Colombia",
+    "changeLabel": "Landslide",
+    "metric": "Cumulative line-of-sight displacement",
+    "story": "TENUA's pilot area. Andean slopes creep slowly before they fail; the radar measures millimetres of movement even through clouds.",
+    "unit": "mm"
+  },
   "pilot": true,
   "dates": [
     "2026-08-02",
@@ -109,28 +117,38 @@
   "stats": [
     {
       "label": "Desplazamiento máximo",
+      "labelEn": "Peak displacement",
       "value": "-56.5",
       "unit": "mm",
-      "note": "Alejándose del satélite"
+      "unitEn": "mm",
+      "note": "Alejándose del satélite",
+      "noteEn": "Moving away from the satellite"
     },
     {
       "label": "Área con más de 10 mm",
+      "labelEn": "Area beyond 10 mm",
       "value": "9.4",
       "unit": "km²",
-      "note": "Al final del periodo"
+      "unitEn": "km²",
+      "note": "Al final del periodo",
+      "noteEn": "At the end of the period"
     },
     {
       "label": "Ritmo en el punto máximo",
+      "labelEn": "Rate at the peak",
       "value": "-20.2",
       "unit": "mm/mes",
-      "note": "Promedio del periodo"
+      "unitEn": "mm/month",
+      "note": "Promedio del periodo",
+      "noteEn": "Period average"
     }
   ],
   "source": {
     "mode": "demo",
     "product": "NISAR L2 GUNW",
     "granules": [],
-    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
   },
-  "generated": "2026-11-14T14:49:37+00:00"
+  "generated": "2026-11-14T15:15:09+00:00"
 }

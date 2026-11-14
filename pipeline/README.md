@@ -24,9 +24,11 @@ python -m pip install -r requirements.txt
 # 1. Datos de demostración (lo que hay ahora en el repo)
 python build_layers.py --demo
 
-# 2. Datos reales
-python search_nisar.py --list-collections          # elegir los short names
-# añadir al .env: NISAR_SHORT_NAME_GUNW=..., NISAR_SHORT_NAME_GCOV=..., NISAR_SHORT_NAME_GOFF=...
+# 2. ¿Qué escenas reales hay? (catálogo CMR, sin credenciales)
+python search_nisar.py                             # escribe frontend/public/data/availability.json
+python search_nisar.py --list-collections
+
+# 3. Descargar y procesar (requiere EARTHDATA_USERNAME/PASSWORD en el .env)
 python search_nisar.py --site cdmx-subsidencia --download --limit 8
 python build_layers.py --real                      # sitios sin descargas siguen en demo
 ```
@@ -45,4 +47,6 @@ El explorador muestra el badge **Demo** o **NISAR** según `source.mode`.
 - El modo demo genera campos sintéticos con la forma y las unidades de cada producto. No son mediciones.
 - El modo real está escrito siguiendo la estructura de los productos L2 (datasets `unwrappedPhase`, `HHHH`/`HVHV`, `alongTrackOffset`/`slantRangeOffset`, con `xCoordinates`, `yCoordinates` y `projection`). **Aún no se ha probado con archivos reales**: hay que verificar las rutas con la especificación de ASF cuando se descarguen las primeras escenas.
 - GUNW: el desplazamiento es `-fase × λ / 4π` con λ = 23.84 cm (banda L). Los pares consecutivos se suman para obtener el acumulado; esto asume pares secuenciales sin huecos.
+- Colecciones: `NISAR_L2_<GUNW|GCOV|GOFF>_<BETA_V1|PROVISIONAL_V1|V1>`. Por defecto se descarga la madurez con más escenas (`--maturity` para forzarla).
+- En modo real solo se usan escenas de la misma geometría (track, dirección y frame); el resto se descarta y se avisa.
 - No mezclar madureces (BETA, PROVISIONAL, VALIDATED) sin documentarlo (ver `docs/arquitectura/04`).

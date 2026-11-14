@@ -21,6 +21,14 @@
   ],
   "colormap": "forest",
   "story": "El bosque devuelve mucha señal en polarización cruzada (HV). Cuando se tala, la señal cae: el radar ve la deforestación incluso bajo las nubes amazónicas.",
+  "en": {
+    "name": "Forest loss",
+    "place": "Rondônia, Brazil",
+    "changeLabel": "Deforestation",
+    "metric": "HV backscatter",
+    "story": "Forests return strong cross-polarised (HV) signal. When they are cleared the signal drops, so radar sees deforestation even under Amazon clouds.",
+    "unit": "dB"
+  },
   "pilot": false,
   "dates": [
     "2026-08-02",
@@ -108,28 +116,38 @@
   "stats": [
     {
       "label": "Área sin bosque al inicio",
+      "labelEn": "Cleared area at start",
       "value": "300",
       "unit": "km²",
-      "note": "2026-08-02"
+      "unitEn": "km²",
+      "note": "2026-08-02",
+      "noteEn": "2026-08-02"
     },
     {
       "label": "Área sin bosque al final",
+      "labelEn": "Cleared area at end",
       "value": "401",
       "unit": "km²",
-      "note": "2026-10-25"
+      "unitEn": "km²",
+      "note": "2026-10-25",
+      "noteEn": "2026-10-25"
     },
     {
       "label": "Cambio neto",
+      "labelEn": "Net change",
       "value": "+101",
       "unit": "km²",
-      "note": "Umbral -15.5 dB"
+      "unitEn": "km²",
+      "note": "Umbral -15.5 dB",
+      "noteEn": "Threshold -15.5 dB"
     }
   ],
   "source": {
     "mode": "demo",
     "product": "NISAR L2 GCOV",
     "granules": [],
-    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
   },
-  "generated": "2026-11-14T14:49:48+00:00"
+  "generated": "2026-11-14T15:15:14+00:00"
 }

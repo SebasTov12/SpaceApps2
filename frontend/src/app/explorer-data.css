@@ -98,3 +98,16 @@
   .map-hint{display:none}
   .swipe-dates{bottom:auto;top:52px}
 }
+
+/* ---------- Idioma y escenas reales en ASF ---------- */
+.lang-toggle{display:flex;padding:3px;border:1px solid var(--line);border-radius:9px;background:#0d1820}
+.lang-toggle button{min-width:34px;padding:5px 8px;border:0;border-radius:6px;background:transparent;color:#8a9ba2;font-size:11px;font-weight:600;letter-spacing:.06em}
+.lang-toggle button.is-active{background:rgba(64,170,168,.22);color:#d5f3f0}
+.asf-card{display:flex;gap:10px;margin-top:10px;padding:11px;border:1px solid rgba(95,211,159,.25);border-radius:9px;background:rgba(95,211,159,.06)}
+.asf-card strong{font-size:11px;font-weight:600;color:#bfeed8}
+.asf-card p{margin:3px 0 6px;font-size:10px;color:#a9c9bb}
+.asf-card ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
+.asf-card li{font-size:10px;color:#9fb3ac}
+.asf-card li b{font-weight:600;color:#cfe9de;margin-right:4px;font-size:9px;letter-spacing:.05em}
+.asf-card small{display:block;margin-top:6px;font-size:9px;color:#71838b}
+.asf-card .source-icon{flex-shrink:0;color:#7fe0b4;background:rgba(95,211,159,.12)}

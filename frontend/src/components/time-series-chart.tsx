@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { shortDate } from "@/lib/sites";
 
 type TimeSeriesChartProps = {
@@ -16,9 +17,11 @@ const PAD = { top: 18, right: 16, bottom: 30, left: 46 };
 
 /** Serie temporal del punto seleccionado, en SVG para no añadir dependencias. */
 export default function TimeSeriesChart({ dates, values, unit, activeIndex, onSelect }: TimeSeriesChartProps) {
+  const { lang, t } = useI18n();
+  const sd = (iso: string) => shortDate(iso, lang);
   const valid = values.filter((value): value is number => value !== null);
   if (valid.length < 2) {
-    return <p className="chart-empty">Sin datos en este punto (fuera de cobertura o sin señal). Prueba otro lugar dentro del recuadro.</p>;
+    return <p className="chart-empty">{t.chartEmpty}</p>;
   }
   let min = Math.min(...valid, 0);
   let max = Math.max(...valid, 0);
@@ -37,7 +40,7 @@ export default function TimeSeriesChart({ dates, values, unit, activeIndex, onSe
   const ticks = [min + margin, (min + max) / 2, max - margin];
 
   return (
-    <svg className="ts-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Serie temporal en ${unit}: ${values.map((v, i) => `${shortDate(dates[i])} ${v ?? "sin dato"}`).join(", ")}`}>
+    <svg className="ts-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${t.chartLabel(unit)}: ${values.map((v, i) => `${sd(dates[i])} ${v ?? t.noValue}`).join(", ")}`}>
       {ticks.map((tick) => (
         <g key={tick}>
           <line x1={PAD.left} x2={W - PAD.right} y1={y(tick)} y2={y(tick)} className="ts-grid" />
@@ -54,7 +57,7 @@ export default function TimeSeriesChart({ dates, values, unit, activeIndex, onSe
         </g>
       ))}
       {dates.map((d, i) => (i % 2 === 0 || i === dates.length - 1) && (
-        <text key={d} x={x(i)} y={H - 8} className={`ts-tick ${i === activeIndex ? "is-active" : ""}`} textAnchor="middle">{shortDate(d)}</text>
+        <text key={d} x={x(i)} y={H - 8} className={`ts-tick ${i === activeIndex ? "is-active" : ""}`} textAnchor="middle">{sd(d)}</text>
       ))}
       <text x={PAD.left} y={11} className="ts-unit">{unit}</text>
     </svg>

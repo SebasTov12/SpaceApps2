@@ -21,6 +21,14 @@
   ],
   "colormap": "diverging",
   "story": "La extracción de agua subterránea hace que partes de la ciudad se hundan varios centímetros al año, dañando calles, tuberías y edificios.",
+  "en": {
+    "name": "Sinking city",
+    "place": "Mexico City, Mexico",
+    "changeLabel": "Subsidence",
+    "metric": "Cumulative line-of-sight displacement",
+    "story": "Groundwater pumping makes parts of the city sink several centimetres per year, damaging streets, pipes and buildings.",
+    "unit": "cm"
+  },
   "pilot": false,
   "dates": [
     "2026-08-02",
@@ -109,28 +117,38 @@
   "stats": [
     {
       "label": "Desplazamiento máximo",
+      "labelEn": "Peak displacement",
       "value": "-9.4",
       "unit": "cm",
-      "note": "Alejándose del satélite"
+      "unitEn": "cm",
+      "note": "Alejándose del satélite",
+      "noteEn": "Moving away from the satellite"
     },
     {
       "label": "Área con más de 3 cm",
+      "labelEn": "Area beyond 3 cm",
       "value": "349.6",
       "unit": "km²",
-      "note": "Al final del periodo"
+      "unitEn": "km²",
+      "note": "Al final del periodo",
+      "noteEn": "At the end of the period"
     },
     {
       "label": "Ritmo en el punto máximo",
+      "labelEn": "Rate at the peak",
       "value": "-3.4",
       "unit": "cm/mes",
-      "note": "Promedio del periodo"
+      "unitEn": "cm/month",
+      "note": "Promedio del periodo",
+      "noteEn": "Period average"
     }
   ],
   "source": {
     "mode": "demo",
     "product": "NISAR L2 GUNW",
     "granules": [],
-    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
   },
-  "generated": "2026-11-14T14:49:43+00:00"
+  "generated": "2026-11-14T15:15:10+00:00"
 }

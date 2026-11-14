@@ -21,6 +21,14 @@
   ],
   "colormap": "ice",
   "story": "Uno de los glaciares más rápidos del planeta. El seguimiento de desplazamientos entre pasadas del radar mide cuántos metros al día avanza el hielo.",
+  "en": {
+    "name": "Moving glacier",
+    "place": "Sermeq Kujalleq (Jakobshavn), Greenland",
+    "changeLabel": "Glacier flow",
+    "metric": "Ice velocity",
+    "story": "One of the fastest glaciers on Earth. Tracking image offsets between radar passes measures how many metres per day the ice advances.",
+    "unit": "m/day"
+  },
   "pilot": false,
   "dates": [
     "2026-08-02",
@@ -108,28 +116,38 @@
   "stats": [
     {
       "label": "Velocidad máxima al inicio",
+      "labelEn": "Peak speed at start",
       "value": "36.0",
       "unit": "m/día",
-      "note": "2026-08-02"
+      "unitEn": "m/day",
+      "note": "2026-08-02",
+      "noteEn": "2026-08-02"
     },
     {
       "label": "Velocidad máxima al final",
+      "labelEn": "Peak speed at end",
       "value": "24.0",
       "unit": "m/día",
-      "note": "2026-10-25"
+      "unitEn": "m/day",
+      "note": "2026-10-25",
+      "noteEn": "2026-10-25"
     },
     {
       "label": "Variación",
+      "labelEn": "Change",
       "value": "-33",
       "unit": "%",
-      "note": "Desaceleración estacional"
+      "unitEn": "%",
+      "note": "Desaceleración estacional",
+      "noteEn": "Seasonal slowdown"
     }
   ],
   "source": {
     "mode": "demo",
     "product": "NISAR L2 GOFF",
     "granules": [],
-    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
   },
-  "generated": "2026-11-14T14:49:46+00:00"
+  "generated": "2026-11-14T15:15:13+00:00"
 }

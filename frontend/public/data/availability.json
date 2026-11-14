@@ -1,0 +1,116 @@
+{
+  "checked": "2026-11-14T15:14:35+00:00",
+  "source": "NASA CMR · ASF DAAC",
+  "sites": [
+    {
+      "id": "colombia-ladera",
+      "product": "GUNW",
+      "total": 43,
+      "maturities": [
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GUNW_PROVISIONAL_V1",
+          "count": 43,
+          "first": "2026-06-19",
+          "last": "2026-10-08"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GUNW_032_119_A_005_033_2000_SH_20261008T103043_20261008T103118_20261020T103043_20261020T103118_P05023_N_F_J_001"
+    },
+    {
+      "id": "cdmx-subsidencia",
+      "product": "GUNW",
+      "total": 79,
+      "maturities": [
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GUNW_PROVISIONAL_V1",
+          "count": 67,
+          "first": "2025-10-30",
+          "last": "2026-10-08"
+        },
+        {
+          "maturity": "BETA",
+          "shortName": "NISAR_L2_GUNW_BETA_V1",
+          "count": 12,
+          "first": "2025-10-25",
+          "last": "2026-01-05"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GUNW_032_113_D_079_033_4000_SH_20261008T011329_20261008T011403_20261020T011329_20261020T011403_P05023_N_F_J_001"
+    },
+    {
+      "id": "sylhet-inundacion",
+      "product": "GCOV",
+      "total": 47,
+      "maturities": [
+        {
+          "maturity": "VALIDATED",
+          "shortName": "NISAR_L2_GCOV_V1",
+          "count": 8,
+          "first": "2026-10-21",
+          "last": "2026-11-11"
+        },
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GCOV_PROVISIONAL_V1",
+          "count": 39,
+          "first": "2026-06-18",
+          "last": "2026-10-18"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GCOV_035_091_D_076_2005_QPDH_A_20261111T123421_20261111T123456_P05036_N_F_J_001"
+    },
+    {
+      "id": "jakobshavn-glaciar",
+      "product": "GOFF",
+      "total": 75,
+      "maturities": [
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GOFF_PROVISIONAL_V1",
+          "count": 52,
+          "first": "2026-06-18",
+          "last": "2026-10-09"
+        },
+        {
+          "maturity": "BETA",
+          "shortName": "NISAR_L2_GOFF_BETA_V1",
+          "count": 23,
+          "first": "2025-10-28",
+          "last": "2026-01-01"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GOFF_032_131_A_037_033_7700_SH_20261009T064731_20261009T064808_20261021T064731_20261021T064808_P05023_N_P_J_001"
+    },
+    {
+      "id": "rondonia-deforestacion",
+      "product": "GCOV",
+      "total": 60,
+      "maturities": [
+        {
+          "maturity": "VALIDATED",
+          "shortName": "NISAR_L2_GCOV_V1",
+          "count": 5,
+          "first": "2026-10-23",
+          "last": "2026-10-28"
+        },
+        {
+          "maturity": "PROVISIONAL",
+          "shortName": "NISAR_L2_GCOV_PROVISIONAL_V1",
+          "count": 50,
+          "first": "2026-06-18",
+          "last": "2026-10-16"
+        },
+        {
+          "maturity": "BETA",
+          "shortName": "NISAR_L2_GCOV_BETA_V1",
+          "count": 5,
+          "first": "2025-11-02",
+          "last": "2025-11-14"
+        }
+      ],
+      "latest": "NISAR_L2_PR_GCOV_034_068_D_094_2005_SHSH_A_20261028T222703_20261028T222737_P05036_N_F_J_001"
+    }
+  ]
+}

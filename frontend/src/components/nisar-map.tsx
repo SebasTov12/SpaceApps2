@@ -3,6 +3,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { ImageSource, Map as MapLibreMap, Marker, StyleSpecification } from "maplibre-gl";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useI18n } from "@/lib/i18n";
 import type { Bbox } from "@/lib/sites";
 
 export type MapMode = "single" | "swipe" | "change";
@@ -64,6 +65,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
 }
 
 export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey }: NisarMapProps) {
+  const { t } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -191,7 +193,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
             className="swipe-grip"
             role="slider"
             tabIndex={0}
-            aria-label="Comparar antes y después"
+            aria-label={t.compare}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(split)}
@@ -203,11 +205,11 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
           >
             <span>‹</span><span>›</span>
           </div>
-          <span className="swipe-tag swipe-before">Antes</span>
-          <span className="swipe-tag swipe-after">Después</span>
+          <span className="swipe-tag swipe-before">{t.beforeTag}</span>
+          <span className="swipe-tag swipe-after">{t.afterTag}</span>
         </div>
       )}
-      {failed && <div className="map-fallback">No se pudo iniciar el mapa (WebGL no disponible).</div>}
+      {failed && <div className="map-fallback">{t.mapFailed}</div>}
     </div>
   );
 }

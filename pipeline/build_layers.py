@@ -199,6 +199,20 @@ DATASET_BY_PRODUCT = {
     "GOFF": ["alongTrackOffset", "slantRangeOffset"],
 }
 DATE_IN_NAME = re.compile(r"(\d{8})T\d{6}")
+# geometría de adquisición en el nombre: <track>_<A|D>_<frame>, p. ej. "119_A_005"
+GEOMETRY_IN_NAME = re.compile(r"_(\d{3})_([AD])_(\d{3})_")
+
+
+def same_geometry(files):
+    """Se queda con la geometría (track, dirección, frame) más frecuente: no se deben mezclar."""
+    groups = {}
+    for path in files:
+        match = GEOMETRY_IN_NAME.search(path.name)
+        groups.setdefault(match.groups() if match else None, []).append(path)
+    key = max(groups, key=lambda k: len(groups[k]))
+    if len(groups) > 1:
+        print(f"    {len(groups)} geometrías distintas; se usa {key} ({len(groups[key])} archivos)")
+    return groups[key]
 
 
 def _find(h5, name):
@@ -242,7 +256,7 @@ def read_real(site, grid, files):
 
     product = site["product"]
     records = []
-    for path in sorted(files):
+    for path in sorted(same_geometry(files)):
         stamps = DATE_IN_NAME.findall(path.name)
         if not stamps:
             continue
@@ -334,34 +348,42 @@ def downsample(field, rows, cols):
     return field[np.ix_(r_idx, c_idx)]
 
 
+def stat(label, label_en, value, unit, note, note_en, unit_en=None):
+    return {"label": label, "labelEn": label_en, "value": value, "unit": unit, "unitEn": unit_en or unit, "note": note, "noteEn": note_en}
+
+
 def compute_stats(site, frames, grid):
+    """Tres cifras por sitio, con etiquetas en español e inglés."""
     first, last = frames[0], frames[-1]
     px = grid["pixel_km2"]
     unit = site["unit"]
     sid = site["id"]
+    d0, d1 = site["dates"][0], site["dates"][-1]
     if site["change"] == "deformation":
         threshold = 10 if unit == "mm" else 3
         moving = np.nansum(last <= -threshold) * px
+        rate = np.nanmin(last) / max(1, days_between(d0, d1)) * 30
         return [
-            {"label": "Desplazamiento máximo", "value": f"{np.nanmin(last):.1f}", "unit": unit, "note": "Alejándose del satélite"},
-            {"label": f"Área con más de {threshold} {unit}", "value": f"{moving:.1f}", "unit": "km²", "note": "Al final del periodo"},
-            {"label": "Ritmo en el punto máximo", "value": f"{np.nanmin(last) / max(1, days_between(site['dates'][0], site['dates'][-1])) * 30:.1f}", "unit": f"{unit}/mes", "note": "Promedio del periodo"},
+            stat("Desplazamiento máximo", "Peak displacement", f"{np.nanmin(last):.1f}", unit, "Alejándose del satélite", "Moving away from the satellite"),
+            stat(f"Área con más de {threshold} {unit}", f"Area beyond {threshold} {unit}", f"{moving:.1f}", "km²", "Al final del periodo", "At the end of the period"),
+            stat("Ritmo en el punto máximo", "Rate at the peak", f"{rate:.1f}", f"{unit}/mes", "Promedio del periodo", "Period average", f"{unit}/month"),
         ]
     if site["change"] == "backscatter":
         thr = -15 if sid != "rondonia-deforestacion" else -15.5
         a0 = np.nansum(first < thr) * px
         a1 = np.nansum(last < thr) * px
-        label = "Área inundada" if sid == "sylhet-inundacion" else "Área sin bosque"
+        flood = sid == "sylhet-inundacion"
+        es, en = ("Área inundada", "Flooded area") if flood else ("Área sin bosque", "Cleared area")
         return [
-            {"label": f"{label} al inicio", "value": f"{a0:.0f}", "unit": "km²", "note": site["dates"][0]},
-            {"label": f"{label} al final", "value": f"{a1:.0f}", "unit": "km²", "note": site["dates"][-1]},
-            {"label": "Cambio neto", "value": f"{a1 - a0:+.0f}", "unit": "km²", "note": f"Umbral {thr} dB"},
+            stat(f"{es} al inicio", f"{en} at start", f"{a0:.0f}", "km²", d0, d0),
+            stat(f"{es} al final", f"{en} at end", f"{a1:.0f}", "km²", d1, d1),
+            stat("Cambio neto", "Net change", f"{a1 - a0:+.0f}", "km²", f"Umbral {thr} dB", f"Threshold {thr} dB"),
         ]
     v0, v1 = np.nanpercentile(first, 99.5), np.nanpercentile(last, 99.5)
     return [
-        {"label": "Velocidad máxima al inicio", "value": f"{v0:.1f}", "unit": unit, "note": site["dates"][0]},
-        {"label": "Velocidad máxima al final", "value": f"{v1:.1f}", "unit": unit, "note": site["dates"][-1]},
-        {"label": "Variación", "value": f"{(v1 - v0) / v0 * 100:+.0f}", "unit": "%", "note": "Desaceleración estacional"},
+        stat("Velocidad máxima al inicio", "Peak speed at start", f"{v0:.1f}", unit, d0, d0, "m/day"),
+        stat("Velocidad máxima al final", "Peak speed at end", f"{v1:.1f}", unit, d1, d1, "m/day"),
+        stat("Variación", "Change", f"{(v1 - v0) / v0 * 100:+.0f}", "%", "Desaceleración estacional", "Seasonal slowdown"),
     ]
 
 
@@ -413,6 +435,7 @@ def build_site(site, mode, global_dates):
     stats = compute_stats(site, frames, grid)
     manifest = {
         **{k: site[k] for k in ("id", "name", "place", "lat", "lon", "bbox", "change", "changeLabel", "product", "metric", "unit", "range", "colormap", "story")},
+        "en": {**site.get("en", {}), "unit": "m/day" if site["unit"] == "m/día" else site["unit"]},
         "pilot": site.get("pilot", False),
         "dates": dates,
         "layers": layers,
@@ -426,12 +449,14 @@ def build_site(site, mode, global_dates):
             "granules": granules,
             "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración." if source_mode == "demo"
             else "Procesado desde productos NISAR descargados de ASF DAAC.",
+            "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo." if source_mode == "demo"
+            else "Processed from NISAR products downloaded from ASF DAAC.",
         },
         "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"  {site['id']:<24} {source_mode:<5} {len(dates)} fechas  {cols}x{rows}px")
-    return {k: manifest[k] for k in ("id", "name", "place", "lat", "lon", "bbox", "change", "changeLabel", "product", "unit", "story", "pilot")} | {
+    return {k: manifest[k] for k in ("id", "name", "place", "lat", "lon", "bbox", "change", "changeLabel", "product", "unit", "story", "pilot", "en")} | {
         "mode": source_mode, "headline": stats[0]}
 
 

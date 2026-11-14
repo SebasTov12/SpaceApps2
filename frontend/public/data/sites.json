@@ -18,12 +18,23 @@
       "unit": "mm",
       "story": "Zona piloto de TENUA. Las laderas andinas se mueven lentamente antes de fallar; el radar mide milímetros de desplazamiento aunque haya nubes.",
       "pilot": true,
+      "en": {
+        "name": "Andean hillside",
+        "place": "Norte de Santander, Colombia",
+        "changeLabel": "Landslide",
+        "metric": "Cumulative line-of-sight displacement",
+        "story": "TENUA's pilot area. Andean slopes creep slowly before they fail; the radar measures millimetres of movement even through clouds.",
+        "unit": "mm"
+      },
       "mode": "demo",
       "headline": {
         "label": "Desplazamiento máximo",
+        "labelEn": "Peak displacement",
         "value": "-56.5",
         "unit": "mm",
-        "note": "Alejándose del satélite"
+        "unitEn": "mm",
+        "note": "Alejándose del satélite",
+        "noteEn": "Moving away from the satellite"
       }
     },
     {
@@ -44,12 +55,23 @@
       "unit": "cm",
       "story": "La extracción de agua subterránea hace que partes de la ciudad se hundan varios centímetros al año, dañando calles, tuberías y edificios.",
       "pilot": false,
+      "en": {
+        "name": "Sinking city",
+        "place": "Mexico City, Mexico",
+        "changeLabel": "Subsidence",
+        "metric": "Cumulative line-of-sight displacement",
+        "story": "Groundwater pumping makes parts of the city sink several centimetres per year, damaging streets, pipes and buildings.",
+        "unit": "cm"
+      },
       "mode": "demo",
       "headline": {
         "label": "Desplazamiento máximo",
+        "labelEn": "Peak displacement",
         "value": "-9.4",
         "unit": "cm",
-        "note": "Alejándose del satélite"
+        "unitEn": "cm",
+        "note": "Alejándose del satélite",
+        "noteEn": "Moving away from the satellite"
       }
     },
     {
@@ -70,12 +92,23 @@
       "unit": "dB",
       "story": "Tras el monzón, el agua de los humedales (haor) retrocede. El agua tranquila refleja el radar lejos del satélite y aparece oscura.",
       "pilot": false,
+      "en": {
+        "name": "Flooded wetlands",
+        "place": "Sylhet, Bangladesh",
+        "changeLabel": "Flooding",
+        "metric": "HH backscatter",
+        "story": "After the monsoon, water in the haor wetlands recedes. Calm water reflects the radar away from the satellite and looks dark.",
+        "unit": "dB"
+      },
       "mode": "demo",
       "headline": {
         "label": "Área inundada al inicio",
+        "labelEn": "Flooded area at start",
         "value": "1995",
         "unit": "km²",
-        "note": "2026-08-02"
+        "unitEn": "km²",
+        "note": "2026-08-02",
+        "noteEn": "2026-08-02"
       }
     },
     {
@@ -96,12 +129,23 @@
       "unit": "m/día",
       "story": "Uno de los glaciares más rápidos del planeta. El seguimiento de desplazamientos entre pasadas del radar mide cuántos metros al día avanza el hielo.",
       "pilot": false,
+      "en": {
+        "name": "Moving glacier",
+        "place": "Sermeq Kujalleq (Jakobshavn), Greenland",
+        "changeLabel": "Glacier flow",
+        "metric": "Ice velocity",
+        "story": "One of the fastest glaciers on Earth. Tracking image offsets between radar passes measures how many metres per day the ice advances.",
+        "unit": "m/day"
+      },
       "mode": "demo",
       "headline": {
         "label": "Velocidad máxima al inicio",
+        "labelEn": "Peak speed at start",
         "value": "36.0",
         "unit": "m/día",
-        "note": "2026-08-02"
+        "unitEn": "m/day",
+        "note": "2026-08-02",
+        "noteEn": "2026-08-02"
       }
     },
     {
@@ -122,12 +166,23 @@
       "unit": "dB",
       "story": "El bosque devuelve mucha señal en polarización cruzada (HV). Cuando se tala, la señal cae: el radar ve la deforestación incluso bajo las nubes amazónicas.",
       "pilot": false,
+      "en": {
+        "name": "Forest loss",
+        "place": "Rondônia, Brazil",
+        "changeLabel": "Deforestation",
+        "metric": "HV backscatter",
+        "story": "Forests return strong cross-polarised (HV) signal. When they are cleared the signal drops, so radar sees deforestation even under Amazon clouds.",
+        "unit": "dB"
+      },
       "mode": "demo",
       "headline": {
         "label": "Área sin bosque al inicio",
+        "labelEn": "Cleared area at start",
         "value": "300",
         "unit": "km²",
-        "note": "2026-08-02"
+        "unitEn": "km²",
+        "note": "2026-08-02",
+        "noteEn": "2026-08-02"
       }
     }
   ]

@@ -24,7 +24,9 @@ Las demás amenazas y sectores quedan como ampliaciones. Toda vista debe mostrar
 
 ## Estado actual del repo
 
-- **Frontend (Next.js):** recorrido 3D de la Tierra con NISAR y explorador con mapa real (MapLibre + imagen satelital). Muestra 5 sitios del mundo, uno por tipo de cambio: deslizamiento, subsidencia, inundación, flujo de glaciar y deforestación. Incluye vistas por fecha, antes/después y mapa de cambio, y la serie temporal de cualquier punto al hacer clic. Los sitios también aparecen como marcadores sobre el globo.
-- **Pipeline (`pipeline/`):** `search_nisar.py` busca y descarga productos NISAR de ASF DAAC con las credenciales de Earthdata del `.env`. `build_layers.py` convierte GUNW, GCOV y GOFF en las capas del explorador (`frontend/public/data`). Ver [pipeline/README.md](pipeline/README.md).
-- **Datos:** las capas actuales son **sintéticas con formato NISAR** (`build_layers.py --demo`) y la interfaz las marca como demo. El paso siguiente es descargar escenas reales y ejecutar `build_layers.py --real`; el modo real aún no se ha probado con archivos de ASF.
-- Pendiente: API/backend, `frontend/Dockerfile` (lo referencia `infra/tenua`; debe ejecutar `npm run build`, que copia el worker de MapLibre en `prebuild`) y la versión en inglés.
+- **Frontend (Next.js):** recorrido 3D de la Tierra con NISAR y explorador con mapa real (MapLibre + imagen satelital). Muestra 5 sitios del mundo, uno por tipo de cambio: deslizamiento, subsidencia, inundación, flujo de glaciar y deforestación. Incluye vistas por fecha, antes/después y mapa de cambio, serie temporal al hacer clic, marcadores en el globo y selector **ES/EN**.
+- **Pipeline (`pipeline/`):** `search_nisar.py` consulta el catálogo CMR de NASA sin credenciales (y descarga con Earthdata). `build_layers.py` convierte GUNW, GCOV y GOFF en las capas del explorador. Ver [pipeline/README.md](pipeline/README.md).
+- **Datos:** hay escenas NISAR reales en ASF para los 5 sitios (43 GUNW sobre el piloto de Colombia, ver [docs/entrega.md](docs/entrega.md)). Las capas del mapa siguen siendo **sintéticas con formato NISAR** y se marcan como demo. Siguiente paso: descargar y ejecutar `build_layers.py --real`.
+- **Despliegue:** `frontend/Dockerfile` (Next standalone, Node 24 Alpine) para `infra/tenua`.
+- **Entrega:** resumen ES/EN, datos de NASA usados y guion del video en [docs/entrega.md](docs/entrega.md).
+- Pendiente: API/backend y procesar escenas reales.

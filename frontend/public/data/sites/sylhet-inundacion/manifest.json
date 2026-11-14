@@ -21,6 +21,14 @@
   ],
   "colormap": "water",
   "story": "Tras el monzón, el agua de los humedales (haor) retrocede. El agua tranquila refleja el radar lejos del satélite y aparece oscura.",
+  "en": {
+    "name": "Flooded wetlands",
+    "place": "Sylhet, Bangladesh",
+    "changeLabel": "Flooding",
+    "metric": "HH backscatter",
+    "story": "After the monsoon, water in the haor wetlands recedes. Calm water reflects the radar away from the satellite and looks dark.",
+    "unit": "dB"
+  },
   "pilot": false,
   "dates": [
     "2026-08-02",
@@ -108,28 +116,38 @@
   "stats": [
     {
       "label": "Área inundada al inicio",
+      "labelEn": "Flooded area at start",
       "value": "1995",
       "unit": "km²",
-      "note": "2026-08-02"
+      "unitEn": "km²",
+      "note": "2026-08-02",
+      "noteEn": "2026-08-02"
     },
     {
       "label": "Área inundada al final",
+      "labelEn": "Flooded area at end",
       "value": "512",
       "unit": "km²",
-      "note": "2026-10-25"
+      "unitEn": "km²",
+      "note": "2026-10-25",
+      "noteEn": "2026-10-25"
     },
     {
       "label": "Cambio neto",
+      "labelEn": "Net change",
       "value": "-1483",
       "unit": "km²",
-      "note": "Umbral -15 dB"
+      "unitEn": "km²",
+      "note": "Umbral -15 dB",
+      "noteEn": "Threshold -15 dB"
     }
   ],
   "source": {
     "mode": "demo",
     "product": "NISAR L2 GCOV",
     "granules": [],
-    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración."
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
   },
-  "generated": "2026-11-14T14:49:44+00:00"
+  "generated": "2026-11-14T15:15:11+00:00"
 }

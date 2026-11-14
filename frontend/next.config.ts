@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // build autocontenido para la imagen Docker (infra/tenua)
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
