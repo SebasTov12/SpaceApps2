@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DoubleSide, type Group, type Mesh, type MeshBasicMaterial } from "three";
+import { AdditiveBlending, Color, DoubleSide, type Group, type Mesh, type MeshBasicMaterial, type ShaderMaterial } from "three";
 import { riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { GLOBE_SELECT, focusZone, globeState } from "./globe-state";
 
@@ -13,24 +13,44 @@ export function spherePosition(lat: number, lon: number, radius: number): [numbe
   return [-Math.cos(phi) * Math.sin(theta) * radius, Math.cos(theta) * radius, Math.sin(phi) * Math.sin(theta) * radius];
 }
 
-const easeOutBack = (t: number) => 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2);
+const easeOutBack = (t: number) => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2);
+const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+
+// Columna de luz: degradado que se desvanece hacia arriba
+const pillarVertex = `
+  varying vec2 vUv;
+  void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+`;
+const pillarFragment = `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying vec2 vUv;
+  void main() {
+    float fade = pow(1.0 - vUv.y, 1.6);
+    gl_FragColor = vec4(uColor, fade * uOpacity);
+  }
+`;
 
 function Marker({ zone, selected, index }: { zone: RiskZone; selected: boolean; index: number }) {
   const group = useRef<Group>(null);
-  const core = useRef<Mesh>(null);
-  const idle = useRef<Mesh>(null);
+  const body = useRef<Group>(null);
+  const pillar = useRef<Group>(null);
+  const pillarMaterial = useRef<ShaderMaterial>(null);
+  const pulse = useRef<Mesh>(null);
   const burst = useRef<Mesh>(null);
-  const halo = useRef<Mesh>(null);
+  const base = useRef<Mesh>(null);
   const revealAt = useRef<number | null>(null);
   const [hover, setHover] = useState(false);
-  const position = useMemo(() => spherePosition(zone.lat, zone.lon, 1.014), [zone.lat, zone.lon]);
   const color = riskKinds[zone.kind].color;
-  const size = zone.siteId ? 0.017 : 0.012;
+  const position = useMemo(() => spherePosition(zone.lat, zone.lon, 1.002), [zone.lat, zone.lon]);
+  const size = zone.siteId ? 0.013 : 0.0095;
+  const pillarHeight = zone.siteId ? 0.075 : 0.05;
+  const uniforms = useMemo(() => ({ uColor: { value: new Color(color) }, uOpacity: { value: 0 } }), [color]);
 
   useEffect(() => {
     const node = group.current;
     if (!node) return;
-    node.lookAt(position[0] * 2, position[1] * 2, position[2] * 2);
+    node.lookAt(position[0] * 2, position[1] * 2, position[2] * 2); // +Z hacia fuera de la superficie
     globeState.markers.set(zone.id, node);
     return () => {
       globeState.markers.delete(zone.id);
@@ -39,64 +59,82 @@ function Marker({ zone, selected, index }: { zone: RiskZone; selected: boolean; 
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    const node = group.current;
+    const node = body.current;
     if (!node) return;
     if (!globeState.revealed.has(zone.id)) {
-      node.scale.setScalar(0.0001);
+      node.visible = false;
       return;
     }
+    node.visible = true;
     if (revealAt.current === null) revealAt.current = t;
-    const pop = Math.min(1, (t - revealAt.current) / 0.7);
-    node.scale.setScalar(Math.max(0.0001, easeOutBack(pop)) * (hover ? 1.5 : 1) * (selected ? 1.35 : 1));
+    const appear = clamp01((t - revealAt.current) / 0.8);
+    const emphasis = (hover ? 1.35 : 1) * (selected ? 1.25 : 1);
+    node.scale.setScalar(Math.max(0.001, easeOutBack(appear)) * emphasis);
 
-    // pulso suave permanente
-    if (idle.current) {
-      const p = (t * 0.55 + index * 0.137) % 1;
-      idle.current.scale.setScalar(1 + p * 2.2);
-      (idle.current.material as MeshBasicMaterial).opacity = 0.55 * (1 - p);
+    // pasada del haz: la columna se alarga un instante y sale un anillo suave
+    const flashAt = globeState.flashes.get(zone.id) ?? -99;
+    const f = (t - flashAt) / 1.8;
+    const flashing = f >= 0 && f < 1;
+    const boost = flashing ? Math.sin(f * Math.PI) : 0;
+    if (pillar.current) pillar.current.scale.set(1, 1, Math.max(0.001, appear * (1 + boost * 1.4 + (selected ? 0.5 : 0))));
+    if (pillarMaterial.current) pillarMaterial.current.uniforms.uOpacity.value = 0.55 + boost * 0.4 + (selected ? 0.2 : 0);
+
+    if (pulse.current) {
+      const p = (t * 0.45 + index * 0.137) % 1;
+      pulse.current.scale.setScalar(1 + p * 2.6);
+      (pulse.current.material as MeshBasicMaterial).opacity = 0.32 * (1 - p) * appear;
     }
-    // destello cuando el reconocimiento la descubre o el haz pasa encima
-    const flashAt = Math.max(globeState.flashes.get(zone.id) ?? -99, revealAt.current);
-    const f = (t - flashAt) / 1.6;
     if (burst.current) {
-      const active = f >= 0 && f < 1;
-      burst.current.visible = active;
-      if (active) {
-        burst.current.scale.setScalar(1 + f * 6);
-        (burst.current.material as MeshBasicMaterial).opacity = 0.9 * (1 - f) ** 2;
+      burst.current.visible = flashing;
+      if (flashing) {
+        burst.current.scale.setScalar(1 + f * 4.5);
+        (burst.current.material as MeshBasicMaterial).opacity = 0.5 * (1 - f) ** 2;
       }
     }
-    if (core.current) core.current.scale.setScalar(f >= 0 && f < 0.5 ? 1 + Math.sin(f * Math.PI * 2) * 0.6 : 1);
-    if (halo.current) (halo.current.material as MeshBasicMaterial).opacity = selected ? 0.95 : zone.siteId ? 0.6 : 0;
+    if (base.current) (base.current.material as MeshBasicMaterial).opacity = selected || hover ? 0.95 : 0.6;
   });
+
+  const select = () => {
+    if (globeState.user.moved > 6) return; // fue un arrastre, no un clic
+    focusZone(zone.id);
+  };
 
   return (
     <group ref={group} position={position}>
-      <mesh
-        ref={core}
-        onClick={(event) => {
-          event.stopPropagation();
-          if (globeState.user.moved > 6) return; // fue un arrastre, no un clic
-          focusZone(zone.id);
-        }}
-        onPointerOver={(event) => { event.stopPropagation(); setHover(true); document.body.style.cursor = "pointer"; }}
-        onPointerOut={() => { setHover(false); document.body.style.cursor = ""; }}
-      >
-        <circleGeometry args={[size, 24]} />
-        <meshBasicMaterial color={color} side={DoubleSide} toneMapped={false} />
-      </mesh>
-      <mesh ref={halo}>
-        <ringGeometry args={[size * 1.45, size * 1.75, 32]} />
-        <meshBasicMaterial color={selected ? "#ffffff" : color} transparent opacity={0} side={DoubleSide} depthWrite={false} toneMapped={false} />
-      </mesh>
-      <mesh ref={idle}>
-        <ringGeometry args={[size * 1.1, size * 1.35, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={0.5} side={DoubleSide} depthWrite={false} toneMapped={false} />
-      </mesh>
-      <mesh ref={burst} visible={false}>
-        <ringGeometry args={[size * 1.2, size * 1.6, 40]} />
-        <meshBasicMaterial color="#e9fbff" transparent opacity={0} side={DoubleSide} depthWrite={false} toneMapped={false} />
-      </mesh>
+      <group ref={body} visible={false}>
+        {/* anillo de base, apoyado en la superficie */}
+        <mesh ref={base} position={[0, 0, 0.002]}>
+          <ringGeometry args={[size * 1.25, size * 1.6, 40]} />
+          <meshBasicMaterial color={selected ? "#ffffff" : color} transparent opacity={0.6} side={DoubleSide} depthWrite={false} toneMapped={false} />
+        </mesh>
+        {/* pulso que se expande sobre el terreno */}
+        <mesh ref={pulse} position={[0, 0, 0.0025]}>
+          <ringGeometry args={[size * 1.3, size * 1.5, 40]} />
+          <meshBasicMaterial color={color} transparent opacity={0} side={DoubleSide} depthWrite={false} toneMapped={false} />
+        </mesh>
+        <mesh ref={burst} position={[0, 0, 0.003]} visible={false}>
+          <ringGeometry args={[size * 1.4, size * 1.75, 48]} />
+          <meshBasicMaterial color="#e6fbff" transparent opacity={0} side={DoubleSide} depthWrite={false} toneMapped={false} />
+        </mesh>
+        {/* cúpula iluminada por la escena: se integra con el relieve */}
+        <mesh
+          rotation={[Math.PI / 2, 0, 0]}
+          onClick={(event) => { event.stopPropagation(); select(); }}
+          onPointerOver={(event) => { event.stopPropagation(); setHover(true); document.body.style.cursor = "pointer"; }}
+          onPointerOut={() => { setHover(false); document.body.style.cursor = ""; }}
+        >
+          <sphereGeometry args={[size, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.55} roughness={0.35} metalness={0.2} />
+        </mesh>
+        {/* columna de luz hacia el espacio; el grupo se estira desde la base (eje Z = hacia fuera) */}
+        <group ref={pillar}>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, pillarHeight / 2]}>
+            <cylinderGeometry args={[size * 0.28, size * 0.5, pillarHeight, 16, 1, true]} />
+            <shaderMaterial ref={pillarMaterial} uniforms={uniforms} vertexShader={pillarVertex} fragmentShader={pillarFragment}
+              transparent depthWrite={false} blending={AdditiveBlending} side={DoubleSide} />
+          </mesh>
+        </group>
+      </group>
     </group>
   );
 }

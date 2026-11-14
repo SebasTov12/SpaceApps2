@@ -14,12 +14,13 @@ function surface(along: number, across: number): [number, number, number] {
   return [radius * Math.cos(along), radius * Math.sin(along), across];
 }
 
-function makeGeometry(orbitRadius: number) {
+function makeGeometry(apex: [number, number, number]) {
   const corners = [surface(-0.022, 0.10), surface(0.022, 0.10), surface(0.022, 0.23), surface(-0.022, 0.23)];
   const beam: number[] = [];
   const beamUv: number[] = [];
   for (let index = 0; index < 4; index++) {
-    beam.push(orbitRadius, 0, 0, ...corners[index], ...corners[(index + 1) % 4]);
+    // el haz nace en la apertura de la antena del satélite
+    beam.push(...apex, ...corners[index], ...corners[(index + 1) % 4]);
     beamUv.push(0.5, 0, 0, 1, 1, 1);
   }
   const swath: number[] = [];
@@ -46,14 +47,15 @@ const vertex = `
   }
 `;
 
-export default function NisarRadar({ radius, playing, progress }: {
-  radius: number; playing: boolean; progress: MotionValue<number>;
+export default function NisarRadar({ apex, playing, progress }: {
+  radius: number; apex: [number, number, number]; playing: boolean; progress: MotionValue<number>;
 }) {
   const beam = useRef<ShaderMaterial>(null);
   const swath = useRef<ShaderMaterial>(null);
   const footprint = useRef<MeshBasicMaterial>(null);
   const elapsed = useRef(0);
-  const geometry = useMemo(() => makeGeometry(radius), [radius]);
+  const [ax, ay, az] = apex;
+  const geometry = useMemo(() => makeGeometry([ax, ay, az]), [ax, ay, az]);
   const beamUniforms = useMemo(() => ({ time: { value: 0 }, visibility: { value: 0 } }), []);
   const swathUniforms = useMemo(() => ({ visibility: { value: 0 } }), []);
 

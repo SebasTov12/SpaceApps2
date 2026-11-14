@@ -38,15 +38,17 @@ const fragment = `
     vec3 n = normalize(vPos);
     float a = acos(clamp(dot(n, uOrigin), -1.0, 1.0));
     float d = a - uAngle;
-    float front = exp(-pow(d / 0.045, 2.0)) + 0.35 * exp(-pow(d / 0.16, 2.0));
+    float front = exp(-pow(d / 0.035, 2.0)) * 0.7 + 0.22 * exp(-pow(d / 0.14, 2.0));
     float scanned = 1.0 - smoothstep(-0.02, 0.02, d);
     float latD = degrees(asin(clamp(n.y, -1.0, 1.0)));
     float lonD = degrees(atan(n.x, n.z));
-    float gLat = abs(fract(latD / 10.0 + 0.5) - 0.5) * 10.0;
-    float gLon = abs(fract(lonD / 10.0 + 0.5) - 0.5) * 10.0 * cos(radians(latD));
-    float grid = max(1.0 - smoothstep(0.12, 0.32, gLat), 1.0 - smoothstep(0.12, 0.32, gLon));
+    float gLat = abs(fract(latD / 5.0 + 0.5) - 0.5) * 5.0;
+    float gLon = abs(fract(lonD / 5.0 + 0.5) - 0.5) * 5.0 * cos(radians(latD));
+    float grid = max(1.0 - smoothstep(0.03, 0.11, gLat), 1.0 - smoothstep(0.03, 0.11, gLon));
+    // la retícula solo se ve cerca del frente y se apaga detrás de él
+    float near = exp(-pow(d / 0.5, 2.0));
     float rim = pow(1.0 - max(dot(vViewNormal, vec3(0.0, 0.0, 1.0)), 0.0), 2.0);
-    float alpha = front * 0.85 * uActive + scanned * (grid * 0.32 + rim * 0.18 + 0.03) * uTrail;
+    float alpha = front * 0.55 * uActive + scanned * (grid * 0.16 * (0.35 + 0.65 * near) + rim * 0.08) * uTrail;
     gl_FragColor = vec4(mix(vec3(0.45, 0.86, 0.9), vec3(0.9, 1.0, 1.0), front * 0.5), alpha);
   }
 `;
@@ -67,12 +69,14 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     const u = material.current?.uniforms;
     if (!u) return;
     const t = clock.elapsedTime;
+    // El barrido usa el reloj real del navegador: si el lienzo se vuelve a montar no se repite
+    const now = performance.now() / 1000;
     globeState.clock = t;
     const scan = globeState.scan;
 
     // 1. Inicio: el barrido parte del punto bajo el satélite
     if (ready && scan.startedAt < 0) {
-      scan.startedAt = t + SCAN_DELAY;
+      scan.startedAt = now + SCAN_DELAY;
       if (globeState.orbit) {
         globeState.orbit.localToWorld(tmp.foot.copy(FOOTPRINT_LOCAL));
         scan.origin.copy(tmp.foot.normalize());
@@ -81,12 +85,12 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     }
     if (scan.startedAt < 0) return;
 
-    scan.progress = Math.min(1, Math.max(0, (t - scan.startedAt) / SCAN_DURATION));
+    scan.progress = Math.min(1, Math.max(0, (now - scan.startedAt) / SCAN_DURATION));
     const angle = scan.progress * Math.PI * 1.04;
     u.uAngle.value = angle;
     u.uActive.value = smooth(0, 0.04, scan.progress) * (1 - smooth(0.92, 1, scan.progress));
-    u.uTrail.value = smooth(0, 0.1, scan.progress) * (1 - smooth(scan.startedAt + SCAN_DURATION + 0.4, scan.startedAt + SCAN_DURATION + 2.4, t));
-    globeState.beam = smooth(scan.startedAt - 0.4, scan.startedAt + 0.5, t);
+    u.uTrail.value = smooth(0, 0.1, scan.progress) * (1 - smooth(scan.startedAt + SCAN_DURATION + 0.2, scan.startedAt + SCAN_DURATION + 1.6, now));
+    globeState.beam = smooth(scan.startedAt - 0.4, scan.startedAt + 0.5, now);
 
     // 2. El frente descubre las zonas que alcanza
     if (scan.progress > 0 && globeState.revealed.size < riskZones.length) {
