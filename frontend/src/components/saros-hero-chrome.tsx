@@ -44,7 +44,7 @@ export function SarosWordmark({ progress, departure }: { progress: MotionValue<n
     const p = Math.min(1, progress.get() / 0.8);
     return (1 - p * 0.8) * (1 - Math.min(1, departure.get() * 2));
   });
-  const taglineOpacity = useTransform(progress, [0, 0.3], [1, 0]);
+
   return (
     <motion.div className="hero-wordmark" style={{ y, scale, opacity }} aria-hidden="true">
       <p className="wordmark-title">
@@ -54,7 +54,6 @@ export function SarosWordmark({ progress, departure }: { progress: MotionValue<n
         <span className="wm-o">O<SarosStar className="wm-star" /></span>
         <span>S</span>
       </p>
-      <motion.p className="wordmark-tagline" style={{ opacity: taglineOpacity }}>OBSERVA · ANALIZA · PREVIENE</motion.p>
     </motion.div>
   );
 }

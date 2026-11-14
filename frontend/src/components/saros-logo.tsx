@@ -33,8 +33,8 @@ export function SarosEmblem({ size = 34 }: { size?: number }) {
   );
 }
 
-/** Logo completo: emblema + "SAROS" + lema. */
-export default function SarosLogo({ href = "#inicio", tagline = true, size = 34 }: { href?: string; tagline?: boolean; size?: number }) {
+/** Logo completo: emblema + "SAROS" */
+export default function SarosLogo({ href = "#inicio", tagline = false, size = 34 }: { href?: string; tagline?: boolean; size?: number }) {
   return (
     <a className="saros-logo" href={href} aria-label="SAROS, inicio">
       <SarosEmblem size={size} />
