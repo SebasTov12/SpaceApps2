@@ -54,6 +54,46 @@ def model_ready() -> bool:
         return False
 
 
+def dataset_catalog() -> list[dict[str, object]]:
+    """Return provenance counts for model records without treating unknown as real."""
+    datasets = []
+    with connect_db() as connection:
+        for schema, source, kind in (
+            ("dian", "DIAN", "forecast_records"),
+            ("nasa", "NASA-ISRO NISAR", "forecast_records"),
+        ):
+            total, synthetic, real, unclassified, latest = connection.execute(
+                f"""
+                SELECT count(*),
+                       count(*) FILTER (WHERE payload->>'synthetic' = 'true'),
+                       count(*) FILTER (WHERE payload->>'synthetic' = 'false'),
+                       count(*) FILTER (WHERE payload->>'synthetic' IS NULL),
+                       max(predicted_at)
+                  FROM {schema}.predictions
+                """
+            ).fetchone()
+            status = (
+                "empty" if total == 0 else
+                "demo" if synthetic == total else
+                "real" if real == total else
+                "mixed" if synthetic and real else
+                "unclassified"
+            )
+            datasets.append({
+                "id": f"{schema}.predictions",
+                "source": source,
+                "kind": kind,
+                "records": total,
+                "synthetic_records": synthetic,
+                "real_records": real,
+                "unclassified_records": unclassified,
+                "status": status,
+                "latest_record_at": latest.isoformat() if latest else None,
+                "note": "Son registros de predicción, no granules ni observaciones satelitales." if schema == "nasa" else "Son registros de predicción, no datos de recaudo observados.",
+            })
+    return datasets
+
+
 @app.get("/health")
 def health():
     return jsonify({"status": "ok", "service": "saros-api"})
@@ -76,6 +116,26 @@ def headlines():
     # The frontend falls back to its sourced ASF and demo data until the
     # publication pipeline begins writing reviewed headlines to the API.
     return jsonify({"headlines": []})
+
+
+@app.get("/api/v1/datasets")
+def datasets():
+    try:
+        return jsonify({"datasets": dataset_catalog()})
+    except psycopg.Error:
+        return jsonify({"error": "dataset_catalog_unavailable"}), 503
+
+
+@app.get("/api/v1/manifest")
+def manifest():
+    try:
+        return jsonify({
+            "api_version": "v1",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "datasets": dataset_catalog(),
+        })
+    except psycopg.Error:
+        return jsonify({"error": "dataset_manifest_unavailable"}), 503
 
 
 @app.post("/api/v1/predictions")

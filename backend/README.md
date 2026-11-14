@@ -7,6 +7,7 @@
 - `GET /health`: API liveness.
 - `GET /ready`: checks PostgreSQL and the loaded NISAR ONNX predictor.
 - `GET /api/v1/headlines`: returns an empty list while the reviewed publication pipeline is not connected; the frontend then uses its sourced static data.
+- `GET /api/v1/manifest` and `GET /api/v1/datasets`: return database provenance counts for DIAN/NASA prediction records, separating synthetic, real and unclassified rows. The NASA table contains forecasts, not source granules.
 - `POST /api/v1/predictions`: accepts an NPZ body as `application/octet-stream`, requires `Authorization: Bearer <SAROS_PREDICTION_TOKEN>`, proxies the patch to the private predictor, and stores its result summary in PostgreSQL.
 
 Prediction inputs must contain finite, co-registered `before` and `after` arrays. See [the model contract](../ml/nisar_change/README.md). The API stores the prediction ID, time, threshold, dimensions, and changed fraction; large pixel masks remain in the response rather than the database.
