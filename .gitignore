@@ -1,0 +1,17 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+!.env.search.example
+!.env.train.example
+
+# Local NISAR data and model artifacts
+data/
+artifacts/
+models/
+
+# Python and editor/runtime cache
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
