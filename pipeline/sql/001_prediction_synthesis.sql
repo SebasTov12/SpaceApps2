@@ -144,6 +144,7 @@ BEGIN
                 'period', v_dian -> 'period',
                 'forecast', v_dian -> 'forecast',
                 'baseline', v_dian -> 'baseline',
+                'model_context', v_dian -> 'model_context',
                 'analysis', jsonb_build_object(
                     'month_over_month_change_pct', v_dian_change_pct,
                     'direction', v_dian_trend
@@ -165,6 +166,7 @@ BEGIN
                 'period', v_nasa -> 'period',
                 'forecast', v_nasa -> 'forecast',
                 'baseline', v_nasa -> 'baseline',
+                'model_context', v_nasa -> 'model_context',
                 'analysis', jsonb_build_object(
                     'signed_los_change_mm', v_nasa_change_mm,
                     'direction', v_nasa_trend
@@ -184,6 +186,11 @@ BEGIN
             'spatial_scopes_comparable',
                 (v_dian #>> '{geography,scope_level}' = v_nasa #>> '{geography,scope_level}'),
             'cross_source_correlation_estimated', false,
+            'predictive_models_trained', coalesce(
+                v_dian #>> '{model_context,training_status}' = 'trained'
+                AND v_nasa #>> '{model_context,training_status}' = 'trained',
+                false
+            ),
             'combined_risk_score', NULL,
             'alert', false,
             'interpretation',

@@ -74,7 +74,6 @@ ON CONFLICT (run_id, prediction_key) DO UPDATE
         model_version = EXCLUDED.model_version,
         predicted_at = EXCLUDED.predicted_at,
         payload = EXCLUDED.payload;
-
 WITH forecasts (period_start, value_mm, previous_value_mm, mean_coherence, observation_count) AS (
     VALUES
         (DATE '2026-12-01', 10.800::numeric, 10.300::numeric, 0.71::numeric, 2),
@@ -128,7 +127,7 @@ SELECT
             'synthetic_observation_count', f.observation_count,
             'nominal_acquisition_interval_days', 12,
             'mean_coherence', f.mean_coherence,
-            'synthetic_unwrapped_phase_rad', round(-4 * pi() * (f.value_mm / 1000.0) / 0.2384, 6),
+            'synthetic_unwrapped_phase_rad', round((-4 * pi() * (f.value_mm / 1000.0) / 0.2384)::numeric, 6),
             'wavelength_m', 0.2384
         ),
         'model_context', jsonb_build_object(
@@ -164,5 +163,3 @@ ON CONFLICT (run_id, prediction_key) DO UPDATE
         model_version = EXCLUDED.model_version,
         predicted_at = EXCLUDED.predicted_at,
         payload = EXCLUDED.payload;
-
-SELECT analysis.refresh_colombia_llm_briefs() AS briefs_written;

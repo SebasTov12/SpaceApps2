@@ -2,9 +2,9 @@
 
 ## Alcance de esta primera versión
 
-La base almacena seis meses de escenario sintético para dos fuentes. Los valores no se descargaron de DIAN ni de ASF y no representan recaudación, deformación ni riesgo reales. Los scripts se pueden ejecutar de nuevo sin duplicar filas.
+La base almacena seis meses de escenario sintético para dos fuentes y una predicción del mes siguiente de cada una. Los valores no se descargaron de DIAN ni de ASF y no representan recaudación, deformación ni riesgo reales. Los scripts se pueden ejecutar de nuevo sin duplicar filas.
 
-El modelo actual es una síntesis determinista y explicable, no un modelo entrenado. Compara cada predicción con la base sintética del mes anterior, conserva por separado sus unidades y alcances, y deja un paquete JSON preparado para un LLM. No envía datos a un proveedor LLM porque aún no hay proveedor ni credenciales configurados.
+La tercera migración entrena dos regresiones lineales por mínimos cuadrados ordinarios, una con la serie sintética DIAN y otra con la serie sintética NISAR. Guarda coeficientes, R², MAE y el intervalo de entrenamiento en `analysis.model_training_runs`. Luego extrapola un mes y crea un paquete JSON que conserva por separado unidades y ámbitos geográficos. El entrenamiento está hecho sobre seis valores sintéticos por fuente. No valida comportamiento real. El paquete está listo para integrar con un LLM, pero aún no se envía a ningún proveedor porque no hay uno configurado.
 
 ## Datos que conviene conservar
 
@@ -26,7 +26,7 @@ Cada fila conserva modelo y versión, `run_id`, clave idempotente, fecha de cál
 
 ## Modelo de síntesis
 
-`analysis.synthesize_colombia_month(date)` devuelve evidencia DIAN y NISAR para el mismo mes, el cambio porcentual sintético de recaudo, el cambio firmado de LOS en milímetros, la diferencia entre sus escalas geográficas y las instrucciones del LLM.
+`analysis.train_colombia_synthetic_models()` ajusta las dos regresiones, registra sus métricas, inserta las predicciones del siguiente mes y actualiza los resúmenes. `analysis.synthesize_colombia_month(date)` devuelve evidencia DIAN y NISAR para el mismo mes, el cambio porcentual sintético de recaudo, el cambio firmado de LOS en milímetros, la diferencia entre sus escalas geográficas y las instrucciones del LLM.
 
 DIAN se modela aquí a nivel nacional. NISAR corresponde al AOI de Norte de Santander. La función marca que sus escalas no son comparables, no estima una correlación, no genera un puntaje de riesgo y no produce una alerta. El resultado queda en `analysis.llm_briefs` para que una integración posterior lo recupere y lo envíe al proveedor elegido.
 
@@ -37,12 +37,17 @@ Ejecuta desde PowerShell en la raíz del repositorio:
 ```powershell
 Get-Content -Raw pipeline/sql/001_prediction_synthesis.sql | ssh -i "$env:USERPROFILE\.ssh\id_ed25519" admin@100.104.169.58 "docker exec -i spaceapps2-postgres psql -v ON_ERROR_STOP=1 -U spaceapps2_admin -d spaceapps2"
 Get-Content -Raw pipeline/sql/002_seed_colombia_synthetic.sql | ssh -i "$env:USERPROFILE\.ssh\id_ed25519" admin@100.104.169.58 "docker exec -i spaceapps2-postgres psql -v ON_ERROR_STOP=1 -U spaceapps2_admin -d spaceapps2"
+Get-Content -Raw pipeline/sql/003_train_synthetic_models.sql | ssh -i "$env:USERPROFILE\.ssh\id_ed25519" admin@100.104.169.58 "docker exec -i spaceapps2-postgres psql -v ON_ERROR_STOP=1 -U spaceapps2_admin -d spaceapps2"
 ```
 
 Para obtener paquetes listos para integrar con un LLM:
 
 ```sql
 SELECT analysis.refresh_colombia_llm_briefs();
+SELECT source, sample_count, coefficients, metrics
+FROM analysis.model_training_runs
+WHERE case_id = 'colombia-ladera'
+ORDER BY source;
 SELECT jsonb_pretty(payload)
 FROM analysis.llm_briefs
 WHERE case_id = 'colombia-ladera'
