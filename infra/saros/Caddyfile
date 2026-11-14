@@ -1,0 +1,9 @@
+# Caddy emite y renueva el certificado TLS de saros.tobaru.xyz automáticamente.
+# El registro DNS debe apuntar al servidor y los puertos 80/443 deben llegar a Caddy.
+saros.tobaru.xyz {
+	encode zstd gzip
+
+	@api path /health /ready /api/*
+	reverse_proxy @api spaceapps2-api:8000
+	reverse_proxy spaceapps2-saros:3000
+}

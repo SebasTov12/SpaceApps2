@@ -7,7 +7,7 @@ El proyecto Compose `spaceapps2` empaqueta los servicios de SAROS: frontend Next
 1. Copia `.env.example` a `.env` en la raíz del repositorio.
 2. En Orivia conserva en `SAROS_POSTGRES_PASSWORD` exactamente la contraseña configurada en el contenedor PostgreSQL actual. El volumen `spaceapps2_postgres_data` ya contiene sus datos.
 3. Genera `SAROS_PREDICTION_TOKEN` con un valor aleatorio largo.
-4. Configura un registro DNS `A` para `saros.tobaru.xyz` apuntando a la IP pública del servidor.
+4. Configura un registro DNS `A` para `saros.tobaru.xyz` apuntando a la IP pública del servidor. Si Cloudflare tiene el proxy activo, configura su modo SSL/TLS como **Full (strict)**.
 
 No levantes otro PostgreSQL sobre `spaceapps2_postgres_data` mientras `spaceapps2-postgres` esté ejecutándose. Para migrar el servicio manual al Compose, conserva el volumen, detén y retira solo el contenedor antiguo, y luego inicia el proyecto.
 
@@ -19,7 +19,7 @@ Desde la raíz del repositorio:
 docker compose -f infra/saros/docker-compose.yml up -d --build
 ```
 
-Agrega `Caddyfile.snippet` al Caddyfile activo de Orivia y valida/recarga Caddy. La ruta `/api/*` llega a Flask; las demás rutas llegan al frontend. La base de datos y el predictor solo están disponibles en la red privada de SAROS. No ejecutes `docker compose down -v`: el volumen PostgreSQL contiene los datos.
+Agrega el bloque de `Caddyfile` al Caddyfile activo de Orivia y valida/recarga Caddy. Caddy obtiene y renueva automáticamente el certificado TLS para `saros.tobaru.xyz`; para ello el DNS debe resolver al servidor y los puertos 80/443 deben llegar a Caddy. La ruta `/api/*` llega a Flask; las demás rutas llegan al frontend. La base de datos y el predictor solo están disponibles en la red privada de SAROS. No ejecutes `docker compose down -v`: el volumen PostgreSQL contiene los datos.
 
 El trabajador de filtros y capas se ejecuta bajo el perfil `processing`:
 
