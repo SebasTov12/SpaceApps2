@@ -1,4 +1,4 @@
-# Tobaru Workteam — análisis socioeconómico de riesgo con NISAR
+# SAROS — análisis socioeconómico de riesgo con NISAR
 
 Plataforma geoespacial que combina observaciones NISAR con información territorial, demográfica y económica para identificar amenazas, analizar quién y qué actividad puede quedar expuesto, priorizar prevención y comunicar recomendaciones explicables.
 

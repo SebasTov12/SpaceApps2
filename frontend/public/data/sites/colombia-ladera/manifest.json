@@ -20,13 +20,13 @@
     20
   ],
   "colormap": "diverging",
-  "story": "Zona piloto de TENUA. Las laderas andinas se mueven lentamente antes de fallar; el radar mide milímetros de desplazamiento aunque haya nubes.",
+      "story": "Zona piloto de SAROS. El radar permite estudiar deformación del terreno y contrastarla con la exposición territorial; esta demostración no predice deslizamientos.",
   "en": {
     "name": "Andean hillside",
     "place": "Norte de Santander, Colombia",
     "changeLabel": "Landslide",
     "metric": "Cumulative line-of-sight displacement",
-    "story": "TENUA's pilot area. Andean slopes creep slowly before they fail; the radar measures millimetres of movement even through clouds.",
+        "story": "SAROS pilot area. Radar helps study ground deformation alongside territorial exposure; this demonstration does not predict landslides.",
     "unit": "mm"
   },
   "pilot": true,

@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 
 export const metadata: Metadata = {
   title: "SAROS | Monitoreo geoespacial con NISAR",
-  description: "SAROS es una plataforma de monitoreo geoespacial impulsada por datos satelitales de NISAR para visualizar, analizar y anticipar riesgos en la Tierra.",
+  description: "SAROS relaciona observaciones satelitales NISAR con exposición territorial, vulnerabilidad e impactos socioeconómicos potenciales para apoyar la prevención.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -5,6 +5,7 @@ import { Crosshair, Database, Info, MapPin, MousePointerClick, X } from "lucide-
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
+import TerritorialImpact from "./territorial-impact";
 import type { MapMode } from "@/components/nisar-map";
 import { LanguageToggle, useI18n } from "@/lib/i18n";
 import { riskKindInfo, riskKinds, riskZones } from "@/lib/risk-zones";
@@ -139,6 +140,7 @@ export default function ZoneView() {
             <motion.div key={zone.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
               <h2 className="zone-title">{zone.name[lang]}</h2>
               <p className="zone-place"><MapPin size={13} /> {zone.place[lang]} · {formatCoord(zone.lat, zone.lon)}</p>
+              <TerritorialImpact key={zone.id} zoneId={zone.id} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
 
               {!siteId && (
                 <>
