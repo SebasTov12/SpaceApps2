@@ -7,8 +7,8 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui";
 import GlobeCanvas, { type GlobeState, type GlobeTarget } from "./globe-canvas";
 
-/** Zona piloto ilustrativa (por definir con especialistas). */
-const TARGET: GlobeTarget = { lat: 7.88, lon: -72.5 };
+/** Centro visual aproximado de Colombia; no representa el AOI del piloto. */
+const TARGET: GlobeTarget = { lat: 4.5, lon: -73.5 };
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -181,11 +181,11 @@ export default function GlobeJourney() {
         <Chapter progress={scrollYProgress} range={[0.45, 0.51, 0.64, 0.69]}>
           <p className="eyebrow">02 · ZONA PILOTO</p>
           <h2>Acercamos la mirada al territorio</h2>
-          <p>El piloto se concentra en una región y una amenaza: deslizamientos. La ubicación exacta se definirá con especialistas y autoridades locales.</p>
+          <p>El prototipo se enfocará en una región y una amenaza principal. El punto mostrado solo centra la animación en Colombia; el área piloto se definirá con especialistas, autoridades y disponibilidad de datos.</p>
           <dl className="meta-list">
-            <div><dt>Coordenadas</dt><dd>7°53′ N · 72°30′ W</dd></div>
-            <div><dt>Amenaza</dt><dd>Deslizamientos</dd></div>
-            <div><dt>Área de análisis</dt><dd>48.2 km² <Badge tone="demo">Demo</Badge></dd></div>
+            <div><dt>Enfoque</dt><dd>Colombia · ilustrativo</dd></div>
+            <div><dt>Amenaza candidata</dt><dd>Deslizamientos</dd></div>
+            <div><dt>Área piloto</dt><dd>Por definir</dd></div>
           </dl>
         </Chapter>
 

@@ -56,7 +56,7 @@ export default function ExplorerDashboard() {
             <div className="panel-bar">
               <div className="panel-bar-title">
                 <span className="icon-chip tech"><Satellite size={16} /></span>
-                <div><strong>Mapa de cambios</strong><small>7°53′ N · 72°30′ W</small></div>
+                <div><strong>Mapa de cambios</strong><small>Colombia · ubicación demo</small></div>
               </div>
               <div className="panel-bar-tools">
                 <Badge tone="demo">Mapa demo</Badge>

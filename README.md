@@ -22,3 +22,7 @@ El prototipo se concentra en una región delimitada y una amenaza principal, pre
 
 Las demás amenazas y sectores quedan como ampliaciones. Toda vista debe mostrar fuentes, fechas y limitaciones. No se publican probabilidades ni pérdidas monetarias como resultados reales sin modelos y datos que las respalden.
 
+## Estado actual del repo
+
+El frontend Next.js ya incluye el recorrido visual, el explorador territorial y tarjetas de exposición social/económica con datos sintéticos marcados como demo. La ubicación operativa del piloto sigue pendiente. Aún no hay API/backend, pipeline de descarga/procesamiento NISAR ni capas reales conectadas; el catálogo de datos registra lo que falta preparar.
+
