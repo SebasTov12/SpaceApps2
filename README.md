@@ -24,7 +24,7 @@ Las demás amenazas y sectores quedan como ampliaciones. Toda vista debe mostrar
 
 ## Estado actual del repo
 
-- **Frontend (Next.js):** recorrido 3D de la Tierra con NISAR y explorador con mapa real (MapLibre + imagen satelital). Muestra 5 sitios del mundo, uno por tipo de cambio: deslizamiento, subsidencia, inundación, flujo de glaciar y deforestación. Incluye vistas por fecha, antes/después y mapa de cambio, serie temporal al hacer clic, marcadores en el globo y selector **ES/EN**.
+- **Frontend (Next.js) — SAROS:** toda la app vive en el planeta 3D. Al cargar, NISAR hace un reconocimiento global que descubre 19 zonas de riesgo con relieve 3D; el satélite recorre el planeta en trayectos cruzados y su haz detecta zonas al pasar. Al tocar una zona, la cámara se acerca y se abre un panel con el mapa real (fecha, antes/después gradual y cambio), cifras, serie temporal del punto y escenas NISAR reales en ASF. Arriba hay un cintillo de titulares que baja con el scroll. ES/EN.
 - **Pipeline (`pipeline/`):** `search_nisar.py` consulta el catálogo CMR de NASA sin credenciales (y descarga con Earthdata). `build_layers.py` convierte GUNW, GCOV y GOFF en las capas del explorador. Ver [pipeline/README.md](pipeline/README.md).
 - **Datos:** hay escenas NISAR reales en ASF para los 5 sitios (43 GUNW sobre el piloto de Colombia, ver [docs/entrega.md](docs/entrega.md)). Las capas del mapa siguen siendo **sintéticas con formato NISAR** y se marcan como demo. Siguiente paso: descargar y ejecutar `build_layers.py --real`.
 - **Despliegue:** `frontend/Dockerfile` (Next standalone, Node 24 Alpine) para `infra/tenua`.

@@ -1,5 +1,10 @@
 import { Vector3, type Object3D } from "three";
 
+/** Relieve exagerado del planeta (fracción del radio). Montañas y casquetes sobresalen hasta este valor. */
+export const RELIEF = 0.04;
+/** Radio de las capas que van sobre el relieve (franja del radar, barrido). */
+export const OVER_RELIEF = 1 + RELIEF + 0.006;
+
 /**
  * Estado compartido entre la escena 3D (useFrame) y la interfaz HTML del globo.
  * Es un objeto mutable a propósito: se lee en cada fotograma sin provocar renders de React.
@@ -23,12 +28,14 @@ export const globeState = {
   beam: 0,
   /** Zona a la que el usuario pidió llevar el planeta. */
   focus: null as string | null,
+  /** Acercamiento de la cámara a una zona: 0 = vista general, 1 = zona abierta. */
+  zoom: 0,
   /** Tiempo del reloj de la escena, para que la interfaz calcule "hace X s". */
   clock: 0,
 };
 
 /** Huella del haz en coordenadas del grupo de órbita (ver nisar-radar: lado derecho, ~0.165 fuera del plano). */
-export const FOOTPRINT_LOCAL = new Vector3(Math.sqrt(1.012 ** 2 - 0.165 ** 2), 0, 0.165);
+export const FOOTPRINT_LOCAL = new Vector3(Math.sqrt(OVER_RELIEF ** 2 - 0.165 ** 2), 0, 0.165);
 
 export type DetectEvent = { id: string; source: "scan" | "pass"; visible: boolean };
 export type ReconEvent = { progress: number; found: number };
@@ -36,8 +43,16 @@ export type ReconEvent = { progress: number; found: number };
 export const GLOBE_DETECT = "tenua:detect";
 export const GLOBE_RECON = "tenua:recon";
 export const GLOBE_SELECT = "tenua:zone-select";
+/** Pedir que se abra un sitio con datos (lo usan el cintillo y otros componentes). */
+export const SITE_EVENT = "tenua:site";
 
 export const emit = <T,>(name: string, detail: T) => window.dispatchEvent(new CustomEvent<T>(name, { detail }));
+
+/** Cierra la zona abierta y aleja la cámara. */
+export function closeZone() {
+  globeState.focus = null;
+  emit(GLOBE_SELECT, null);
+}
 
 /** Pide girar el planeta hasta una zona (lo resuelve el controlador en useFrame). */
 export function focusZone(id: string) {

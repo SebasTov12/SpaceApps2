@@ -43,16 +43,9 @@ html body .metric-card,html body .map-card,html body .detail-card,html body .rev
 
 /* ---------- Hero: navbar, cintillo y logotipo detrás del planeta ---------- */
 .saros-chrome{position:absolute;inset:0;pointer-events:none;z-index:7}
-.saros-nav{position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 clamp(16px,3vw,40px);pointer-events:auto;background:linear-gradient(180deg,rgba(6,9,20,.92),rgba(6,9,20,.55));border-bottom:1px solid var(--saros-line);backdrop-filter:blur(14px)}
-.saros-nav nav{display:flex;gap:4px}
-.saros-nav nav a{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:500;color:#b9c6e4;transition:background .2s,color .2s}
-.saros-nav nav a:hover{background:rgba(0,212,255,.1);color:#fff}
-.saros-nav-actions{display:flex;align-items:center;gap:12px}
-.saros-cta{padding:10px 18px;border-radius:24px;background:var(--saros-gradient);color:#fff;font-size:13px;font-weight:600;box-shadow:0 6px 24px rgba(0,212,255,.25)}
-.saros-cta:hover{filter:brightness(1.1)}
 
 .ticker-dock{position:absolute;left:0;right:0;pointer-events:auto}
-.ticker-dock-top{top:64px}
+.ticker-dock-top{top:0}
 .ticker-dock-bottom{bottom:0}
 .ticker{display:flex;align-items:stretch;height:38px;background:rgba(8,12,28,.86);border-top:1px solid rgba(0,212,255,.18);border-bottom:1px solid rgba(0,212,255,.18);backdrop-filter:blur(12px);overflow:hidden}
 .ticker-label{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 16px;background:linear-gradient(90deg,#f59e0b,#f97316);color:#1a0f00;font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.14em;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%);padding-right:26px}
@@ -77,46 +70,105 @@ html body .metric-card,html body .map-card,html body .detail-card,html body .rev
 .ticker-loading{display:flex;align-items:center;height:100%;padding:0 16px;font-size:12px;color:#7486aa}
 @media(prefers-reduced-motion:reduce){.ticker-track{animation:none}.ticker-viewport{overflow-x:auto}}
 
-.hero-wordmark{position:absolute;z-index:1;left:0;right:0;top:clamp(130px,19vh,210px);display:grid;justify-items:center;pointer-events:none;transform-origin:50% 30%}
-.wordmark-title{position:relative;margin:0;display:flex;font-family:var(--font-display);font-weight:800;font-size:clamp(64px,10.5vw,168px);line-height:.9;letter-spacing:.06em;background:linear-gradient(180deg,#ffffff 0%,#dfe7ff 45%,#9aa8d8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 8px 40px rgba(0,212,255,.25))}
-.wordmark-title span{position:relative}
-.wm-star{position:absolute;color:#00d4ff;filter:drop-shadow(0 0 12px #00d4ff)}
-.wm-a .wm-star{width:.24em;height:.24em;left:50%;bottom:.1em;transform:translateX(-50%)}
-.wm-o .wm-star{width:.34em;height:.34em;left:50%;top:50%;transform:translate(-50%,-50%)}
-.wordmark-orbit{position:absolute;left:-6%;right:-6%;top:-18%;width:112%;height:150%;opacity:.85}
-.wordmark-tagline{margin:18px 0 0;font-family:var(--font-ui);font-size:clamp(11px,1.1vw,15px);font-weight:500;letter-spacing:.5em;color:#c4cff0}
-.wordmark-claim{margin:10px 0 0;font-size:clamp(13px,1.2vw,17px);color:#93a4c3}
-.wordmark-claim em{font-style:normal;font-weight:600;background:var(--saros-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
-
-/* deja sitio a navbar + cintillo arriba y al cintillo de abajo */
-html body .hud-recon,html body .hud-feed{top:118px}
-html body .hud-telemetry{bottom:58px}
-html body .hud-card{bottom:110px}
-html body .scroll-cue{bottom:56px}
-html body .scene-motion-toggle{bottom:54px}
-html body .hud-panel{border-color:rgba(0,212,255,.18);background:rgba(11,15,31,.66)}
-html body .hud-eyebrow{color:#00d4ff;font-family:var(--font-display);letter-spacing:.12em}
-html body .hud-count strong{font-family:var(--font-display);font-weight:600}
-
-@media(max-width:1100px){.saros-nav nav{display:none}}
 @media(max-width:720px){
-  .saros-nav{height:56px}
-  .saros-word small,.saros-nav .lang-toggle{display:none}
-  .saros-cta{padding:8px 12px;font-size:11px}
-  .ticker-dock-top{top:56px}
+  .saros-word small{display:none}
+  .ticker-dock-top{top:0}
   .ticker{height:34px}
   .ticker-label{font-size:9px;padding:0 18px 0 10px}
   .ticker-item{font-size:12px}
-  .hero-wordmark{top:96px}
-  .wordmark-tagline{letter-spacing:.3em}
-  .wordmark-claim{display:none}
-  html body .hud-recon{top:auto;bottom:96px;left:50%;right:auto;width:max-content;max-width:calc(100% - 24px);transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 14px;border-radius:30px}
-  html body .hud-recon .hud-head,html body .hud-recon .hud-progress,html body .hud-recon .hud-list-toggle,html body .hud-recon .hud-list,html body .hud-recon .hud-kinds,html body .hud-recon .hud-count small{display:none}
-  html body .hud-recon .hud-status{margin:0;font-size:11px}
-  html body .hud-recon .hud-count{margin:0;display:flex;align-items:baseline;gap:4px}
-  html body .hud-recon .hud-count strong{font-size:20px}
-  html body .hud-telemetry{bottom:46px}
+}
+
+/* ---------- Logotipo SAROS: grande al cargar, luego centrado detrás del planeta ---------- */
+.hero-wordmark{position:absolute;z-index:1;left:0;right:0;top:50%;translate:0 -50%;display:grid;justify-items:center;pointer-events:none;transform-origin:50% 50%;transition:opacity .8s ease}
+.wordmark-title{position:relative;margin:0;display:flex;gap:.02em;font-family:var(--font-wordmark),var(--font-display);font-weight:700;font-size:clamp(58px,11.5vw,190px);line-height:1;letter-spacing:.04em;background:linear-gradient(180deg,#ffffff 0%,#e3e9ff 42%,#8f9fd6 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 10px 50px rgba(0,212,255,.22))}
+.wordmark-title span{position:relative}
+.wm-star{position:absolute;color:#00d4ff;filter:drop-shadow(0 0 14px #00d4ff)}
+.wm-a .wm-star{width:.2em;height:.2em;left:50%;bottom:.14em;transform:translateX(-50%)}
+.wm-o .wm-star{width:.3em;height:.3em;left:50%;top:50%;transform:translate(-50%,-50%)}
+.wordmark-tagline{margin:22px 0 0;font-family:var(--font-ui);font-size:clamp(11px,1.05vw,15px);font-weight:500;letter-spacing:.55em;color:#c4cff0}
+.earth-stage[data-zoomed="true"] .hero-wordmark{opacity:0!important}
+html body .scroll-cue{bottom:56px}
+html body .scene-motion-toggle{bottom:54px}
+.earth-render.is-draggable{cursor:grab;touch-action:pan-y}
+.earth-render.is-draggable:active{cursor:grabbing}
+
+/* ---------- Zona abierta: el planeta se acerca y se desplaza; panel de vidrio ---------- */
+html body .earth-orbit{transition:translate 1.4s cubic-bezier(.22,1,.36,1)}
+html body .earth-stage[data-zoomed="true"] .earth-orbit{translate:calc(-50% - 16vw) -50%}
+.zone-layer{position:absolute;inset:0;z-index:6;pointer-events:none}
+.zone-nav{position:absolute;top:12px;left:12px;z-index:9;max-width:320px;padding:14px;border-radius:12px;background:rgba(11,15,31,.92);border:1px solid var(--saros-line);pointer-events:auto;transform:translateY(-200%);transition:transform .25s}
+.zone-nav:focus-within{transform:none}
+.zone-nav p{margin:0 0 8px;font-size:12px;color:var(--saros-muted)}
+.zone-nav ul{margin:0;padding:0;list-style:none;display:grid;gap:2px;max-height:50vh;overflow:auto}
+.zone-nav button{width:100%;padding:6px 8px;border:0;border-radius:6px;background:transparent;color:var(--saros-text);text-align:left;font-size:12px}
+.zone-nav button:hover,.zone-nav button:focus-visible{background:rgba(0,212,255,.12)}
+.zone-panel{position:absolute;top:20px;right:20px;bottom:56px;width:min(480px,40vw);overflow-y:auto;padding:22px 22px 18px;pointer-events:auto;border:1px solid rgba(0,212,255,.2);border-radius:20px;background:linear-gradient(160deg,rgba(17,24,50,.86),rgba(9,13,30,.9));backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);scrollbar-width:thin}
+.zone-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.zone-kind{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.zone-head-actions{display:flex;align-items:center;gap:8px}
+.zone-head-actions .lang-toggle{transform:scale(.85)}
+.zone-close{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--saros-line);border-radius:10px;background:rgba(255,255,255,.04);color:var(--saros-text)}
+.zone-close:hover{background:rgba(255,255,255,.1)}
+.zone-title{margin:14px 0 6px;font-family:var(--font-display);font-size:clamp(22px,2vw,30px);font-weight:600;letter-spacing:.02em;color:#fff}
+.zone-place{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--saros-muted)}
+.zone-place svg{color:var(--saros-tech)}
+.zone-story,.zone-info{margin:14px 0 0;font-size:13px;line-height:1.6;color:#c9d4ee}
+.zone-nodata{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,.08);color:#f5c675;font-size:12px;line-height:1.5}
+.zone-sub{margin:18px 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--saros-muted)}
+.zone-chips{display:flex;flex-wrap:wrap;gap:6px}
+.zone-chips button{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid var(--saros-line);border-radius:20px;background:rgba(255,255,255,.03);color:var(--saros-text);font-size:12px}
+.zone-chips button:hover{border-color:rgba(0,212,255,.45)}
+.zone-chips i{width:8px;height:8px;border-radius:50%}
+.zone-loading{height:240px;margin-top:16px;border-radius:14px;background:linear-gradient(90deg,rgba(255,255,255,.03),rgba(255,255,255,.07),rgba(255,255,255,.03));background-size:200% 100%;animation:zone-shimmer 1.4s linear infinite}
+@keyframes zone-shimmer{to{background-position:-200% 0}}
+.zone-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:16px}
+.zone-stats div{padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}
+.zone-stats small{display:block;font-size:10px;line-height:1.3;color:var(--saros-muted);min-height:2.6em}
+.zone-stats strong{display:flex;align-items:baseline;gap:4px;margin-top:4px;font-family:var(--font-display);font-size:19px;font-weight:600;color:#fff}
+.zone-stats strong span{font-family:var(--font-ui);font-size:10px;font-weight:500;color:var(--saros-muted)}
+.zone-stats em{display:block;margin-top:3px;font-style:normal;font-size:9.5px;color:#7486aa}
+.zone-modes{display:flex;gap:4px;margin-top:16px;padding:4px;border-radius:12px;background:rgba(255,255,255,.04)}
+.zone-modes button{flex:1;padding:8px 6px;border:0;border-radius:9px;background:transparent;color:var(--saros-muted);font-size:12px;font-weight:500;transition:background .25s,color .25s}
+.zone-modes button.is-active{background:linear-gradient(90deg,rgba(139,92,246,.35),rgba(0,212,255,.3));color:#fff}
+.zone-map{position:relative;height:280px;margin-top:10px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.06);background:#0b0f1f}
+.zone-legend{position:absolute;z-index:3;left:10px;bottom:10px;width:170px;padding:7px 9px;border-radius:9px;background:rgba(7,11,24,.8);backdrop-filter:blur(8px);pointer-events:none}
+.zone-legend .legend-bar{display:block;height:7px;border-radius:4px}
+.zone-legend .legend-ends{display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:#b9c6e4}
+.zone-legend i{font-style:normal}
+.zone-flag{position:absolute;z-index:3;top:10px;left:10px;padding:4px 8px;border-radius:6px;background:rgba(7,11,24,.8);font-size:9px;font-weight:700;letter-spacing:.1em;color:#f59e0b;pointer-events:none}
+.zone-flag.is-real{color:#10b981}
+.zone-map .swipe-dates{bottom:auto;top:10px;left:auto;right:10px;transform:none}
+.zone-timeline{margin-top:12px}
+.zone-timeline-head{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--saros-muted);margin-bottom:8px}
+.zone-timeline-head strong{font-weight:500;color:#dfe8fb}
+.zone-timeline-head span{font-family:var(--font-display);color:var(--saros-tech)}
+.zone-timeline input{width:100%;height:5px;margin:0;border-radius:5px;appearance:none;background:linear-gradient(90deg,#8b5cf6,#00d4ff var(--range-progress),rgba(255,255,255,.1) var(--range-progress))}
+.zone-timeline input::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #00d4ff;box-shadow:0 0 12px rgba(0,212,255,.6);cursor:pointer;transition:transform .2s}
+.zone-timeline input::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.zone-timeline input:disabled{opacity:.4}
+.zone-point{margin-top:16px;padding:12px;border-radius:14px;background:rgba(255,255,255,.035)}
+.zone-point-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;color:var(--saros-muted)}
+.zone-point-head span{display:inline-flex;align-items:center;gap:6px}
+.zone-point-head strong{font-family:var(--font-display);font-size:18px;color:#fff}
+.zone-point-head small{font-family:var(--font-ui);font-size:10px;color:var(--saros-muted)}
+.zone-point .ts-line{stroke:#00d4ff}
+.zone-point .ts-area{fill:rgba(0,212,255,.1)}
+.zone-point .ts-point circle{stroke:#00d4ff}
+.zone-explain{margin-top:14px;padding:12px;border-radius:14px;border:1px solid rgba(139,92,246,.25);background:rgba(139,92,246,.07)}
+.zone-explain strong{display:flex;align-items:center;gap:6px;font-size:12px;color:#d8ccff}
+.zone-explain p{margin:6px 0 0;font-size:12px;line-height:1.55;color:#c3cbe3}
+.zone-source{display:grid;gap:6px;margin-top:14px;font-size:10.5px;line-height:1.5;color:#7f90b3}
+.zone-asf{display:inline-flex;align-items:center;gap:6px;color:#6ee7b7}
+.zone-map .swipe-grip{width:34px;height:34px;background:#fff;box-shadow:0 0 0 4px rgba(0,212,255,.25),0 6px 18px rgba(0,0,0,.4)}
+
+@media(max-width:900px){
+  html body .earth-stage[data-zoomed="true"] .earth-orbit{translate:-50% calc(-50% - 24vh)}
+  .zone-panel{top:auto;left:10px;right:10px;bottom:46px;width:auto;max-height:58vh;border-radius:18px}
+  .zone-stats{gap:6px}
+  .zone-map{height:220px}
+}
+@media(max-width:720px){
+  .hero-wordmark .wordmark-tagline{letter-spacing:.3em}
   html body .scroll-cue{bottom:44px}
   html body .scene-motion-toggle{bottom:44px}
-  html body .hud-card{bottom:300px}
 }

@@ -8,7 +8,8 @@ import NisarOrbit from "@/components/nisar-orbit";
 import RiskMarkers from "@/components/globe/risk-markers";
 import ReconScan from "@/components/globe/recon-scan";
 import CompanionSats from "@/components/globe/companion-sats";
-import { globeState } from "@/components/globe/globe-state";
+import { RELIEF, globeState } from "@/components/globe/globe-state";
+import CameraRig from "@/components/globe/camera-rig";
 import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight, type DirectionalLight, type Group } from "three";
 
 type SceneQuality = "compact" | "full";
@@ -16,9 +17,11 @@ type SceneQuality = "compact" | "full";
 function Planet({ onReady, playing, quality }: { onReady: () => void; playing: boolean; quality: SceneQuality }) {
   const surface = useRef<Group>(null);
   const clouds = useRef<Group>(null);
-  const [day, cloud, normal, specular] = useTexture([
+  const [day, cloud, normal, specular, height] = useTexture([
     "/earth-blue-marble.jpg", "/earth-clouds.png",
     "/earth-normal.jpg", "/earth-specular.jpg",
+    // alturas reconstruidas desde el mapa de normales (montañas, mesetas y casquetes de hielo)
+    "/earth-height.png",
   ], (textures) => {
     textures[0].colorSpace = SRGBColorSpace;
     for (const texture of textures) texture.anisotropy = 8;
@@ -49,7 +52,8 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
     if (surface.current) surface.current.rotation.y += step * 0.04;
     if (clouds.current) clouds.current.rotation.y += step * 0.006;
   });
-  const earthSegments: [number, number] = quality === "compact" ? [72, 36] : [128, 64];
+  // más subdivisiones para que el relieve desplazado se vea sobresalir
+  const earthSegments: [number, number] = quality === "compact" ? [220, 110] : [480, 240];
   const shellSegments: [number, number] = quality === "compact" ? [56, 28] : [96, 48];
   return (
     <group ref={userGroup}>
@@ -57,7 +61,8 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
       <group ref={surface} rotation={[0, -Math.PI / 2 + 65 * Math.PI / 180, 0]}>
         <mesh>
           <sphereGeometry args={[1, ...earthSegments]} />
-          <meshPhongMaterial map={day} normalMap={normal} normalScale={new Vector2(0.17, 0.17)}
+          <meshPhongMaterial map={day} normalMap={normal} normalScale={new Vector2(0.55, 0.55)}
+            displacementMap={height} displacementScale={RELIEF}
             specularMap={specular} specular="#263b4e" shininess={55}
             emissive="#142f52" emissiveIntensity={0.32} />
         </mesh>
@@ -65,7 +70,7 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
         <RiskMarkers />
         <group ref={clouds}>
         {/* A faint offset veil gives cloud systems depth without heavy shadow maps. */}
-        <mesh scale={1.0015} rotation={[0, 0.006, 0.003]}>
+        <mesh scale={1 + RELIEF + 0.004} rotation={[0, 0.006, 0.003]}>
           <sphereGeometry args={[1, ...shellSegments]} />
           <meshBasicMaterial alphaMap={cloud} color="#05101c" transparent opacity={0.18} depthWrite={false}
             onBeforeCompile={(shader) => {
@@ -75,7 +80,7 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
               );
             }} />
         </mesh>
-        <mesh scale={1.008}>
+        <mesh scale={1 + RELIEF + 0.009}>
           <sphereGeometry args={[1, ...shellSegments]} />
           <meshPhongMaterial alphaMap={cloud} color="#f5f9ff" transparent opacity={0.9} depthWrite={false} shininess={3}
             onBeforeCompile={(shader) => {
@@ -88,7 +93,7 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
         </mesh>
         </group>
       </group>
-      <mesh scale={1.002}>
+      <mesh scale={1 + RELIEF + 0.002}>
         <sphereGeometry args={[1, ...shellSegments]} />
         <shaderMaterial transparent depthWrite={false} blending={AdditiveBlending}
           vertexShader={`
@@ -111,7 +116,7 @@ function Planet({ onReady, playing, quality }: { onReady: () => void; playing: b
           `}
         />
       </mesh>
-      <mesh scale={1.012}>
+      <mesh scale={1 + RELIEF + 0.012}>
         <sphereGeometry args={[1, ...shellSegments]} />
         <shaderMaterial transparent depthWrite={false} side={BackSide} blending={AdditiveBlending}
           vertexShader={`
@@ -241,6 +246,7 @@ export default function EarthGlobe({ progress, playing }: { progress: MotionValu
             <NisarOrbit playing={playing} progress={progress} />
             <ReconScan ready={ready} progress={progress} />
             <CompanionSats playing={playing} />
+            <CameraRig />
           </Suspense>
         </Canvas>
       </SceneBoundary>

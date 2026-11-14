@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SITE_EVENT } from "@/components/explorer-dashboard";
+import { SITE_EVENT } from "@/components/globe/globe-state";
 import { SarosStar } from "@/components/saros-logo";
 import { loadHeadlines, type Headline } from "@/lib/headlines";
 import { useI18n } from "@/lib/i18n";
@@ -29,8 +29,8 @@ export default function HeadlineTicker({ className }: { className?: string }) {
 
   const open = (siteId?: string) => {
     if (!siteId) return;
+    // abre la zona dentro del planeta (zone-view)
     window.dispatchEvent(new CustomEvent(SITE_EVENT, { detail: siteId }));
-    document.getElementById("explorador")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const renderItem = (item: Headline, copy: boolean) => (

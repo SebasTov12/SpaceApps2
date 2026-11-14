@@ -2,7 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { ImageSource, Map as MapLibreMap, Marker, StyleSpecification } from "maplibre-gl";
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useI18n } from "@/lib/i18n";
 import type { Bbox } from "@/lib/sites";
 
@@ -73,7 +73,33 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   const markerRef = useRef<Marker | null>(null);
   const onPickRef = useRef(onPick);
   const [ready, setReady] = useState(false);
-  const [split, setSplit] = useState(50);
+  // Deslizador antes/después con movimiento gradual: la línea persigue al objetivo con inercia
+  const [split, setSplit] = useState(96);
+  const splitShown = useRef(96);
+  const splitTarget = useRef(50);
+  const splitFrame = useRef(0);
+  const animateSplit = useCallback(() => {
+    cancelAnimationFrame(splitFrame.current);
+    const tick = () => {
+      const diff = splitTarget.current - splitShown.current;
+      splitShown.current += diff * 0.12;
+      if (Math.abs(diff) < 0.04) splitShown.current = splitTarget.current;
+      setSplit(splitShown.current);
+      if (splitShown.current !== splitTarget.current) splitFrame.current = requestAnimationFrame(tick);
+    };
+    splitFrame.current = requestAnimationFrame(tick);
+  }, []);
+  const moveSplitTo = useCallback((value: number) => {
+    splitTarget.current = Math.min(96, Math.max(4, value));
+    animateSplit();
+  }, [animateSplit]);
+  // al entrar en modo comparación, la línea se abre sola desde la derecha hasta el centro
+  useEffect(() => {
+    if (mode !== "swipe") return;
+    splitShown.current = 96;
+    moveSplitTo(50);
+    return () => cancelAnimationFrame(splitFrame.current);
+  }, [mode, moveSplitTo]);
   const [failed, setFailed] = useState(false);
   const initial = useRef({ bbox, layerUrl, beforeUrl, opacity, mode });
 
@@ -171,7 +197,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     const box = event.currentTarget.parentElement?.getBoundingClientRect();
     if (!box) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    const move = (clientX: number) => setSplit(Math.min(96, Math.max(4, ((clientX - box.left) / box.width) * 100)));
+    const move = (clientX: number) => moveSplitTo(((clientX - box.left) / box.width) * 100);
     move(event.clientX);
     const handle = event.currentTarget;
     const onMove = (e: PointerEvent) => move(e.clientX);
@@ -199,8 +225,8 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
             aria-valuenow={Math.round(split)}
             onPointerDown={dragSplit}
             onKeyDown={(event) => {
-              if (event.key === "ArrowLeft") setSplit((value) => Math.max(4, value - 4));
-              if (event.key === "ArrowRight") setSplit((value) => Math.min(96, value + 4));
+              if (event.key === "ArrowLeft") moveSplitTo(splitTarget.current - 6);
+              if (event.key === "ArrowRight") moveSplitTo(splitTarget.current + 6);
             }}
           >
             <span>‹</span><span>›</span>

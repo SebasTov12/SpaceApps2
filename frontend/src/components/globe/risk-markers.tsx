@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdditiveBlending, Color, DoubleSide, type Group, type Mesh, type MeshBasicMaterial, type ShaderMaterial } from "three";
 import { riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
-import { GLOBE_SELECT, focusZone, globeState } from "./globe-state";
+import { GLOBE_SELECT, RELIEF, focusZone, globeState } from "./globe-state";
 
 /** Posición en la esfera de three.js (SphereGeometry con textura equirectangular). */
 export function spherePosition(lat: number, lon: number, radius: number): [number, number, number] {
@@ -31,7 +31,37 @@ const pillarFragment = `
   }
 `;
 
-function Marker({ zone, selected, index }: { zone: RiskZone; selected: boolean; index: number }) {
+/** Altura del terreno (0–1) en cada zona, leída del mismo mapa que desplaza la superficie. */
+function useTerrainHeights() {
+  const [heights, setHeights] = useState<Map<string, number>>(new Map());
+  useEffect(() => {
+    const image = new window.Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) return;
+      context.drawImage(image, 0, 0);
+      const { width, height } = canvas;
+      const result = new Map<string, number>();
+      for (const zone of riskZones) {
+        const cx = Math.round(((zone.lon + 180) / 360) * width);
+        const cy = Math.round(((90 - zone.lat) / 180) * height);
+        // máximo en una vecindad: la malla interpola y no queremos que la baliza quede enterrada
+        const data = context.getImageData(Math.max(0, cx - 3), Math.max(0, cy - 3), 7, 7).data;
+        let max = 0;
+        for (let i = 0; i < data.length; i += 4) max = Math.max(max, data[i]);
+        result.set(zone.id, max / 255);
+      }
+      setHeights(result);
+    };
+    image.src = "/earth-height.png";
+  }, []);
+  return heights;
+}
+
+function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: boolean; index: number; terrain: number }) {
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);
   const pillar = useRef<Group>(null);
@@ -42,7 +72,7 @@ function Marker({ zone, selected, index }: { zone: RiskZone; selected: boolean; 
   const revealAt = useRef<number | null>(null);
   const [hover, setHover] = useState(false);
   const color = riskKinds[zone.kind].color;
-  const position = useMemo(() => spherePosition(zone.lat, zone.lon, 1.002), [zone.lat, zone.lon]);
+  const position = useMemo(() => spherePosition(zone.lat, zone.lon, 1.002 + RELIEF * terrain), [zone.lat, zone.lon, terrain]);
   const size = zone.siteId ? 0.013 : 0.0095;
   const pillarHeight = zone.siteId ? 0.075 : 0.05;
   const uniforms = useMemo(() => ({ uColor: { value: new Color(color) }, uOpacity: { value: 0 } }), [color]);
@@ -142,6 +172,7 @@ function Marker({ zone, selected, index }: { zone: RiskZone; selected: boolean; 
 /** Zonas de riesgo sobre la superficie: giran con la Tierra. */
 export default function RiskMarkers() {
   const [selected, setSelected] = useState<string | null>(null);
+  const heights = useTerrainHeights();
   useEffect(() => {
     const onSelect = (event: Event) => setSelected((event as CustomEvent<string | null>).detail);
     window.addEventListener(GLOBE_SELECT, onSelect);
@@ -149,7 +180,7 @@ export default function RiskMarkers() {
   }, []);
   return (
     <group>
-      {riskZones.map((zone, index) => <Marker key={zone.id} zone={zone} index={index} selected={selected === zone.id} />)}
+      {riskZones.map((zone, index) => <Marker key={zone.id} zone={zone} index={index} selected={selected === zone.id} terrain={heights.get(zone.id) ?? 0} />)}
     </group>
   );
 }

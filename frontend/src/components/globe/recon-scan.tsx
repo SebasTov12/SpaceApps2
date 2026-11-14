@@ -5,7 +5,7 @@ import { useMemo, useRef } from "react";
 import { AdditiveBlending, Vector3, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
 import { riskZones } from "@/lib/risk-zones";
-import { FOOTPRINT_LOCAL, GLOBE_DETECT, GLOBE_RECON, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
+import { FOOTPRINT_LOCAL, OVER_RELIEF, GLOBE_DETECT, GLOBE_RECON, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
 
 const SCAN_DELAY = 0.9;      // s entre que carga la Tierra y empieza el barrido
 const SCAN_DURATION = 5.2;   // s que tarda el frente en cubrir el planeta
@@ -138,7 +138,8 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
         yaw += Math.PI * 2 * Math.round((user.targetYaw - yaw) / (Math.PI * 2));
         user.targetYaw = yaw;
         // Al inicio la Tierra está baja (scroll del hero): la zona se deja inclinada hacia la parte visible
-        const lift = 0.6 * (1 - Math.min(1, progress.get() / 0.8));
+        // con la zona abierta (acercamiento) va centrada
+        const lift = globeState.zoom > 0 ? 0 : 0.6 * (1 - Math.min(1, progress.get() / 0.8));
         user.targetPitch = Math.max(-1.2, Math.min(1.2, Math.atan2(q.y, Math.hypot(q.x, q.z)) - lift));
         user.velocity = 0;
       }
@@ -147,7 +148,7 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
 
   return (
     <mesh renderOrder={2}>
-      <sphereGeometry args={[1.018, 96, 48]} />
+      <sphereGeometry args={[OVER_RELIEF + 0.006, 96, 48]} />
       <shaderMaterial ref={material} uniforms={uniforms} vertexShader={vertex} fragmentShader={fragment}
         transparent depthWrite={false} blending={AdditiveBlending} />
     </mesh>

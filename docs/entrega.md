@@ -13,11 +13,10 @@ Aplicación web interactiva que usa datos de radar de la misión NASA-ISRO NISAR
 | Rondônia, Brasil | Deforestación | L2 GCOV | Retrodispersión HV (dB): cae al talar el bosque |
 
 En la app se puede:
-- Girar la Tierra 3D con NISAR en órbita y abrir cada sitio desde su marcador.
-- Recorrer las adquisiciones cada 12 días, comparar **antes/después** con un deslizador y ver el **mapa de cambio**.
-- Hacer clic en cualquier punto para ver su **serie temporal**.
-- Leer en lenguaje simple **qué ve el radar** en cada caso.
-- Cambiar entre español e inglés.
+- Ver el reconocimiento inicial de NISAR sobre la Tierra 3D (con relieve) y seguir sus pasadas sobre 19 zonas de riesgo del mundo.
+- Girar el planeta y tocar una zona: la cámara se acerca y se abre su ficha con el mapa satelital, la capa NISAR por fecha, **antes/después** con deslizador gradual y **mapa de cambio**.
+- Hacer clic en cualquier punto del mapa para ver su **serie temporal**, y leer en lenguaje simple **qué ve el radar**.
+- Seguir las últimas actualizaciones en el cintillo de titulares y cambiar entre español e inglés.
 
 ## Summary (EN)
 

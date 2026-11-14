@@ -4,11 +4,11 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { AdditiveBlending, DoubleSide, type MeshBasicMaterial, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
-import { globeState } from "./globe/globe-state";
+import { OVER_RELIEF, globeState } from "./globe/globe-state";
 
 // Artistic side-looking footprint; not an acquisition polygon or live telemetry.
 // The surface is sampled on a sphere so the swath never becomes a flat decal.
-const SHELL = 1.012;
+const SHELL = OVER_RELIEF;
 function surface(along: number, across: number): [number, number, number] {
   const radius = Math.sqrt(SHELL * SHELL - across * across);
   return [radius * Math.cos(along), radius * Math.sin(along), across];

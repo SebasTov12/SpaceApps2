@@ -5,7 +5,7 @@ import { ChevronDown, Pause, Play } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
-import GlobeHud from "@/components/globe/globe-hud";
+import ZoneView from "@/components/globe/zone-view";
 import SarosHeroChrome, { SarosWordmark } from "@/components/saros-hero-chrome";
 
 const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
@@ -39,7 +39,6 @@ export default function EarthHero() {
   const revealScale = useTransform(progress, [0, 0.8, 1], [1.48, 0.94, 0.94]);
   const scale = useTransform(() => revealScale.get() * (1 + departure.get() * 0.16));
   const opacity = useTransform(departure, [0, 0.8], [1, 0.15]);
-  const hudOpacity = useTransform(departure, [0, 0.45], [1, 0]);
   const bridgeOpacity = useTransform(progress, [0.5, 1], [0, 1]);
   const rotate = useTransform(progress, [0, 1], [-4, 0]);
   const starsY = useTransform(progress, [0, 1], ["0%", "-8%"]);
@@ -69,10 +68,16 @@ export default function EarthHero() {
           title={paused ? "Reanudar animación orbital" : "Pausar animación orbital"}>
           {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
         </button>
-        <GlobeHud fade={hudOpacity} />
-        {/* Navbar SAROS y cintillo de titulares (arriba → abajo con el scroll) */}
+        {/* Zona elegida: acercamiento y panel con su información */}
+        <ZoneView />
+        {/* Cintillo de titulares (arriba → abajo con el scroll) */}
         <SarosHeroChrome progress={progress} departure={departure} />
-        <a href="#explorador" className="scroll-cue" aria-label="Ir al explorador">
+        <a href="#zonas" className="scroll-cue" aria-label="Bajar hasta el planeta"
+          onClick={(event) => {
+            event.preventDefault();
+            const hero = section.current;
+            if (hero) window.scrollTo({ top: hero.offsetTop + (hero.offsetHeight - window.innerHeight) * 0.92, behavior: "smooth" });
+          }}>
           <ChevronDown size={22} />
         </a>
       </div>

@@ -67,3 +67,15 @@ export const riskZones: RiskZone[] = [
   { id: "british-columbia", kind: "wildfire", lat: 55.0, lon: -123.0,
     name: { es: "Incendios boreales", en: "Boreal wildfires" }, place: { es: "Columbia Británica, Canadá", en: "British Columbia, Canada" } },
 ];
+
+/** Qué mide NISAR en cada tipo de riesgo, en lenguaje simple. */
+export const riskKindInfo: Record<RiskKind, { es: string; en: string }> = {
+  landslide: { es: "La interferometría mide milímetros de movimiento lento de la ladera antes de que falle.", en: "Interferometry measures millimetres of slow slope creep before failure." },
+  subsidence: { es: "Interferogramas sucesivos revelan cuánto se hunde el suelo cada año.", en: "Successive interferograms reveal how much the ground sinks each year." },
+  flood: { es: "El agua tranquila se ve oscura en la retrodispersión: la extensión se mapea aunque haya nubes.", en: "Calm water looks dark in backscatter, so flood extent is mapped even under clouds." },
+  glacier: { es: "El seguimiento de desplazamientos mide cuántos metros al día avanza el hielo.", en: "Offset tracking measures how many metres per day the ice advances." },
+  deforestation: { es: "La señal HV cae cuando se tala el bosque, incluso bajo nubes tropicales.", en: "HV signal drops when forest is cleared, even under tropical clouds." },
+  volcano: { es: "La inflación del suelo antes de una erupción aparece como franjas en el interferograma.", en: "Ground inflation before an eruption shows up as interferogram fringes." },
+  earthquake: { es: "El interferograma muestra cuánto se desplazó el terreno a cada lado de la falla.", en: "Interferograms show how far the ground moved on each side of the fault." },
+  wildfire: { es: "Los cambios de retrodispersión delimitan las cicatrices de incendio.", en: "Backscatter change outlines burn scars." },
+};
