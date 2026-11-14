@@ -50,3 +50,28 @@ El explorador muestra el badge **Demo** o **NISAR** según `source.mode`.
 - Colecciones: `NISAR_L2_<GUNW|GCOV|GOFF>_<BETA_V1|PROVISIONAL_V1|V1>`. Por defecto se descarga la madurez con más escenas (`--maturity` para forzarla).
 - En modo real solo se usan escenas de la misma geometría (track, dirección y frame); el resto se descarta y se avisa.
 - No mezclar madureces (BETA, PROVISIONAL, VALIDATED) sin documentarlo (ver `docs/arquitectura/04`).
+
+## Predicciones sintéticas DIAN + NASA y síntesis para LLM
+
+La primera carga usa escenarios sintéticos de recaudo nacional DIAN y desplazamiento LOS NISAR para Norte de Santander. No son datos oficiales ni observaciones satelitales. Se guardan en la base dedicada `spaceapps2`, en `dian.predictions` y `nasa.predictions`, con el origen y las limitaciones dentro de `payload`.
+
+La migración agrega claves idempotentes y `analysis.llm_briefs`. La función `analysis.synthesize_colombia_month(date)` calcula los cambios de cada fuente por separado y genera un paquete JSON. La función `analysis.refresh_colombia_llm_briefs()` persiste un paquete por mes coincidente. El ámbito DIAN del ejemplo es nacional y el de NISAR es el AOI, por lo que la síntesis marca que sus escalas no son comparables. No crea puntaje conjunto ni alerta.
+
+Desde PowerShell en la raíz del repositorio, aplica la migración y carga seis meses sintéticos:
+
+```powershell
+Get-Content -Raw pipeline/sql/001_prediction_synthesis.sql | ssh -i "$env:USERPROFILE\.ssh\id_ed25519" admin@100.104.169.58 "docker exec -i spaceapps2-postgres psql -v ON_ERROR_STOP=1 -U spaceapps2_admin -d spaceapps2"
+Get-Content -Raw pipeline/sql/002_seed_colombia_synthetic.sql | ssh -i "$env:USERPROFILE\.ssh\id_ed25519" admin@100.104.169.58 "docker exec -i spaceapps2-postgres psql -v ON_ERROR_STOP=1 -U spaceapps2_admin -d spaceapps2"
+```
+
+Consulta los paquetes listos para la integración LLM con:
+
+```sql
+SELECT analysis.refresh_colombia_llm_briefs();
+SELECT jsonb_pretty(payload)
+FROM analysis.llm_briefs
+WHERE case_id = 'colombia-ladera'
+ORDER BY period_start;
+```
+
+La investigación de campos, el método y las fuentes oficiales están en [modelo-sintesis-colombia](../docs/modelo-sintesis-colombia.md).
