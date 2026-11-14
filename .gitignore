@@ -2,8 +2,6 @@
 .env
 .env.*
 !.env.example
-!.env.search.example
-!.env.train.example
 
 # Local NISAR data and model artifacts
 data/
