@@ -27,6 +27,8 @@ El trabajador de filtros y capas se ejecuta bajo el perfil `processing`:
 docker compose -f infra/saros/docker-compose.yml --profile processing run --rm processor
 ```
 
+El contenedor de procesamiento usa una red de salida dedicada para consultar ASF/CMR y descargar productos por HTTPS; no se conecta a la red privada de la base. La búsqueda pública del catálogo no requiere Earthdata Login. La descarga sí requiere `EARTHDATA_USERNAME` y `EARTHDATA_PASSWORD` en `.env`. El acceso S3 directo de NISAR solo funciona desde AWS `us-west-2`; desde otras regiones usa el flujo HTTPS de `earthaccess`.
+
 El entrenamiento se ejecuta bajo el perfil `training` y escribe `best.onnx` en `models/nisar-change/`, donde el predictor lo monta como solo lectura.
 
 ## Estado esperado

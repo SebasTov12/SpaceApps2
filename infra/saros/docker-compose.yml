@@ -180,10 +180,17 @@ services:
       - ../../frontend/public/data:/workspace/frontend/public/data
     init: true
     restart: "no"
+    networks:
+      - saros_private
+      - saros_egress
 
 networks:
   saros_private:
     internal: true
+  # The catalog/download worker needs outbound NASA/ASF HTTPS, but not access
+  # to Orivia's application network or the database container.
+  saros_egress:
+    name: spaceapps2_saros_egress
   orivia_private:
     external: true
     name: ${ORIVIA_DOCKER_NETWORK:-orivia-server_orivia_private}
