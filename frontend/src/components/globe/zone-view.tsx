@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Database, History, Info, ListChecks, MapPin, MousePointerClick, Radar, TrendingUp, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Beef, Box, ExternalLink, Layers, Database, Droplets, Fish, History, House, Info, ListChecks, MapPin, MousePointerClick, Pickaxe, Radar, Route, Store, Trees, TrendingUp, Wheat, X, type LucideIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
@@ -10,6 +10,7 @@ import type { MapMode } from "@/components/nisar-map";
 import { adviceNote, levelInfo, recommendations, trendSentence } from "@/lib/insights";
 import { LanguageToggle, useI18n } from "@/lib/i18n";
 import { riskKindInfo, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
+import { exposureNames, sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import {
   formatCoord, loadAvailability, loadManifest, loadTimeSeries, longDate, radarExplainer, seriesAt, shortDate, strongestChange,
   type AttentionLevel, type Availability, type Bbox, type SiteManifest, type SiteStat, type TimeSeries,
@@ -29,6 +30,11 @@ const copy = {
     asf: "Escenas NISAR reales en ASF", demo: "DEMO", real: "NISAR", accel: "Aceleración detectada",
     trend: "Tendencia", early: "Ritmo inicial", recent: "Ritmo reciente", p30: "Proyección 30 días", p90: "Proyección 90 días",
     compare: "Antes · después", opacity: "Opacidad de la capa", loading: "Acercando a la zona…",
+    explore: "Explorar el lugar", view3d: "Vista 3D a ras de suelo", view2d: "Vista desde arriba", s2: "Sentinel-2 2024", esri: "Alta resolución",
+    s2Hint: "Mosaico Sentinel-2 sin nubes más reciente (2024, 10 m)", esriHint: "Imagen de alta resolución de Esri (fecha variable)",
+    street: "Street View", streetHint: "Abre Google Street View en este punto (si hay cobertura)",
+    impact: "Cómo afectaría a la región", impactIntro: "Si el cambio del terreno continúa, estos sectores son los más expuestos:", reinforce: "Cómo reforzar",
+    impactNote: "Escenario ilustrativo (DEMO): muestra exposición posible, no daños confirmados ni probabilidades. SAROS no predice terremotos.",
   },
   en: {
     back: "Back to the planet", close: "Close zone", zones: "Risk zones", zonesHint: "Pick a zone to zoom the planet",
@@ -40,10 +46,19 @@ const copy = {
     asf: "Real NISAR scenes at ASF", demo: "DEMO", real: "NISAR", accel: "Acceleration detected",
     trend: "Trend", early: "Early rate", recent: "Recent rate", p30: "30-day projection", p90: "90-day projection",
     compare: "Before · after", opacity: "Layer opacity", loading: "Zooming into the zone…",
+    explore: "Explore the place", view3d: "3D ground-level view", view2d: "Top-down view", s2: "Sentinel-2 2024", esri: "High resolution",
+    s2Hint: "Latest cloud-free Sentinel-2 mosaic (2024, 10 m)", esriHint: "Esri high-resolution imagery (variable date)",
+    street: "Street View", streetHint: "Opens Google Street View at this point (where covered)",
+    impact: "How it could affect the region", impactIntro: "If the ground change continues, these sectors are the most exposed:", reinforce: "How to reinforce",
+    impactNote: "Illustrative scenario (DEMO): shows possible exposure, not confirmed damage or probabilities. SAROS does not predict earthquakes.",
   },
 };
 
-const MAP_DELAY = 950; // ms: primero acerca la cámara 3D, luego entra el mapa
+const sectorIcons: Record<SectorKey, LucideIcon> = {
+  agriculture: Wheat, livestock: Beef, mining: Pickaxe, housing: House, roads: Route, forest: Trees, water: Droplets, commerce: Store, fishing: Fish,
+};
+
+const MAP_DELAY = 650; // ms: la cámara 3D ya casi llegó; el mapa carga detrás y se funde cuando está alineado
 
 function zoneBbox(zone: RiskZone): Bbox {
   return [zone.lon - 0.18, zone.lat - 0.14, zone.lon + 0.18, zone.lat + 0.14];
@@ -57,6 +72,9 @@ export default function ZoneView() {
   const wrapper = useRef<HTMLDivElement>(null);
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [mapVisible, setMapVisible] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+  const [terrain, setTerrain] = useState(false);
+  const [basemap, setBasemap] = useState<"esri" | "s2">("esri");
   const [tab, setTab] = useState<"simple" | "analysis">("simple");
   const [manifest, setManifest] = useState<SiteManifest | null>(null);
   const [series, setSeries] = useState<TimeSeries | null>(null);
@@ -87,6 +105,8 @@ export default function ZoneView() {
       setZoneId(id);
       setTab("simple");
       setMapVisible(false);
+      setMapReady(false);
+      setTerrain(false);
       globeState.zoom = id ? 1 : 0;
       const stage = wrapper.current?.closest(".earth-stage") as HTMLElement | null;
       if (stage) {
@@ -99,10 +119,7 @@ export default function ZoneView() {
           const target = hero.offsetTop + (hero.offsetHeight - window.innerHeight) * 0.92;
           if (window.scrollY < target - 4) window.scrollTo({ top: target, behavior: "smooth" });
         }
-        timer = setTimeout(() => {
-          setMapVisible(true);
-          if (stage) stage.dataset.mapview = "true";
-        }, MAP_DELAY);
+        timer = setTimeout(() => setMapVisible(true), MAP_DELAY);
       }
     };
     const onSite = (event: Event) => {
@@ -159,6 +176,18 @@ export default function ZoneView() {
   const assessment = active?.assessment;
   const level: AttentionLevel = assessment?.level ?? (zone?.event ? "moderada" : "baja");
   const colombia = zone?.country === "CO";
+  const onMapReady = useCallback(() => {
+    setMapReady(true);
+    const stage = wrapper.current?.closest(".earth-stage") as HTMLElement | null;
+    if (stage) stage.dataset.mapview = "true";
+  }, []);
+  // si el mapa no llega a estar listo (red lenta o error), igual se muestra
+  useEffect(() => {
+    if (!mapVisible || mapReady) return;
+    const fallback = setTimeout(onMapReady, 4500);
+    return () => clearTimeout(fallback);
+  }, [mapVisible, mapReady, onMapReady]);
+  const impacts = useMemo(() => (zone ? sectorImpacts(zone.id, zone.kind) : []), [zone]);
   const mapBbox = active?.bbox ?? (zone ? zoneBbox(zone) : null);
   // el mapa ocupa solo el área visible (a la izquierda del panel o encima de la hoja)
   const padding = wide ? { top: 80, right: 60, bottom: 70, left: 60 } : { top: 60, right: 24, bottom: 30, left: 24 };
@@ -177,7 +206,7 @@ export default function ZoneView() {
       {/* Mapa de la zona a pantalla completa: nace como globo y vuela hasta el lugar */}
       <AnimatePresence>
         {zone && mapVisible && mapBbox && (siteId ? active : true) && (
-          <motion.div key={`map-${zone.id}`} className="zone-stage-map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.9 }}>
+          <motion.div key={`map-${zone.id}`} className="zone-stage-map" data-ready={mapReady} initial={{ opacity: 0 }} animate={{ opacity: mapReady ? 1 : 0 }} exit={{ opacity: 0, transition: { duration: 0.6 } }} transition={{ duration: 0.75, ease: [0.4, 0, 0.2, 1] }}>
             <NisarMap
               bbox={mapBbox}
               layerUrl={layerUrl}
@@ -187,7 +216,10 @@ export default function ZoneView() {
               pick={active ? pick : { lon: zone.lon, lat: zone.lat }}
               onPick={active ? setPick : () => undefined}
               recenterKey={0}
-              intro={{ lat: zone.lat, lon: zone.lon }}
+              intro={{ lat: zone.lat, lon: zone.lon, screen: () => globeState.screen }}
+              onReady={onMapReady}
+              terrain={terrain}
+              basemap={basemap}
               hotspots={assessment?.hotspots}
               splitValue={split}
               padding={padding}
@@ -199,6 +231,18 @@ export default function ZoneView() {
                 <span className="legend-ends"><i>{legend.range[0]} {unit}</i><i>{legend.range[1]} {unit}</i></span>
               </div>
             )}
+            <div className="zone-explore" role="toolbar" aria-label={c.explore}>
+              <button type="button" aria-pressed={terrain} className={terrain ? "is-active" : undefined} onClick={() => setTerrain((v) => !v)}>
+                <Box size={15} /> {terrain ? c.view2d : c.view3d}
+              </button>
+              <button type="button" aria-pressed={basemap === "s2"} className={basemap === "s2" ? "is-active" : undefined} onClick={() => setBasemap((b) => (b === "s2" ? "esri" : "s2"))}
+                title={basemap === "s2" ? c.esriHint : c.s2Hint}>
+                <Layers size={15} /> {basemap === "s2" ? c.esri : c.s2}
+              </button>
+              <a href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${(pick ?? zone).lat.toFixed(5)},${(pick ?? zone).lon.toFixed(5)}`} target="_blank" rel="noopener noreferrer" title={c.streetHint}>
+                <ExternalLink size={15} /> {c.street}
+              </a>
+            </div>
             {active && mode === "swipe" && <div className="swipe-dates"><span>{sd(active.dates[0])} · {t.before}</span><span>{sd(active.dates[dateIndex])} · {t.after}</span></div>}
           </motion.div>
         )}
@@ -258,6 +302,25 @@ export default function ZoneView() {
                       {!siteId && <p className="zone-muted">{c.noDataNow}</p>}
                       {assessment && assessment.hotspots.length > 0 && <p className="zone-muted">{c.watch(assessment.hotspots.length)}</p>}
                     </section>
+                    {impacts.length > 0 && (
+                      <section>
+                        <h3><Wheat size={14} /> {c.impact}</h3>
+                        <p className="zone-muted">{c.impactIntro}</p>
+                        <ul className="zone-sectors">
+                          {impacts.map((item) => {
+                            const Icon = sectorIcons[item.sector];
+                            return (
+                              <li key={item.sector} style={{ "--exp": exposureNames[item.exposure].color } as React.CSSProperties}>
+                                <header><Icon size={16} /><strong>{sectorNames[item.sector][lang]}</strong><em>{exposureNames[item.exposure][lang]}</em></header>
+                                <p>{item.effect[lang]}</p>
+                                <p className="zone-reinforce"><b>{c.reinforce}:</b> {item.reinforce[lang]}</p>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <p className="zone-muted">{c.impactNote}</p>
+                      </section>
+                    )}
                     {zone.event && (
                       <section>
                         <h3><History size={14} /> {c.history}</h3>

@@ -68,6 +68,8 @@ export const riskZones: RiskZone[] = [
   { id: "galeras", kind: "volcano", lat: 1.22, lon: -77.36, country: "CO",
     event: { date: "2010-08-25", es: "Erupción explosiva; el volcán sigue bajo vigilancia permanente del SGC.", en: "Explosive eruption; the volcano remains under permanent SGC monitoring." },
     name: { es: "Volcán Galeras", en: "Galeras volcano" }, place: { es: "Pasto, Nariño, Colombia", en: "Pasto, Nariño, Colombia" } },
+  { id: "choco-atrato", kind: "earthquake", lat: 5.69, lon: -76.66, country: "CO",
+    name: { es: "Pacífico sísmico y minero", en: "Seismic, mining Pacific" }, place: { es: "Quibdó y río Atrato, Chocó, Colombia", en: "Quibdó & Atrato River, Chocó, Colombia" } },
   // ---- Resto del mundo ----
   { id: "jakarta", kind: "subsidence", lat: -6.2, lon: 106.85,
     name: { es: "Ciudad que se hunde", en: "Sinking coastal city" }, place: { es: "Yakarta, Indonesia", en: "Jakarta, Indonesia" } },

@@ -173,8 +173,9 @@ html body .earth-stage[data-zoomed="true"] .earth-orbit{translate:calc(-50% - 16
 }
 
 /* ---------- Vista de zona v2: mapa a pantalla completa + panel en dos vistas ---------- */
-html body .earth-stage[data-mapview="true"] .earth-orbit{opacity:0!important;transition:opacity .9s ease,translate 1.4s cubic-bezier(.22,1,.36,1)}
-.zone-stage-map{position:absolute;inset:0;z-index:5;pointer-events:auto;background:#060914}
+html body .earth-stage[data-mapview="true"] .earth-orbit{opacity:0!important;transition:opacity .8s ease .2s,translate 1.4s cubic-bezier(.22,1,.36,1)}
+.zone-stage-map{position:absolute;inset:0;z-index:5;pointer-events:auto;background:transparent}
+.zone-stage-map .maplibregl-canvas{background:transparent}
 .zone-stage-map .nisar-map{position:absolute;inset:0 540px 0 0}
 .zone-stage-map .zone-legend{position:absolute;z-index:4;left:20px;bottom:56px;width:220px;padding:10px 12px;border-radius:12px;background:rgba(7,11,24,.82);border:1px solid var(--saros-line);backdrop-filter:blur(10px);pointer-events:none}
 .zone-stage-map .zone-legend strong{display:block;margin-bottom:6px;font-size:10px;font-weight:600;letter-spacing:.06em;color:#dfe8fb}
@@ -280,3 +281,27 @@ html body .space-stars{opacity:1;filter:brightness(1.35)}
 
 html body .earth-stage[data-zoomed="true"] .ticker-dock{opacity:0!important;pointer-events:none!important;transition:opacity .4s}
 html body .hero-latest{bottom:96px}
+
+/* ---------- Explorar el lugar: vista 3D, imagen reciente y Street View ---------- */
+.zone-explore{position:absolute;z-index:4;bottom:22px;left:calc((100% - 540px) / 2);transform:translateX(-50%);display:flex;gap:6px;padding:5px;border-radius:999px;background:rgba(7,11,24,.78);border:1px solid var(--saros-line);backdrop-filter:blur(12px);box-shadow:0 12px 34px rgba(0,0,0,.4)}
+.zone-explore button,.zone-explore a{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#dfe8fb;font-size:12.5px;font-weight:500;white-space:nowrap;text-decoration:none;transition:background .25s,color .25s}
+.zone-explore button:hover,.zone-explore a:hover{background:rgba(255,255,255,.07)}
+.zone-explore .is-active{background:rgba(0,212,255,.16);color:#9fe9ff}
+.zone-explore svg{color:var(--saros-tech)}
+
+/* ---------- Cómo afectaría a la región ---------- */
+.zone-sectors{display:grid;gap:8px;margin:10px 0 8px;padding:0;list-style:none}
+.zone-sectors li{padding:11px 12px;border:1px solid rgba(255,255,255,.07);border-left:3px solid var(--exp);border-radius:12px;background:rgba(255,255,255,.025)}
+.zone-sectors header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.zone-sectors header svg{color:var(--exp);flex-shrink:0}
+.zone-sectors header strong{font-size:13px;font-weight:600;color:#eef3ff}
+.zone-sectors header em{margin-left:auto;font-style:normal;font-size:10.5px;font-weight:600;color:var(--exp);white-space:nowrap}
+.zone-sectors p{margin:0;font-size:12.5px;line-height:1.55;color:#c3cbe3}
+.zone-sectors .zone-reinforce{margin-top:6px;color:#a8b6d2}
+.zone-sectors .zone-reinforce b{color:#9fe9ff;font-weight:600}
+
+@media(max-width:900px){
+  .zone-explore{left:50%;bottom:calc(56vh + 10px);max-width:calc(100% - 20px);overflow-x:auto;scrollbar-width:none}
+  .zone-explore button,.zone-explore a{min-height:38px;padding:0 11px;font-size:12px}
+}
+@media(max-width:900px){html body .zone-stage-map .swipe-dates{bottom:calc(56vh + 64px)}}
