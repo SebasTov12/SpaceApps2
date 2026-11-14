@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Orbitron } from "next/font/google";
+import { Cinzel, Inter, Orbitron } from "next/font/google";
 import "./globals.css";
 
 // Identidad SAROS: Orbitron para títulos, display y logo; Inter para texto e interfaz
@@ -10,6 +10,7 @@ const orbitron = Orbitron({
   display: "swap",
 });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const cinema = Cinzel({ subsets: ["latin"], variable: "--font-cinema", weight: "500", display: "swap" });
 
 export const metadata: Metadata = {
   title: "SAROS | Monitoreo geoespacial con NISAR",
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className={`${orbitron.variable} ${inter.variable} h-full antialiased`}>
+    <html lang="es" className={`${orbitron.variable} ${inter.variable} ${cinema.variable} h-full antialiased`}>
       <body className="min-h-full">
         <a className="skip-link" href="#zonas">Ir a las zonas de riesgo</a>
         {children}

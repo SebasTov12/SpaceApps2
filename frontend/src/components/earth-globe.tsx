@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useProgress, useTexture } from "@react-three/drei";
+import { useTexture } from "@react-three/drei";
 import { type MotionValue } from "framer-motion";
 import { Component, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import NisarOrbit from "@/components/nisar-orbit";
@@ -14,7 +14,7 @@ import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight,
 
 type SceneQuality = "compact" | "full";
 
-function Planet({ onReady, playing, quality, children }: { onReady: () => void; playing: boolean; quality: SceneQuality; children?: ReactNode }) {
+function Planet({ playing, quality, children }: { playing: boolean; quality: SceneQuality; children?: ReactNode }) {
   const surface = useRef<Group>(null);
   const clouds = useRef<Group>(null);
   const [day, cloud, normal, specular, height] = useTexture([
@@ -26,7 +26,6 @@ function Planet({ onReady, playing, quality, children }: { onReady: () => void; 
     textures[0].colorSpace = SRGBColorSpace;
     for (const texture of textures) texture.anisotropy = 8;
   });
-  useEffect(onReady, [onReady]);
 
   const userGroup = useRef<Group>(null);
   useEffect(() => {
@@ -147,9 +146,10 @@ function Planet({ onReady, playing, quality, children }: { onReady: () => void; 
   );
 }
 
-class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class SceneBoundary extends Component<{ children: ReactNode; onFailure: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch() { this.props.onFailure(); }
   render() {
     return this.state.failed ? (
       <div className="earth-static scene-fallback" role="status">
@@ -158,19 +158,6 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
       </div>
     ) : this.props.children;
   }
-}
-
-function SceneLoading({ ready }: { ready: boolean }) {
-  const { active, progress } = useProgress();
-  const visible = !ready || active;
-  const value = Math.max(8, Math.round(progress));
-  return (
-    <div className={`scene-loading ${visible ? "is-visible" : ""}`} role="status" aria-live="polite" aria-hidden={!visible}>
-      <span className="scene-loading-ring" aria-hidden="true" />
-      <span>Cargando Tierra 3D</span>
-      <small>{value}%</small>
-    </div>
-  );
 }
 
 function Sunlight({ progress }: { progress: MotionValue<number> }) {
@@ -197,13 +184,28 @@ function Sunlight({ progress }: { progress: MotionValue<number> }) {
   );
 }
 
-export default function EarthGlobe({ progress, playing }: { progress: MotionValue<number>; playing: boolean }) {
+function SceneReady({ onReady }: { onReady: () => void }) {
+  const frames = useRef(0);
+  useFrame(({ invalidate }) => {
+    frames.current += 1;
+    if (frames.current === 2) onReady();
+    if (frames.current < 2) invalidate();
+  });
+  return null;
+}
+
+function NoWebGL({ onReady }: { onReady: () => void }) {
+  useEffect(onReady, [onReady]);
+  return <div className="earth-static scene-fallback" role="status"><span>Vista 3D no disponible</span></div>;
+}
+
+export default function EarthGlobe({ progress, playing, onReady }: { progress: MotionValue<number>; playing: boolean; onReady: () => void }) {
   const [ready, setReady] = useState(false);
   const [quality] = useState<SceneQuality>(() => {
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
     return window.matchMedia("(max-width: 760px)").matches || memory <= 4 ? "compact" : "full";
   });
-  const showScene = useCallback(() => setReady(true), []);
+  const showScene = useCallback(() => { setReady(true); onReady(); }, [onReady]);
 
   // Girar el planeta arrastrando. Se escucha en window para no robar los clics de R3F.
   const startDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
@@ -236,22 +238,22 @@ export default function EarthGlobe({ progress, playing }: { progress: MotionValu
   }, []);
   return (
     <div className="earth-render is-draggable" onPointerDown={startDrag} role="group" aria-label="Globo interactivo: arrastra para girar la Tierra; NISAR orbita y su radar ilustrativo detecta zonas de riesgo. La lista de zonas está en el panel de reconocimiento.">
-      <SceneBoundary>
-        {!ready && <div className="earth-static" />}
-        <SceneLoading ready={ready} />
+      <SceneBoundary onFailure={showScene}>
         <Canvas style={{ position: "absolute", inset: "-35%", width: "170%", height: "170%" }}
           camera={{ position: [0, 0, 3.5], fov: 58 }} dpr={quality === "compact" ? [1, 1.2] : [1, 1.6]}
           frameloop={playing ? "always" : "demand"}
+          fallback={<NoWebGL onReady={showScene} />}
           resize={{ offsetSize: true }}
           gl={{ antialias: quality === "full", alpha: true, powerPreference: "high-performance" }}>
           <Sunlight progress={progress} />
           <Suspense fallback={null}>
-            <Planet onReady={showScene} playing={playing} quality={quality}>
+            <Planet playing={playing && ready} quality={quality}>
               <NisarOrbit playing={playing} progress={progress} />
               <CompanionSats playing={playing} />
             </Planet>
             <ReconScan ready={ready} progress={progress} />
             <CameraRig />
+            <SceneReady onReady={showScene} />
           </Suspense>
         </Canvas>
       </SceneBoundary>

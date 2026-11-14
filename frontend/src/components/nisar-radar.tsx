@@ -61,15 +61,17 @@ export default function NisarRadar({ apex, playing, progress }: {
 
   useFrame((_, delta) => {
     if (playing) elapsed.current += Math.min(delta, 0.1);
-    // visible por el scroll o desde que empieza el reconocimiento
-    const reveal = Math.max(globeState.beam, Math.min(1, Math.max(0, (progress.get() - 0.12) / 0.38)));
+    // El detector de NISAR emite barridos de radar activos y pulsos continuos a medida que orbita
+    const operationalPulse = 0.55 + 0.35 * Math.sin(elapsed.current * 1.6);
+    const scrollFactor = 0.85 + Math.min(1, Math.max(0, progress.get())) * 0.15;
+    const reveal = Math.min(1, Math.max(globeState.beam, operationalPulse) * scrollFactor);
     const visibility = reveal * reveal * (3 - 2 * reveal);
     if (beam.current) {
       beam.current.uniforms.time.value = elapsed.current;
       beam.current.uniforms.visibility.value = visibility;
     }
     if (swath.current) swath.current.uniforms.visibility.value = visibility;
-    if (footprint.current) footprint.current.opacity = visibility * 0.22;
+    if (footprint.current) footprint.current.opacity = visibility * 0.24;
   });
 
   return (

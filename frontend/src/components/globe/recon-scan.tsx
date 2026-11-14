@@ -7,7 +7,8 @@ import type { MotionValue } from "framer-motion";
 import { riskZones } from "@/lib/risk-zones";
 import { FOOTPRINT_LOCAL, OVER_RELIEF, GLOBE_DETECT, GLOBE_RECON, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
 
-const SCAN_DELAY = 0.9;      // s entre que carga la Tierra y empieza el barrido
+const SCAN_DELAY = 3.6;      // esperar a que termine la entrada cinematográfica
+const SCAN_INTERVAL = 30;   // segundos entre inicios de barridos
 const SCAN_DURATION = 5.2;   // s que tarda el frente en cubrir el planeta
 const PASS_DISTANCE = 0.35;  // distancia huella–zona para contar una pasada del haz
 const PASS_COOLDOWN = 10;    // s mínimos entre dos detecciones de la misma zona
@@ -64,6 +65,7 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
   }), []);
   const tmp = useMemo(() => ({ foot: new Vector3(), marker: new Vector3(), local: new Vector3() }), []);
   const lastEmit = useRef({ found: -1, at: 0, progress: 0 });
+  const initialFocusDone = useRef(false);
 
   useFrame(({ clock }) => {
     const u = material.current?.uniforms;
@@ -75,8 +77,9 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     const scan = globeState.scan;
 
     // 1. Inicio: el barrido parte del punto bajo el satélite
-    if (ready && scan.startedAt < 0) {
-      scan.startedAt = now + SCAN_DELAY;
+    if (ready && (scan.startedAt < 0 || now - scan.startedAt >= SCAN_INTERVAL)) {
+      scan.startedAt = scan.startedAt < 0 ? now + SCAN_DELAY : now;
+      lastEmit.current.progress = 0;
       if (globeState.orbit) {
         globeState.orbit.localToWorld(tmp.foot.copy(FOOTPRINT_LOCAL));
         scan.origin.copy(tmp.foot.normalize());
@@ -90,7 +93,8 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     u.uAngle.value = angle;
     u.uActive.value = smooth(0, 0.04, scan.progress) * (1 - smooth(0.92, 1, scan.progress));
     u.uTrail.value = smooth(0, 0.1, scan.progress) * (1 - smooth(scan.startedAt + SCAN_DURATION + 0.2, scan.startedAt + SCAN_DURATION + 1.6, now));
-    globeState.beam = smooth(scan.startedAt - 0.4, scan.startedAt + 0.5, now);
+    globeState.beam = smooth(scan.startedAt - 0.4, scan.startedAt + 0.5, now)
+      * (1 - smooth(scan.startedAt + SCAN_DURATION, scan.startedAt + SCAN_DURATION + 1.6, now));
 
     // 2. El frente descubre las zonas que alcanza
     if (scan.progress > 0 && globeState.revealed.size < riskZones.length) {
@@ -107,20 +111,26 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     const found = globeState.revealed.size;
     const finished = scan.progress >= 1 && lastEmit.current.progress < 1;
     // al terminar el barrido, el planeta gira hacia el último evento (Colombia) y lo destaca
-    if (finished && globeState.featured && globeState.zoom === 0 && !globeState.focus) {
+    if (finished && !initialFocusDone.current && globeState.featured && globeState.zoom === 0 && !globeState.focus) {
       globeState.focus = globeState.featured;
     }
+    if (finished) initialFocusDone.current = true;
     if (found !== lastEmit.current.found || finished || (scan.progress < 1 && t - lastEmit.current.at > 0.12)) {
       lastEmit.current = { found, at: t, progress: scan.progress };
       emit<ReconEvent>(GLOBE_RECON, { progress: scan.progress, found });
     }
 
-    // 3. Después del barrido: cada vez que la huella del haz pasa sobre una zona
-    if (scan.progress >= 1 && globeState.orbit) {
+    // 3. Huella del haz de NISAR: detecta zonas y modula la iluminación de los puntos
+    if (globeState.orbit) {
       globeState.orbit.localToWorld(tmp.foot.copy(FOOTPRINT_LOCAL));
       for (const [id, node] of globeState.markers) {
         node.getWorldPosition(tmp.marker);
-        if (tmp.marker.distanceTo(tmp.foot) > PASS_DISTANCE) continue;
+        const dist = tmp.marker.distanceTo(tmp.foot);
+        // Cuando el satélite y su haz pasan cerca, la zona se ilumina suavemente
+        const prox = Math.max(0, 1 - dist / 0.52);
+        globeState.radarProximity.set(id, prox);
+
+        if (dist > PASS_DISTANCE) continue;
         if (t - (globeState.flashes.get(id) ?? -99) < PASS_COOLDOWN) continue;
         globeState.flashes.set(id, t);
         emit<DetectEvent>(GLOBE_DETECT, { id, source: "pass", visible: tmp.marker.z > 0.15 });

@@ -2,7 +2,6 @@
 
 import { motion, useTransform, type MotionValue } from "framer-motion";
 import HeadlineTicker from "@/components/headline-ticker";
-import { SarosStar } from "@/components/saros-logo";
 
 /**
  * Cintillo de titulares sobre el planeta. Arriba al cargar; con el scroll se desvanece y
@@ -43,20 +42,21 @@ export default function SarosHeroChrome({ progress, departure }: { progress: Mot
  */
 export function SarosWordmark({ progress }: { progress: MotionValue<number>; departure?: MotionValue<number> }) {
   // Acompaña el ascenso del planeta y se desvanece con suavidad antes de que el planeta se centre por completo
-  const y = useTransform(progress, [0, 0.65], ["-31vh", "-6vh"]);
-  const scale = useTransform(progress, [0, 0.65], [1, 0.9]);
-  const opacity = useTransform(progress, [0, 0.12, 0.6], [1, 0.95, 0]);
-  const filter = useTransform(progress, [0.15, 0.6], ["blur(0px)", "blur(10px)"]);
+  const y = useTransform(progress, [0, 0.65], ["-25vh", "-3vh"]);
+  const scale = useTransform(progress, [0, 0.65], [1, 0.82]);
+  const opacity = useTransform(progress, [0, 0.08, 0.56], [1, 1, 0]);
+  const filter = useTransform(progress, [0.12, 0.56], ["blur(0px)", "blur(12px)"]);
 
   return (
     <motion.div className="hero-wordmark" style={{ y, scale, opacity, filter }} aria-hidden="true">
-      <p className="wordmark-title">
-        <span>S</span>
-        <span className="wm-a">A<SarosStar className="wm-star" /></span>
-        <span>R</span>
-        <span className="wm-o">O<SarosStar className="wm-star" /></span>
-        <span>S</span>
-      </p>
+      <div className="wordmark-premiere">
+        <p className="wordmark-title">
+          {Array.from("SAROS").map((letter, index) => (
+            <span key={index} style={{ "--letter-index": index } as React.CSSProperties}>{letter}</span>
+          ))}
+        </p>
+        <span className="wordmark-horizon" />
+      </div>
     </motion.div>
   );
 }

@@ -24,6 +24,8 @@ export const globeState = {
   revealed: new Set<string>(),
   /** Último instante (s de reloj) en que el haz detectó cada zona. */
   flashes: new Map<string, number>(),
+  /** Nivel de cercanía/iluminación del haz de radar sobre cada zona (0–1). */
+  radarProximity: new Map<string, number>(),
   /** Visibilidad extra del haz de radar (0–1), además de la del scroll. */
   beam: 0,
   /** Zona destacada al terminar el reconocimiento (último evento). */

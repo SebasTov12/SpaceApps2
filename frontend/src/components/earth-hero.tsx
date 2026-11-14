@@ -3,7 +3,7 @@
 import { motion, useInView, useScroll, useSpring, useTransform } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
 import ZoneView from "@/components/globe/zone-view";
 import HeroOverlay from "@/components/globe/hero-overlay";
@@ -12,12 +12,14 @@ import SarosHeroChrome, { SarosWordmark } from "@/components/saros-hero-chrome";
 
 const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
   ssr: false,
-  loading: () => <div className="earth-static" />,
+  loading: () => null,
 });
 
 export default function EarthHero() {
   const section = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
+  const [sceneReady, setSceneReady] = useState(false);
+  const revealScene = useCallback(() => setSceneReady(true), []);
   const inView = useInView(section, { amount: 0 });
   const playing = visible && inView;
   useEffect(() => {
@@ -44,17 +46,18 @@ export default function EarthHero() {
 
   return (
     <section ref={section} id="inicio" className="earth-scroll" aria-label="SAROS: la Tierra y la órbita de NISAR">
-      <div className="earth-stage" data-playing={playing}>
+      <div className="earth-stage" data-playing={playing} data-scene-ready={sceneReady}>
         <motion.div className="space-backdrop" aria-hidden="true" style={{ y: starsY }}>
           <SpaceBackdrop />
         </motion.div>
         <div className="space-dust" aria-hidden="true" />
         <SpaceDepth />
+        {!sceneReady && <div className="scene-prelude" role="status"><span>SAROS</span><i aria-hidden="true" /><small>Preparando la Tierra 3D</small></div>}
         {/* Logotipo SAROS detrás del planeta */}
         <SarosWordmark progress={progress} departure={departure} />
         <motion.div className="earth-orbit" style={{ y, scale, rotate, opacity }}>
           <OrbitRings />
-          <EarthGlobe progress={progress} playing={playing} />
+          <div className="earth-premiere"><EarthGlobe progress={progress} playing={playing} onReady={revealScene} /></div>
         </motion.div>
         <motion.div className="explorer-bridge" style={{ opacity: bridgeOpacity }} aria-hidden="true">
           <svg viewBox="0 0 1400 260" preserveAspectRatio="none">

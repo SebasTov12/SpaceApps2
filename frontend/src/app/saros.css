@@ -80,11 +80,26 @@ html body .metric-card,html body .map-card,html body .detail-card,html body .rev
 
 /* ---------- Logotipo SAROS: grande al cargar, luego desaparece fluidamente tras el planeta ---------- */
 .hero-wordmark{position:absolute;z-index:1;left:0;right:0;top:50%;translate:0 -50%;display:grid;justify-items:center;pointer-events:none;transform-origin:50% 50%;will-change:transform,opacity,filter}
-.wordmark-title{position:relative;margin:0;display:flex;align-items:center;gap:.06em;font-family:var(--font-display);font-weight:900;font-size:clamp(68px,13vw,200px);line-height:.95;letter-spacing:.12em;background:linear-gradient(180deg,#ffffff 0%,#d9e6ff 38%,#7890cf 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 14px 45px rgba(0,212,255,.32)) drop-shadow(0 0 80px rgba(139,92,246,.25));user-select:none}
-.wordmark-title span{position:relative;display:inline-block}
-.wm-star{position:absolute;color:#00d4ff;filter:drop-shadow(0 0 16px #00d4ff) drop-shadow(0 0 6px #ffffff)}
-.wm-a .wm-star{width:.22em;height:.22em;left:50%;bottom:.14em;transform:translateX(-50%)}
-.wm-o .wm-star{width:.32em;height:.32em;left:50%;top:50%;transform:translate(-50%,-50%)}
+.wordmark-premiere{position:relative;display:grid;justify-items:center;animation:saros-arrival 3.6s cubic-bezier(.16,1,.3,1) both}
+.wordmark-title{position:relative;margin:0;display:flex;align-items:center;gap:.19em;font-family:var(--font-cinema),Georgia,serif;font-weight:500;font-size:clamp(54px,12vw,184px);line-height:1.15;letter-spacing:0;user-select:none}
+.wordmark-title span{position:relative;display:inline-block;background:linear-gradient(115deg,#8195ad 8%,#e4edf5 30%,#fff 43%,#b7cddd 54%,#7188a2 82%);background-size:240% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:saros-letter 2.4s cubic-bezier(.16,1,.3,1) both,saros-sheen 4.8s ease-out both;animation-delay:calc(.15s + var(--letter-index)*.13s);text-shadow:0 0 35px #b1daf520}
+.wordmark-horizon{position:absolute;bottom:-22px;width:72%;height:1px;background:linear-gradient(90deg,transparent,#baddec,transparent);box-shadow:0 0 16px #8dcde880;transform-origin:center;animation:saros-horizon 3.8s ease-in-out both}
+.earth-premiere{width:100%;height:100%;animation:saros-earth-arrival 3.6s ease-out both}
+.earth-stage[data-scene-ready="false"] .earth-premiere{opacity:0;pointer-events:none;animation:none}
+.earth-stage[data-scene-ready="false"] .wordmark-premiere,.earth-stage[data-scene-ready="false"] .wordmark-title span,.earth-stage[data-scene-ready="false"] .wordmark-horizon{animation:none;opacity:0}
+.earth-stage[data-scene-ready="false"] .saros-chrome,.earth-stage[data-scene-ready="false"] .scroll-cue{visibility:hidden}
+.scene-prelude{position:absolute;z-index:5;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;pointer-events:none;color:#b8cedf}
+.scene-prelude span{font-family:var(--font-cinema),Georgia,serif;font-size:clamp(30px,6vw,60px);letter-spacing:.3em;padding-left:.3em}
+.scene-prelude small{font-size:11px;letter-spacing:.12em;color:#98afc4}
+.scene-prelude i{width:120px;height:1px;background:linear-gradient(90deg,transparent,#bce6fa,transparent);animation:scene-breath 1.6s ease-in-out infinite}
+@keyframes scene-breath{50%{opacity:.25;transform:scaleX(.5)}}
+@media(prefers-reduced-motion:reduce){.scene-prelude i{animation:none}}
+@keyframes saros-arrival{from{opacity:0;transform:scale(1.16)}30%{opacity:1}to{opacity:1;transform:scale(1)}}
+@keyframes saros-letter{from{opacity:0;filter:blur(14px);transform:translateY(18px)}to{opacity:1;filter:blur(0);transform:translateY(0)}}
+@keyframes saros-sheen{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes saros-horizon{0%{opacity:0;transform:scaleX(0)}35%{opacity:.8}70%{opacity:.5;transform:scaleX(1)}100%{opacity:0;transform:scaleX(1.12)}}
+@keyframes saros-earth-arrival{from{opacity:.12;filter:brightness(.5)}to{opacity:1;filter:brightness(1)}}
+@media(prefers-reduced-motion:reduce){.wordmark-premiere,.wordmark-title span,.earth-premiere{animation:none}.wordmark-horizon{display:none}}
 .earth-stage[data-zoomed="true"] .hero-wordmark{opacity:0!important}
 html body .scroll-cue{bottom:56px}
 html body .scene-motion-toggle{bottom:54px}
