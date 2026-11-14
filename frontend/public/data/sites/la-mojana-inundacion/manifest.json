@@ -1,0 +1,194 @@
+{
+  "id": "la-mojana-inundacion",
+  "name": "La Mojana inundada",
+  "place": "La Mojana, Sucre y Bolívar, Colombia",
+  "lat": 8.55,
+  "lon": -74.75,
+  "bbox": [
+    -75.05,
+    8.3,
+    -74.45,
+    8.8
+  ],
+  "change": "backscatter",
+  "changeLabel": "Inundación",
+  "product": "GCOV",
+  "metric": "Retrodispersión HH",
+  "unit": "dB",
+  "range": [
+    -24,
+    -2
+  ],
+  "colormap": "water",
+  "story": "Tras la ruptura del dique de Cara de Gato en 2021, La Mojana sufrió inundaciones prolongadas. El radar delimita el agua aunque el cielo esté cubierto.",
+  "en": {
+    "name": "Flooded La Mojana",
+    "place": "La Mojana, Sucre & Bolívar, Colombia",
+    "changeLabel": "Flooding",
+    "metric": "HH backscatter",
+    "story": "After the Cara de Gato dike breach in 2021, La Mojana suffered long floods. Radar maps the water even under full cloud cover.",
+    "unit": "dB"
+  },
+  "pilot": false,
+  "country": "CO",
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/la-mojana-inundacion/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/la-mojana-inundacion/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/la-mojana-inundacion/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/la-mojana-inundacion/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/la-mojana-inundacion/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/la-mojana-inundacion/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/la-mojana-inundacion/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/la-mojana-inundacion/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/la-mojana-inundacion/change.png",
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "unit": "dB"
+  },
+  "legend": {
+    "colors": [
+      "#0b2440",
+      "#1d4f7a",
+      "#3f8fb0",
+      "#9cc9b8",
+      "#d8d2a8",
+      "#f2ecd8"
+    ],
+    "range": [
+      -24,
+      -2
+    ],
+    "diverging": false
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Área sin bosque al inicio",
+      "labelEn": "Cleared area at start",
+      "value": "2030",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-08-02",
+      "noteEn": "2026-08-02"
+    },
+    {
+      "label": "Área sin bosque al final",
+      "labelEn": "Cleared area at end",
+      "value": "514",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-10-25",
+      "noteEn": "2026-10-25"
+    },
+    {
+      "label": "Cambio neto",
+      "labelEn": "Net change",
+      "value": "-1516",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "Umbral -15 dB",
+      "noteEn": "Threshold -15 dB"
+    }
+  ],
+  "assessment": {
+    "level": "moderada",
+    "rate": {
+      "recent": -468.2,
+      "early": -627.09,
+      "unit": "km²/mes",
+      "unitEn": "km²/month"
+    },
+    "accelerating": false,
+    "current": 514.14,
+    "projection": {
+      "d30": 45.94,
+      "d90": 0.0,
+      "unit": "km²"
+    },
+    "hotspots": [
+      {
+        "lat": 8.54167,
+        "lon": -74.90125,
+        "value": 18.94
+      },
+      {
+        "lat": 8.58667,
+        "lon": -74.75919,
+        "value": 18.89
+      },
+      {
+        "lat": 8.62667,
+        "lon": -74.66393,
+        "value": 18.63
+      },
+      {
+        "lat": 8.68333,
+        "lon": -74.86281,
+        "value": 18.52
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GCOV",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
+  },
+  "generated": "2026-11-14T17:50:22+00:00"
+}

@@ -30,6 +30,7 @@
     "unit": "dB"
   },
   "pilot": false,
+  "country": "",
   "dates": [
     "2026-08-02",
     "2026-08-14",
@@ -142,6 +143,46 @@
       "noteEn": "Threshold -15 dB"
     }
   ],
+  "assessment": {
+    "level": "moderada",
+    "rate": {
+      "recent": -441.61,
+      "early": -598.6,
+      "unit": "km²/mes",
+      "unitEn": "km²/month"
+    },
+    "accelerating": false,
+    "current": 512.45,
+    "projection": {
+      "d30": 70.84,
+      "d90": 0.0,
+      "unit": "km²"
+    },
+    "hotspots": [
+      {
+        "lat": 24.93486,
+        "lon": 91.8344,
+        "value": 20.61
+      },
+      {
+        "lat": 24.70398,
+        "lon": 91.73245,
+        "value": 19.33
+      },
+      {
+        "lat": 24.90428,
+        "lon": 91.74081,
+        "value": 18.89
+      },
+      {
+        "lat": 24.78654,
+        "lon": 91.66894,
+        "value": 18.67
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
   "source": {
     "mode": "demo",
     "product": "NISAR L2 GCOV",
@@ -149,5 +190,5 @@
     "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
     "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
   },
-  "generated": "2026-11-14T15:15:11+00:00"
+  "generated": "2026-11-14T17:50:14+00:00"
 }

@@ -20,6 +20,14 @@ type NisarMapProps = {
   onPick: (point: { lon: number; lat: number }) => void;
   /** Cambia para pedir que el mapa vuelva a encuadrar el sitio. */
   recenterKey: number;
+  /** Arranca en proyección de globo sobre este punto y vuela hasta el sitio (transición desde el planeta). */
+  intro?: { lat: number; lon: number };
+  /** Puntos a vigilar (tendencia más rápida). */
+  hotspots?: { lat: number; lon: number; value: number }[];
+  /** Posición del deslizador antes/después controlada desde fuera (0–100). */
+  splitValue?: number;
+  /** Margen del encuadre (p. ej. para dejar libre el panel lateral). */
+  padding?: { top: number; right: number; bottom: number; left: number };
 };
 
 const baseStyle: StyleSpecification = {
@@ -49,22 +57,28 @@ const outline = (bbox: Bbox) => ({
   geometry: { type: "LineString" as const, coordinates: [...corners(bbox), corners(bbox)[0]] },
 });
 
+const EMPTY_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
 function addNisarLayer(map: MapLibreMap, url: string, bbox: Bbox, opacity: number) {
-  map.addSource("nisar", { type: "image", url, coordinates: corners(bbox) });
-  map.addLayer({ id: "nisar", type: "raster", source: "nisar", paint: { "raster-opacity": opacity, "raster-fade-duration": 250, "raster-resampling": "linear" } });
+  map.addSource("nisar", { type: "image", url: url || EMPTY_PNG, coordinates: corners(bbox) });
+  // fundido largo: los cambios de fecha se ven progresivos
+  map.addLayer({ id: "nisar", type: "raster", source: "nisar", paint: { "raster-opacity": opacity, "raster-fade-duration": 650, "raster-resampling": "linear" } });
+  map.addSource("hotspots", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  map.addLayer({ id: "hotspots-glow", type: "circle", source: "hotspots", paint: { "circle-radius": 18, "circle-color": "#f43f5e", "circle-opacity": 0.18, "circle-blur": 0.6 } });
+  map.addLayer({ id: "hotspots-core", type: "circle", source: "hotspots", paint: { "circle-radius": 5, "circle-color": "#ffffff", "circle-stroke-color": "#f43f5e", "circle-stroke-width": 2.5 } });
   map.addSource("aoi", { type: "geojson", data: outline(bbox) });
   map.addLayer({ id: "aoi", type: "line", source: "aoi", paint: { "line-color": "#79d3d3", "line-width": 1.5, "line-dasharray": [3, 2], "line-opacity": 0.85 } });
 }
 
 function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opacity: number) {
   if (!map || !map.getSource("nisar")) return;
-  (map.getSource("nisar") as ImageSource).updateImage({ url, coordinates: corners(bbox) });
+  (map.getSource("nisar") as ImageSource).updateImage({ url: url || EMPTY_PNG, coordinates: corners(bbox) });
   map.setPaintProperty("nisar", "raster-opacity", opacity);
   const aoi = map.getSource("aoi") as { setData?: (data: unknown) => void } | undefined;
   aoi?.setData?.(outline(bbox));
 }
 
-export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey }: NisarMapProps) {
+export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding }: NisarMapProps) {
   const { t } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
@@ -82,7 +96,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     cancelAnimationFrame(splitFrame.current);
     const tick = () => {
       const diff = splitTarget.current - splitShown.current;
-      splitShown.current += diff * 0.12;
+      splitShown.current += diff * 0.07; // avance pausado, sin saltos
       if (Math.abs(diff) < 0.04) splitShown.current = splitTarget.current;
       setSplit(splitShown.current);
       if (splitShown.current !== splitTarget.current) splitFrame.current = requestAnimationFrame(tick);
@@ -101,7 +115,17 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     return () => cancelAnimationFrame(splitFrame.current);
   }, [mode, moveSplitTo]);
   const [failed, setFailed] = useState(false);
-  const initial = useRef({ bbox, layerUrl, beforeUrl, opacity, mode });
+  const initial = useRef({ bbox, layerUrl, beforeUrl, opacity, mode, intro });
+  const flewIn = useRef(false);
+  const paddingRef = useRef(padding ?? { top: 40, right: 40, bottom: 40, left: 40 });
+  useEffect(() => {
+    paddingRef.current = padding ?? { top: 40, right: 40, bottom: 40, left: 40 };
+  }, [padding]);
+  // posición del deslizador controlada desde el panel
+  useEffect(() => {
+    if (splitValue === undefined || mode !== "swipe") return;
+    moveSplitTo(splitValue);
+  }, [splitValue, mode, moveSplitTo]);
 
   useEffect(() => {
     onPickRef.current = onPick;
@@ -116,7 +140,12 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
       // copiado por scripts/copy-maplibre-worker.mjs (predev / prebuild)
       setWorkerUrl("/maplibre-gl-worker.mjs");
       const start = initial.current;
-      const common = { style: baseStyle, bounds: start.bbox, fitBoundsOptions: { padding: 40 }, attributionControl: false as const, maxZoom: 16 };
+      // con "intro" el mapa nace como globo sobre la zona y luego vuela hasta ella
+      const style: StyleSpecification = start.intro ? { ...baseStyle, projection: { type: "globe" } } : baseStyle;
+      const view = start.intro
+        ? { center: [start.intro.lon, start.intro.lat] as [number, number], zoom: 1.7 }
+        : { bounds: start.bbox, fitBoundsOptions: { padding: 40 } };
+      const common = { style, ...view, attributionControl: false as const, maxZoom: 16 };
       let main: MapLibreMap;
       try {
         main = new Map({ container: mainRef.current, ...common });
@@ -181,8 +210,22 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   // Encuadrar el sitio al cambiarlo o al pulsar "Centrar"
   useEffect(() => {
     if (!ready) return;
-    mapRef.current?.fitBounds(bbox, { padding: 40, duration: 1600, essential: true });
+    const first = !flewIn.current && !!initial.current.intro;
+    flewIn.current = true;
+    mapRef.current?.fitBounds(bbox, { padding: paddingRef.current, duration: first ? 4200 : 1600, curve: 1.6, essential: true });
   }, [ready, bbox, recenterKey]);
+
+  // Puntos a vigilar
+  useEffect(() => {
+    if (!ready) return;
+    const data = {
+      type: "FeatureCollection" as const,
+      features: (hotspots ?? []).map((h) => ({ type: "Feature" as const, properties: { value: h.value }, geometry: { type: "Point" as const, coordinates: [h.lon, h.lat] } })),
+    };
+    for (const map of [mapRef.current, afterMapRef.current]) {
+      (map?.getSource("hotspots") as { setData?: (d: unknown) => void } | undefined)?.setData?.(data);
+    }
+  }, [ready, hotspots]);
 
   // Marcador del punto seleccionado
   useEffect(() => {
