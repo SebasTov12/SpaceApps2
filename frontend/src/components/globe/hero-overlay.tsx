@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useTransform } from "framer-motion";
-import { ArrowLeft, Globe2, Leaf, MousePointerClick, Search, TriangleAlert, X } from "lucide-react";
+import { ArrowLeft, Globe2, Leaf, MousePointerClick, Radar, Search, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MotionValue } from "framer-motion";
 import { levelInfo } from "@/lib/insights";
@@ -13,6 +13,7 @@ import { HAZARDS_EVENT, type HazardPoints } from "@/lib/hazard-points";
 import { COUNTRY_EVENT, KIND_FILTER_EVENT, closeCountry, focusZone, globeState, toggleKind, UI_REVEAL } from "./globe-state";
 import { countryName, countryOf } from "@/lib/emergency";
 import { hazardKind, pointCountry } from "@/lib/hazard-points";
+import { NISAR_COLOR, NISAR_EVENT, NISAR_KIND, frameCountry, variableLabel, type NisarScenes } from "@/lib/nisar-scenes";
 
 const copy = {
   es: {
@@ -97,6 +98,21 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
       .map(([kind, row]) => ({ kind, ...row, records: mode === "watch" ? 0 : row.records }))
       .sort((a, b) => b.records + b.zones * 1000 - (a.records + a.zones * 1000));
   }, [country, countryStats, mode]);
+  // escenas NISAR reales de la base (catálogo ASF + estadísticas de los rasters procesados)
+  const [nisar, setNisar] = useState<NisarScenes | null>(null);
+  const [nisarOpen, setNisarOpen] = useState(false);
+  useEffect(() => {
+    const onData = (event: Event) => setNisar((event as CustomEvent<NisarScenes>).detail);
+    window.addEventListener(NISAR_EVENT, onData);
+    return () => window.removeEventListener(NISAR_EVENT, onData);
+  }, []);
+  const nisarHere = useMemo(() => {
+    if (!nisar || !country || nisar.frames.length === 0) return null;
+    const frames = nisar.frames.filter((f) => frameCountry(f) === country);
+    if (!frames.length) return null;
+    return { frames, passes: frames.reduce((n, f) => n + f.passes, 0), series: nisar.series.filter((x) => x.points.length > 0), summary: nisar.summary };
+  }, [nisar, country]);
+  const fmtDate = (iso: string | null) => (iso ? new Date(`${iso}T12:00:00Z`).toLocaleDateString(lang === "es" ? "es-CO" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "—");
   const kindInfo = (kind: string) => {
     const zone = riskKinds[kind as RiskZone["kind"]];
     const hz = hazardKind(kind);
@@ -158,12 +174,19 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
         ))}
       </div>
       <AnimatePresence>
-        {country && kindRows.length > 0 && (
+        {country && (kindRows.length > 0 || nisarHere) && (
           <motion.div className="kind-filter" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
             <div className="kind-filter-head">
               <span>{lang === "es" ? "Qué ver en el mapa" : "Show on the map"}</span>
               {hidden.size > 0 && <button type="button" onClick={() => toggleKind(null)}>{lang === "es" ? "Todo" : "All"}</button>}
             </div>
+            {nisarHere && mode !== "watch" && (
+              <button type="button" className={`kind-row is-nisar${hidden.has(NISAR_KIND) ? " is-off" : ""}`} aria-pressed={!hidden.has(NISAR_KIND)} onClick={() => toggleKind(NISAR_KIND)} style={{ "--c": NISAR_COLOR } as React.CSSProperties}>
+                <i />
+                <span className="kind-name">{lang === "es" ? "Escenas NISAR reales" : "Real NISAR scenes"}</span>
+                <span className="kind-count">{nisarHere.passes}</span>
+              </button>
+            )}
             {kindRows.map((row) => {
               const info = kindInfo(row.kind);
               const off = hidden.has(row.kind);
@@ -179,6 +202,46 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
                 </button>
               );
             })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {country && nisarHere && nisarOpen && (
+          <motion.div className="nisar-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+            <div className="nisar-card-head">
+              <span className="nisar-badge">NISAR · ASF DAAC</span>
+              <button type="button" onClick={() => setNisarOpen(false)} aria-label={lang === "es" ? "Cerrar" : "Close"}><X size={15} /></button>
+            </div>
+            <strong>{lang === "es" ? "Datos NISAR reales en la base" : "Real NISAR data in the database"}</strong>
+            <p className="nisar-sub">
+              {nisarHere.summary.scenes} {lang === "es" ? "escenas" : "scenes"} · {nisarHere.summary.rasters} {lang === "es" ? "capas procesadas" : "processed layers"} · {Object.entries(nisarHere.summary.products).map(([k, v]) => `${k.replace("_", " ")} ${v}`).join(" · ")}
+            </p>
+            <ul className="nisar-frames">
+              {nisarHere.frames.map((f, i) => (
+                <li key={i}>
+                  <b>{lang === "es" ? "Pista" : "Track"} {f.track ?? "—"}{f.frame ? ` · frame ${f.frame}` : ""}</b>
+                  <span>{f.direction === "ASCENDING" ? (lang === "es" ? "ascendente" : "ascending") : f.direction === "DESCENDING" ? (lang === "es" ? "descendente" : "descending") : f.direction ?? ""} · {f.passes} {lang === "es" ? "pasadas" : "passes"} · {fmtDate(f.first)} – {fmtDate(f.last)}</span>
+                </li>
+              ))}
+            </ul>
+            {nisarHere.series.length > 0 ? nisarHere.series.slice(0, 4).map((x) => {
+              const withMean = x.points.filter((p) => p.mean !== null);
+              const vals = withMean.map((p) => p.mean as number);
+              const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+              const path = withMean.map((p, i) => `${i === 0 ? "M" : "L"}${(i / Math.max(1, withMean.length - 1)) * 200},${46 - (((p.mean as number) - lo) / span) * 40}`).join(" ");
+              const last = x.points[x.points.length - 1];
+              return (
+                <div key={`${x.aoi}-${x.variable}`} className="nisar-series">
+                  <div className="nisar-series-head">
+                    <span>{variableLabel(x.variable, lang === "es")}{x.aoi ? ` · ${x.aoi}` : ""}</span>
+                    <b>{last.mean !== null ? last.mean.toLocaleString(lang === "es" ? "es-CO" : "en-US", { maximumFractionDigits: 2 }) : "—"} {x.units && x.units !== "1" ? x.units : ""}</b>
+                  </div>
+                  {vals.length > 1 && <svg viewBox="0 0 200 50" preserveAspectRatio="none" aria-hidden="true"><path d={path} /></svg>}
+                  <small>{lang === "es" ? "Media del recorte por fecha" : "Clip mean per date"} · {vals.length} {lang === "es" ? "fechas" : "dates"} · {fmtDate(x.points[0].date)} – {fmtDate(last.date)}</small>
+                </div>
+              );
+            }) : <p className="nisar-sub">{lang === "es" ? "Las escenas están catalogadas; aún no hay capas procesadas con estadísticas." : "Scenes are catalogued; no processed layers with statistics yet."}</p>}
+            <small className="nisar-src">{nisar?.source}</small>
           </motion.div>
         )}
       </AnimatePresence>
@@ -200,6 +263,12 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
               {countryStats.records > 0 && countryStats.zones > 0 && " · "}
               {countryStats.zones > 0 && <><b>{countryStats.zones}</b> {lang === "es" ? (countryStats.zones === 1 ? "zona vigilada" : "zonas vigiladas") : (countryStats.zones === 1 ? "watched zone" : "watched zones")}</>}
             </span>
+            {nisarHere && (
+              <button type="button" className={`cy-nisar${nisarOpen ? " is-open" : ""}`} onClick={() => setNisarOpen((v) => !v)}>
+                <Radar size={14} />
+                <span><b>{nisarHere.passes}</b> {lang === "es" ? "escenas NISAR reales" : "real NISAR scenes"} · {fmtDate(nisarHere.summary.first)} – {fmtDate(nisarHere.summary.last)}</span>
+              </button>
+            )}
             <small className="cy-hint"><MousePointerClick size={13} /> {lang === "es" ? "Pasa o toca un punto para ver su detalle; toca una zona para abrirla." : "Hover or tap a point for details; tap a zone to open it."}</small>
           </motion.div>
         )}

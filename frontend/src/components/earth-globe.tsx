@@ -8,6 +8,7 @@ import NisarOrbit from "@/components/nisar-orbit";
 import RiskMarkers from "@/components/globe/risk-markers";
 import HazardPoints from "@/components/globe/hazard-points";
 import CountryLayer from "@/components/globe/country-layer";
+import NisarFrames from "@/components/globe/nisar-frames";
 import ReconScan from "@/components/globe/recon-scan";
 import CompanionSats from "@/components/globe/companion-sats";
 import { RELIEF, globeState } from "@/components/globe/globe-state";
@@ -76,6 +77,8 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
         <HazardPoints />
         {/* Un punto por país; al abrir uno, su croquis y todos sus puntos */}
         <CountryLayer />
+        {/* Huellas reales de las escenas NISAR guardadas en la base */}
+        <NisarFrames />
         <group ref={clouds}>
         {/* A faint offset veil gives cloud systems depth without heavy shadow maps. */}
         <mesh scale={1 + RELIEF + 0.004} rotation={[0, 0.006, 0.003]}>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import urllib.error
@@ -642,6 +643,138 @@ def build_hazard_points() -> dict[str, object]:
 
 def _table_exists(connection: psycopg.Connection, name: str) -> bool:
     return connection.execute("SELECT to_regclass(%s) IS NOT NULL", (name,)).fetchone()[0]
+
+
+# ---------------------------------------------------------------------------
+# Escenas NISAR reales: catálogo de ASF y estadísticas de los rasters ya procesados en el servidor.
+# Los COG viven en disco; aquí solo se publica lo que guarda la base (huellas, fechas y estadísticas).
+# ---------------------------------------------------------------------------
+
+_NISAR_SCENES_CACHE: dict[str, object] = {"at": 0.0, "payload": None}
+
+
+def _outer_ring(geometry: object, max_points: int = 64) -> list[list[float]] | None:
+    """Anillo exterior más grande de la huella, reducido a pocos puntos (lon, lat)."""
+    if not isinstance(geometry, dict):
+        return None
+    coords = geometry.get("coordinates")
+    try:
+        if geometry.get("type") == "Polygon":
+            rings = [coords[0]]
+        elif geometry.get("type") == "MultiPolygon":
+            rings = [polygon[0] for polygon in coords]
+        else:
+            return None
+        ring = max(rings, key=lambda r: abs(_ring_centroid(r)[2]) if _ring_centroid(r) else 0)
+        step = max(1, len(ring) // max_points)
+        out = [[round(float(p[0]), 3), round(float(p[1]), 3)] for p in ring[::step]]
+        return out if len(out) >= 3 else None
+    except (TypeError, ValueError, IndexError, KeyError):
+        return None
+
+
+def _number(value: object) -> float | None:
+    try:
+        number = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def build_nisar_scenes() -> dict[str, object]:
+    with connect_db() as connection:
+        scenes = connection.execute(
+            """
+            SELECT granule_name, aoi_id, processing_level, collection, maturity, orbit_direction,
+                   relative_orbit, frame, polarization, reference_date, secondary_date, geometry_geojson
+              FROM nisar.catalog_assets
+             ORDER BY secondary_date NULLS LAST, granule_name
+            """
+        ).fetchall()
+        rasters = connection.execute(
+            """
+            SELECT r.granule_name, r.variable, r.units, r.valid_fraction, r.statistics,
+                   c.aoi_id, c.processing_level, c.reference_date, c.secondary_date
+              FROM nisar.raster_assets r
+              JOIN nisar.catalog_assets c USING (granule_name)
+             WHERE r.data_mode = 'real'
+             ORDER BY c.secondary_date NULLS LAST
+            """
+        ).fetchall() if _table_exists(connection, "nisar.raster_assets") else []
+
+    # un marco por pista/frame/dirección: la huella y cuántas pasadas tiene
+    frames: dict[tuple, dict[str, object]] = {}
+    products: dict[str, int] = {}
+    dates: list[str] = []
+    for (granule, aoi, level, collection, maturity, direction, track, frame, pol, ref, sec, geometry) in scenes:
+        products[str(level)] = products.get(str(level), 0) + 1
+        day = (sec or ref).isoformat() if (sec or ref) else None
+        if day:
+            dates.append(day)
+        key = (str(track), str(frame), str(direction), str(aoi))
+        item = frames.setdefault(key, {
+            "aoi": aoi, "track": track, "frame": frame, "direction": direction, "footprint": _outer_ring(geometry),
+            "passes": 0, "products": set(), "first": day, "last": day, "maturity": set(), "granules": [],
+        })
+        item["passes"] = int(item["passes"]) + 1
+        item["products"].add(str(level))
+        item["maturity"].add(str(maturity))
+        if day:
+            item["first"] = min(filter(None, [item["first"], day]))
+            item["last"] = max(filter(None, [item["last"], day]))
+        if len(item["granules"]) < 3:
+            item["granules"].append(granule)
+        if item["footprint"] is None:
+            item["footprint"] = _outer_ring(geometry)
+
+    # series por zona y variable: estadísticas de cada raster en la fecha de su escena
+    series: dict[tuple[str, str], dict[str, object]] = {}
+    for granule, variable, units, valid, stats, aoi, level, ref, sec in rasters:
+        stats = stats if isinstance(stats, dict) else {}
+        key = (str(aoi), str(variable))
+        entry = series.setdefault(key, {"aoi": aoi, "variable": variable, "product": level, "units": units, "points": []})
+        entry["points"].append({
+            "date": (sec or ref).isoformat() if (sec or ref) else None,
+            "reference": ref.isoformat() if ref else None,
+            "mean": _number(stats.get("mean")), "min": _number(stats.get("minimum")),
+            "max": _number(stats.get("maximum")), "std": _number(stats.get("standard_deviation")),
+            "valid": _number(valid), "granule": granule,
+        })
+
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": {
+            "scenes": len(scenes), "rasters": len(rasters), "frames": len(frames), "products": products,
+            "first": min(dates) if dates else None, "last": max(dates) if dates else None,
+            "aois": sorted({str(s[1]) for s in scenes}),
+        },
+        "frames": [
+            {**{k: v for k, v in item.items() if k not in ("products", "maturity")},
+             "products": sorted(item["products"]), "maturity": sorted(item["maturity"])}
+            for item in frames.values() if item["footprint"]
+        ],
+        "series": sorted(series.values(), key=lambda s: (str(s["aoi"]), str(s["variable"]))),
+        "source": "NASA-ISRO NISAR · ASF DAAC (catálogo) · recortes procesados en el servidor SAROS",
+    }
+
+
+@app.get("/api/v1/nisar/scenes")
+def nisar_scenes():
+    """Escenas NISAR reales de la base: marcos con su huella, pasadas y series de las variables procesadas."""
+    import time
+    now = time.time()
+    payload = _NISAR_SCENES_CACHE.get("payload")
+    if payload is None or now - float(_NISAR_SCENES_CACHE["at"]) > HAZARD_POINTS_TTL:
+        try:
+            payload = build_nisar_scenes()
+        except psycopg.errors.UndefinedTable:
+            return jsonify({"error": "nisar_catalog_not_loaded"}), 503
+        except psycopg.Error:
+            return jsonify({"error": "nisar_catalog_unavailable"}), 503
+        _NISAR_SCENES_CACHE.update(at=now, payload=payload)
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = "public, max-age=600"
+    return response
 
 
 @app.get("/api/v1/hazards/points")
