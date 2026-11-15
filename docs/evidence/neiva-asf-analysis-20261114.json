@@ -1,0 +1,111 @@
+{
+  "input": "/workspace/data/filtered/neiva-live-20261114/03_colombia_bbox.geojson",
+  "product": "NISAR L2 GUNW",
+  "total_products": 19,
+  "collection_counts": {
+    "NISAR_L2_GUNW_PROVISIONAL_V1": 18,
+    "NISAR_UR_L2": 1
+  },
+  "production_configuration_counts": {
+    "PR": 18,
+    "UR": 1
+  },
+  "flight_direction_counts": {
+    "DESCENDING": 10,
+    "ASCENDING": 9
+  },
+  "catalog_time_span_utc": {
+    "first": "2026-06-17T10:37:59Z",
+    "last": "2026-10-17T23:21:59Z"
+  },
+  "provisional": {
+    "products": 18,
+    "stack_count": 2,
+    "stacks_with_multiple_products": 2,
+    "stacks_with_consecutive_pairs": 2,
+    "largest_stacks": [
+      {
+        "flight_direction": "A",
+        "relative_orbit": "047",
+        "frame_number": "003",
+        "mode": "2000",
+        "polarization": "SH",
+        "product_count": 9,
+        "distinct_pairs": 9,
+        "consecutive_pair_links": 8,
+        "unique_acquisition_dates": 10,
+        "first_date": "2026-06-17",
+        "last_date": "2026-10-15",
+        "sample_pairs": [
+          {
+            "reference": "2026-06-17",
+            "secondary": "2026-06-29"
+          },
+          {
+            "reference": "2026-06-29",
+            "secondary": "2026-07-11"
+          },
+          {
+            "reference": "2026-07-11",
+            "secondary": "2026-07-23"
+          },
+          {
+            "reference": "2026-07-23",
+            "secondary": "2026-08-16"
+          }
+        ],
+        "sample_products": [
+          "NISAR_L2_PR_GUNW_023_047_A_003_024_2000_SH_20260617T103759_20260617T103834_20260629T103759_20260629T103833_P05023_N_F_J_001",
+          "NISAR_L2_PR_GUNW_024_047_A_003_025_2000_SH_20260629T103759_20260629T103833_20260711T103758_20260711T103832_P05023_N_F_J_001",
+          "NISAR_L2_PR_GUNW_025_047_A_003_026_2000_SH_20260711T103758_20260711T103832_20260723T103757_20260723T103832_P05023_N_F_J_001",
+          "NISAR_L2_PR_GUNW_026_047_A_003_028_2000_SH_20260723T103757_20260723T103832_20260816T103756_20260816T103830_P05023_N_F_J_001"
+        ]
+      },
+      {
+        "flight_direction": "D",
+        "relative_orbit": "083",
+        "frame_number": "087",
+        "mode": "2000",
+        "polarization": "SH",
+        "product_count": 9,
+        "distinct_pairs": 9,
+        "consecutive_pair_links": 8,
+        "unique_acquisition_dates": 10,
+        "first_date": "2026-06-19",
+        "last_date": "2026-10-17",
+        "sample_pairs": [
+          {
+            "reference": "2026-06-19",
+            "secondary": "2026-07-01"
+          },
+          {
+            "reference": "2026-07-01",
+            "secondary": "2026-07-13"
+          },
+          {
+            "reference": "2026-07-13",
+            "secondary": "2026-07-25"
+          },
+          {
+            "reference": "2026-07-25",
+            "secondary": "2026-08-18"
+          }
+        ],
+        "sample_products": [
+          "NISAR_L2_PR_GUNW_023_083_D_087_024_2000_SH_20260619T232128_20260619T232202_20260701T232127_20260701T232202_P05023_N_F_J_001",
+          "NISAR_L2_PR_GUNW_024_083_D_087_025_2000_SH_20260701T232127_20260701T232202_20260713T232127_20260713T232201_P05023_F_F_J_001",
+          "NISAR_L2_PR_GUNW_025_083_D_087_026_2000_SH_20260713T232127_20260713T232201_20260725T232126_20260725T232200_P05023_N_F_J_001",
+          "NISAR_L2_PR_GUNW_026_083_D_087_028_2000_SH_20260725T232126_20260725T232200_20260818T232125_20260818T232159_P05023_N_F_J_001"
+        ]
+      }
+    ],
+    "primary_hdf5_size_gb": {
+      "count": 18,
+      "median": 2.282,
+      "min": 2.156,
+      "max": 2.324,
+      "total": 41.004
+    }
+  },
+  "caveat": "Catálogo y pares temporales únicamente; esto no es validación de calidad científica ni etiquetas de entrenamiento."
+}

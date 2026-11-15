@@ -1,0 +1,34 @@
+{
+  "query": "ASF Search API, dataset=NISAR",
+  "filters": {
+    "processing_level": "GUNW",
+    "americas_bbox_wsen": [
+      -170.0,
+      -60.0,
+      -25.0,
+      85.0
+    ],
+    "colombia_bbox_wsen": [
+      -75.34,
+      2.88,
+      -75.24,
+      2.98
+    ],
+    "product_short_name": null,
+    "data_maturity": null,
+    "start": null,
+    "end": null
+  },
+  "counts": {
+    "nisar_product_level": 105769,
+    "americas_bbox": 33597,
+    "colombia_bbox": 19,
+    "colombia_features_saved": 19,
+    "colombia_without_geometry": 0
+  },
+  "saved_limit": 500,
+  "files": [
+    "/workspace/data/filtered/neiva-live-20261114/03_colombia_bbox.geojson"
+  ],
+  "note": "Los conteos son completos del cat\u00e1logo. Colombia se aproxima con una caja envolvente; incluye zonas de pa\u00edses vecinos."
+}

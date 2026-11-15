@@ -319,6 +319,13 @@ livianos y documentación de procedencia.
   cero filas. Los `.env` privados comprobados en el servidor no tienen usuario
   ni contraseña Earthdata configurados; no se intentó una descarga autenticada
   ni se copiaron credenciales al repositorio.
+- Tras la indicación de que Earthdata ya estaba en Docker, se revisaron las
+  variables de entorno de todos los contenedores activos y las rutas de
+  montaje/configuración del Compose SAROS. No aparece ninguna variable
+  `EARTHDATA_*` ni un `.env` montado en el worker; este worker recibe ambos
+  valores desde `/home/admin/spaceapps2/.env`, donde actualmente no están
+  declarados. Los secretos de base de datos montados en otros servicios no son
+  credenciales Earthdata.
 - El contenedor `spaceapps2-model` que expone inferencia ONNX está `unhealthy`
   porque su volumen no contiene `models/nisar-change/best.onnx`. Es un servicio
   de segmentación/cambio distinto del pronóstico temporal LOS alojado en la
@@ -349,3 +356,64 @@ livianos y documentación de procedencia.
 
 Referencias de producto consultadas: [guía NISAR GUNW de ASF](https://nisar-docs.asf.alaska.edu/gunw/),
 [problemas conocidos de NISAR](https://nisar-docs.asf.alaska.edu/provisional-known-issues/).
+
+## Consulta pública ASF repetida para Neiva
+
+Se volvió a consultar ASF desde el worker remoto con `asf_search 10.3.0`, sin
+Earthdata Login y sin descargar productos. Consulta por intersección con
+`-75.34,2.88,-75.24,2.98` (oeste,sur,este,norte), nivel GUNW, sin filtro de
+madurez:
+
+| Alcance del catálogo | Resultados |
+|---|---:|
+| NISAR GUNW global | 105 769 |
+| América | 33 597 |
+| Caja núcleo Neiva | 19 |
+| De esos, GUNW PROVISIONAL | 18 |
+| Producto `NISAR_UR_L2` fuera de la colección PR estándar | 1 |
+
+Los 18 pares PROVISIONAL se separan en dos stacks y no se mezclan:
+
+| Dirección | Track | Frame | Pares | Adquisiciones únicas | Intervalo |
+|---|---:|---:|---:|---:|---|
+| Ascendente | 047 | 003 | 9 | 10 | 2026-06-17 a 2026-10-15 |
+| Descendente | 083 | 087 | 9 | 10 | 2026-06-19 a 2026-10-17 |
+
+Ambas cadenas tienen ocho uniones consecutivas entre sus nueve interferogramas;
+incluyen un intervalo de 24 días en medio del muestreo nominal de 12 días. ASF
+estima para cada archivo HDF5 principal entre 2.156 y 2.324 GB (mediana 2.282
+GB); los 18 sumarían aproximadamente 41 GB si se descargaran completos. El
+inventario completo con footprints y metadatos permanece en
+`/home/admin/spaceapps2/data/filtered/neiva-live-20261114/` del servidor. Se
+versionó una copia metadata-only para reproducir el análisis:
+[GeoJSON ASF](evidence/neiva-asf-catalog-20261114.geojson),
+[resumen de conteos](evidence/neiva-asf-query-20261114.json) y
+[resumen por stack](evidence/neiva-asf-analysis-20261114.json). No se subieron
+HDF5, COG ni credenciales al repositorio.
+
+Este inventario afina la decisión de modelado: con diez adquisiciones, cinco
+observaciones mínimas de entrenamiento y un horizonte de 24 días sobre un
+muestreo cercano a 12 días, el backtest puede aportar como máximo cuatro
+objetivos futuros distintos por stack (y menos si la ventana temporal no
+coincide). El umbral actual de seis objetivos independientes no se alcanza,
+por lo que incluso después de resolver el acceso, esta serie inicial no puede
+certificar fiabilidad. Se requiere esperar nuevas adquisiciones del mismo
+stack; ampliar regiones ayuda a cobertura, pero no aumenta la longitud de la
+serie de Neiva ni permite mezclar geometrías.
+
+La búsqueda y el análisis metadata-only terminaron correctamente en el
+contenedor del procesador. Su instalación actual de `asf_search` se asume en el
+rango `>=10,<11`; comprobar la versión exacta y revisar parámetros en el
+[ASF Cookbook](https://docs.asf.alaska.edu/api/cookbook/) antes de actualizar
+la imagen.
+
+## Despliegue SAROS tras instalar el auto-actualizador
+
+El timer `spaceapps2-auto-update.timer` quedó habilitado en el servidor. La
+primera ejecución coincidió con el fast-forward del propio script y terminó con
+un conflicto al intentar crear el contenedor PostgreSQL ya existente; no se
+recreó la base ni se perdió su volumen. Después se ejecutó la instrucción
+actualizada `docker compose up -d --build --no-deps saros api predictor` y
+finalizó correctamente: `spaceapps2-saros` y `spaceapps2-api` quedaron
+saludables. PostgreSQL mantuvo su contenedor y volumen externos; el predictor
+ONNX continúa no saludable por el checkpoint ausente descrito arriba.
