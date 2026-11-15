@@ -1,9 +1,10 @@
 "use client";
 
 import { motion, useInView, useMotionValueEvent, useScroll, useSpring, useTransform } from "framer-motion";
-import { UI_REVEAL, globeState } from "@/components/globe/globe-state";
+import { GLOBE_SELECT, UI_REVEAL, globeState } from "@/components/globe/globe-state";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowUp } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
 import ZoneView from "@/components/globe/zone-view";
 import HeroOverlay from "@/components/globe/hero-overlay";
@@ -17,11 +18,14 @@ const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
   loading: () => null,
 });
 
+const SCROLL_POSITION_KEY = "saros:home-scroll-y";
+
 export default function EarthHero() {
   const { lang } = useI18n();
   const section = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
   const [sceneReady, setSceneReady] = useState(false);
+  const [exploreLocked, setExploreLocked] = useState(false);
   const revealScene = useCallback(() => setSceneReady(true), []);
   const inView = useInView(section, { amount: 0 });
   const playing = visible && inView;
@@ -31,6 +35,79 @@ export default function EarthHero() {
     document.addEventListener("visibilitychange", update);
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
+  useLayoutEffect(() => {
+    const previousRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    if (!window.location.hash) {
+      try {
+        const saved = Number(window.sessionStorage.getItem(SCROLL_POSITION_KEY));
+        if (Number.isFinite(saved) && saved > 0) window.scrollTo({ top: saved, behavior: "instant" });
+      } catch {
+        // Scrolling still works if browser storage is unavailable.
+      }
+    }
+
+    let saveTimer = 0;
+    const savePosition = () => {
+      window.clearTimeout(saveTimer);
+      try { window.sessionStorage.setItem(SCROLL_POSITION_KEY, String(window.scrollY)); } catch { /* storage is optional */ }
+    };
+    const onScroll = () => {
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(savePosition, 140);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("pagehide", savePosition);
+    return () => {
+      savePosition();
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pagehide", savePosition);
+      window.history.scrollRestoration = previousRestoration;
+    };
+  }, []);
+  useEffect(() => {
+    if (!exploreLocked) return;
+    const stopWheel = (event: WheelEvent) => event.preventDefault();
+    const stopScrollKeys = (event: KeyboardEvent) => {
+      if (event.key === " " && (event.target as HTMLElement).closest("button, a, input, textarea, select, [contenteditable='true']")) return;
+      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) event.preventDefault();
+    };
+    const unlockForZone = () => setExploreLocked(false);
+    window.addEventListener("wheel", stopWheel, { passive: false });
+    window.addEventListener("keydown", stopScrollKeys);
+    window.addEventListener(GLOBE_SELECT, unlockForZone);
+    return () => {
+      window.removeEventListener("wheel", stopWheel);
+      window.removeEventListener("keydown", stopScrollKeys);
+      window.removeEventListener(GLOBE_SELECT, unlockForZone);
+    };
+  }, [exploreLocked]);
+
+  const continueToGlobe = useCallback(() => {
+    if (exploreLocked) {
+      setExploreLocked(false);
+      return;
+    }
+    const element = section.current;
+    if (!element) return;
+    const travel = Math.max(0, element.offsetHeight - window.innerHeight);
+    const target = element.getBoundingClientRect().top + window.scrollY + travel * 0.8;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: target, behavior: reducedMotion ? "instant" : "smooth" });
+
+    const startedAt = performance.now();
+    const waitForPosition = (now: number) => {
+      const distance = Math.abs(window.scrollY - target);
+      if (distance <= 3 || now - startedAt >= 2200) {
+        if (distance <= 48) {
+          setExploreLocked(true);
+        }
+        return;
+      }
+      requestAnimationFrame(waitForPosition);
+    };
+    requestAnimationFrame(waitForPosition);
+  }, [exploreLocked]);
   const { scrollYProgress } = useScroll({
     target: section,
     offset: ["start start", "end end"],
@@ -44,7 +121,17 @@ export default function EarthHero() {
     window.dispatchEvent(new CustomEvent(UI_REVEAL, { detail: next }));
   }, []);
   useMotionValueEvent(scrollYProgress, "change", setReveal);
-  useEffect(() => { setReveal(scrollYProgress.get()); }, [scrollYProgress, setReveal]);
+  useEffect(() => {
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      setReveal(scrollYProgress.get());
+      secondFrame = requestAnimationFrame(() => setReveal(scrollYProgress.get()));
+    });
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      cancelAnimationFrame(secondFrame);
+    };
+  }, [scrollYProgress, setReveal]);
   const { scrollYProgress: departure } = useScroll({
     target: section, offset: ["end end", "end start"],
   });
@@ -58,7 +145,7 @@ export default function EarthHero() {
 
   return (
     <section ref={section} id="inicio" className="earth-scroll" aria-label={lang === "en" ? "SAROS: Earth and NISAR's orbit" : "SAROS: la Tierra y la órbita de NISAR"}>
-      <div className="earth-stage" data-playing={playing} data-scene-ready={sceneReady}>
+      <div className="earth-stage" data-playing={playing} data-scene-ready={sceneReady} data-explore-locked={exploreLocked}>
         <motion.div className="space-backdrop" aria-hidden="true" style={{ y: starsY }}>
           <SpaceBackdrop />
         </motion.div>
@@ -93,6 +180,23 @@ export default function EarthHero() {
         <HeroOverlay progress={progress} />
         {/* Cintillo de titulares (arriba → abajo con el scroll) */}
         <SarosHeroChrome progress={progress} departure={departure} />
+        <button
+          type="button"
+          className="mobile-globe-cue"
+          onClick={continueToGlobe}
+          aria-pressed={exploreLocked}
+          aria-label={exploreLocked
+            ? (lang === "en" ? "Resume page scrolling" : "Reanudar desplazamiento de la página")
+            : (lang === "en" ? "Go to the globe and hold the view" : "Ir al planeta y fijar la vista")}
+          title={exploreLocked
+            ? (lang === "en" ? "Resume scrolling" : "Reanudar desplazamiento")
+            : (lang === "en" ? "Tap to continue" : "Pulsa aquí para continuar")}
+        >
+          <span>{exploreLocked
+            ? (lang === "en" ? "Resume scrolling" : "Reanudar desplazamiento")
+            : (lang === "en" ? "Tap to continue" : "Pulsa aquí para continuar")}</span>
+          {exploreLocked ? <ArrowUp size={16} aria-hidden="true" /> : <ArrowDown size={16} aria-hidden="true" />}
+        </button>
       </div>
     </section>
   );

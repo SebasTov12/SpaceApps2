@@ -25,7 +25,7 @@ export const globeState = {
   /** Marcadores de zonas por id (los registra risk-markers). */
   markers: new Map<string, Object3D>(),
   /** Reconocimiento inicial: 0 = no empezó, 0–1 = en curso, 1 = terminado. */
-  scan: { progress: 0, origin: new Vector3(0, 0, 1), startedAt: -1 },
+  scan: { progress: 0, origin: new Vector3(0, 0, 1), startedAt: -1, originCapturedAt: -1 },
   /** Zonas ya descubiertas por el reconocimiento. */
   revealed: new Set<string>(),
   /** Último instante (s de reloj) en que el haz detectó cada zona. */

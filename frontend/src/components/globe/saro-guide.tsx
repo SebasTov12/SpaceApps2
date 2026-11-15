@@ -9,7 +9,7 @@ import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import { loadManifest, type AttentionLevel, type SiteManifest } from "@/lib/sites";
 import { OPEN_SECTOR_EVENT, QUICK_QUESTIONS, TOUR_EVENT, allReplySentences, answer, sentences, type SaroAction, type TourKey } from "@/lib/saro-brain";
-import { GLOBE_SELECT, UI_REVEAL, focusZone } from "./globe-state";
+import { GLOBE_SELECT, UI_REVEAL, focusZone, globeState } from "./globe-state";
 
 /** Evento que lanza el panel cuando se abre la ficha de un sector (Saro reacciona). */
 export const SECTOR_EVENT = "saros:sector";
@@ -261,7 +261,14 @@ export default function SaroGuide() {
       setArrived(on);
     };
     window.addEventListener(UI_REVEAL, onReveal);
-    return () => window.removeEventListener(UI_REVEAL, onReveal);
+    const frame = requestAnimationFrame(() => {
+      arrivedRef.current = globeState.uiRevealed;
+      setArrived(globeState.uiRevealed);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener(UI_REVEAL, onReveal);
+    };
   }, []);
   const away = !arrived && !zoneId;
   const [voice, setVoice] = useState(true);

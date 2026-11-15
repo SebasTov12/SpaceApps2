@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, ArrowLeft, Box, Database, Info, MapPin, MapPinned, MousePointerClick, Radar, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import ZoneSimple from "./zone-simple";
@@ -103,6 +103,7 @@ export default function ZoneView() {
   const c = copy[lang];
   const en = lang === "en";
   const wrapper = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [mapVisible, setMapVisible] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -127,6 +128,10 @@ export default function ZoneView() {
 
   const zone = riskZones.find((z) => z.id === zoneId) ?? null;
   const siteId = zone?.siteId ?? null;
+
+  useLayoutEffect(() => {
+    if (zoneId) panelRef.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [zoneId]);
 
   useEffect(() => {
     const update = () => setWide(window.innerWidth > 900);
@@ -299,8 +304,6 @@ export default function ZoneView() {
       if (!key || !panel) return;
       const el = panel.querySelector<HTMLElement>(`[data-tour="${key}"]`);
       if (!el) return;
-      const top = el.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 90;
-      panel.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
       el.classList.add("is-tour");
       clearTimeout(timer);
       timer = setTimeout(() => el.classList.remove("is-tour"), 5200);
@@ -406,6 +409,7 @@ export default function ZoneView() {
           <motion.aside
             key="zone-panel"
             className="zone-panel"
+            ref={panelRef}
             role="dialog"
             aria-label={`${zone.name[lang]} · ${zone.place[lang]}`}
             initial={{ opacity: 0, x: wide ? 60 : 0, y: wide ? 0 : 60, filter: "blur(10px)" }}

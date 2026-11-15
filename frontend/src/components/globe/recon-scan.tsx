@@ -63,7 +63,6 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
   }), []);
   const tmp = useMemo(() => ({ foot: new Vector3(), marker: new Vector3(), local: new Vector3() }), []);
   const lastEmit = useRef({ found: -1, at: 0, progress: 0 });
-  const initialFocusDone = useRef(false);
 
   useFrame(({ clock }) => {
     const u = material.current?.uniforms;
@@ -74,17 +73,26 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     globeState.clock = t;
     const scan = globeState.scan;
 
-    // 1. Inicio: el barrido parte del punto bajo el satélite
-    if (ready && (scan.startedAt < 0 || now - scan.startedAt >= SCAN_INTERVAL)) {
+    // 1. Programar el barrido solo cuando existe la órbita de NISAR.
+    if (ready && globeState.orbit && (scan.startedAt < 0 || now - scan.startedAt >= SCAN_INTERVAL)) {
       scan.startedAt = scan.startedAt < 0 ? now + SCAN_DELAY : now;
+      scan.originCapturedAt = -1;
       lastEmit.current.progress = 0;
-      if (globeState.orbit) {
-        globeState.orbit.localToWorld(tmp.foot.copy(FOOTPRINT_LOCAL));
-        scan.origin.copy(tmp.foot.normalize());
-      }
-      u.uOrigin.value.copy(scan.origin);
     }
     if (scan.startedAt < 0) return;
+
+    // Capturar la huella al comenzar de verdad, tras la espera inicial. Así el origen
+    // coincide con la posición orbital actual de NISAR y no con la de varios segundos antes.
+    if (now >= scan.startedAt && scan.originCapturedAt !== scan.startedAt) {
+      if (!globeState.orbit) {
+        scan.startedAt = now + 0.05;
+        return;
+      }
+      globeState.orbit.localToWorld(tmp.foot.copy(FOOTPRINT_LOCAL));
+      scan.origin.copy(tmp.foot.normalize());
+      scan.originCapturedAt = scan.startedAt;
+      u.uOrigin.value.copy(scan.origin);
+    }
 
     scan.progress = Math.min(1, Math.max(0, (now - scan.startedAt) / SCAN_DURATION));
     const angle = scan.progress * Math.PI * 1.04;
@@ -108,11 +116,6 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     }
     const found = globeState.revealed.size;
     const finished = scan.progress >= 1 && lastEmit.current.progress < 1;
-    // al terminar el barrido, el planeta gira hacia el último evento (Colombia) y lo destaca
-    if (finished && !initialFocusDone.current && globeState.featured && globeState.zoom === 0 && !globeState.focus) {
-      globeState.focus = globeState.featured;
-    }
-    if (finished) initialFocusDone.current = true;
     if (found !== lastEmit.current.found || finished || (scan.progress < 1 && t - lastEmit.current.at > 0.12)) {
       lastEmit.current = { found, at: t, progress: scan.progress };
       emit<ReconEvent>(GLOBE_RECON, { progress: scan.progress, found });
