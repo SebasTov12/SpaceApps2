@@ -48,10 +48,6 @@ function SmallSat({ color }: { color: string }) {
         <coneGeometry args={[0.28, 0.25, 20, 1, true]} />
         <meshStandardMaterial color="#e8eef8" metalness={0.5} roughness={0.3} side={DoubleSide} />
       </mesh>
-      <mesh position={[0.5, 0, 0]}>
-        <sphereGeometry args={[0.09, 12, 8]} />
-        <meshBasicMaterial color={color} toneMapped={false} />
-      </mesh>
     </group>
   );
 }

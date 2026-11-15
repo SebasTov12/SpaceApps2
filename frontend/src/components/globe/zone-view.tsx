@@ -60,15 +60,15 @@ const MAP_DELAY = 250;   // ms: el mapa empieza a cargar oculto mientras la cám
 const MIN_APPROACH = 950; // ms: la zambullida empieza cuando la cámara ya llegó cerca
 const HAZE_PEAK = 480;    // ms tras la zambullida: la bruma tapa el cambio y aparece el mapa
 
-/** Vista 3D según el tipo de lugar: montañas con relieve marcado, ciudades con edificios, llanuras casi planas. */
+/** El relieve y el encuadre varían por lugar; los edificios se cargan por coordenadas en todo el mapa. */
 function sceneFor(kind: RiskZone["kind"]): Scene3D {
   switch (kind) {
-    case "subsidence": return { exaggeration: 1, buildings: true, pitch: 62, zoom: 15.2 };
-    case "flood": return { exaggeration: 1.1, buildings: false, pitch: 55, zoom: 12.6 };
-    case "volcano": return { exaggeration: 1.25, buildings: false, pitch: 70, zoom: 12.4 };
-    case "deforestation": return { exaggeration: 1.2, buildings: false, pitch: 62, zoom: 13 };
-    case "glacier": return { exaggeration: 1.3, buildings: false, pitch: 66, zoom: 12.2 };
-    default: return { exaggeration: 1.45, buildings: false, pitch: 70, zoom: 13.6 };
+    case "subsidence": return { exaggeration: 1, pitch: 62, zoom: 15.2 };
+    case "flood": return { exaggeration: 1.1, pitch: 55, zoom: 13.4 };
+    case "volcano": return { exaggeration: 1.25, pitch: 70, zoom: 13.4 };
+    case "deforestation": return { exaggeration: 1.2, pitch: 62, zoom: 13.4 };
+    case "glacier": return { exaggeration: 1.3, pitch: 66, zoom: 13.4 };
+    default: return { exaggeration: 1.45, pitch: 70, zoom: 13.6 };
   }
 }
 

@@ -71,7 +71,6 @@ export function OrbitRings() {
       </g>
       <g className="orbit-ring orbit-ring-c">
         <circle r="95" fill="none" stroke="#7fdcff" strokeOpacity=".08" strokeWidth=".18" />
-        <circle cx="0" cy="-95" r=".9" fill="#9fe9ff" />
       </g>
     </svg>
   );

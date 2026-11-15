@@ -9,9 +9,9 @@ import type { AttentionLevel, Assessment, ChangeType } from "@/lib/sites";
 type L = { es: string; en: string };
 
 export const levelInfo: Record<AttentionLevel, { color: string; label: L; short: L }> = {
-  baja: { color: "#10b981", label: { es: "Atención baja", en: "Low attention" }, short: { es: "BAJA", en: "LOW" } },
-  moderada: { color: "#f59e0b", label: { es: "Atención moderada", en: "Moderate attention" }, short: { es: "MODERADA", en: "MODERATE" } },
-  alta: { color: "#f43f5e", label: { es: "Atención alta", en: "High attention" }, short: { es: "ALTA", en: "HIGH" } },
+  baja: { color: "#78b69d", label: { es: "Atención baja", en: "Low attention" }, short: { es: "BAJA", en: "LOW" } },
+  moderada: { color: "#d4a86a", label: { es: "Atención moderada", en: "Moderate attention" }, short: { es: "MODERADA", en: "MODERATE" } },
+  alta: { color: "#df8098", label: { es: "Atención alta", en: "High attention" }, short: { es: "ALTA", en: "HIGH" } },
 };
 
 /** Frase en lenguaje simple: qué está pasando y qué pasaría si sigue igual. */

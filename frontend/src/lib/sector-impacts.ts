@@ -22,9 +22,9 @@ export const sectorNames: Record<SectorKey, T> = {
 };
 
 export const exposureNames: Record<Exposure, T & { color: string }> = {
-  low: { ...t("Exposición baja", "Low exposure"), color: "#10b981" },
-  medium: { ...t("Exposición media", "Medium exposure"), color: "#f59e0b" },
-  high: { ...t("Exposición alta", "High exposure"), color: "#f43f5e" },
+  low: { ...t("Exposición baja", "Low exposure"), color: "#78b69d" },
+  medium: { ...t("Exposición media", "Medium exposure"), color: "#d4a86a" },
+  high: { ...t("Exposición alta", "High exposure"), color: "#df8098" },
 };
 
 type Effect = { effect: T; reinforce: T };

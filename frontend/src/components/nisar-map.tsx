@@ -7,9 +7,9 @@ import { useI18n } from "@/lib/i18n";
 import type { Bbox } from "@/lib/sites";
 
 export type MapMode = "single" | "swipe" | "change";
-/** Ajustes de la vista 3D: exageración del relieve, edificios, inclinación y acercamiento. */
-export type Scene3D = { exaggeration: number; buildings: boolean; pitch: number; zoom: number };
-const DEFAULT_SCENE: Scene3D = { exaggeration: 1.35, buildings: false, pitch: 68, zoom: 13.4 };
+/** Ajustes de cámara y relieve; las edificaciones se obtienen por ubicación. */
+export type Scene3D = { exaggeration: number; pitch: number; zoom: number };
+const DEFAULT_SCENE: Scene3D = { exaggeration: 1.35, pitch: 68, zoom: 13.4 };
 const EARTH_CIRCUMFERENCE_KM = 40075.0167;
 
 type NisarMapProps = {
@@ -97,7 +97,7 @@ const SKY = {
 } as never;
 
 /** Capas de la vista 3D: sombreado del relieve y edificios (solo se cargan la primera vez que se usan). */
-function prepare3D(map: MapLibreMap, scene: Scene3D) {
+function prepare3D(map: MapLibreMap) {
   if (!map.getSource("dem-shade")) {
     map.addSource("dem-shade", { type: "raster-dem", tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
     map.addLayer({
@@ -105,15 +105,17 @@ function prepare3D(map: MapLibreMap, scene: Scene3D) {
       paint: { "hillshade-exaggeration": 0.45, "hillshade-shadow-color": "#0b1530", "hillshade-highlight-color": "#fff6e0", "hillshade-accent-color": "#24324f" },
     }, "nisar");
   }
-  if (scene.buildings && !map.getSource("omt")) {
+  if (!map.getSource("omt")) {
     map.addSource("omt", { type: "vector", url: "https://tiles.openfreemap.org/planet", attribution: "© OpenStreetMap · OpenFreeMap" });
     map.addLayer({
       id: "buildings", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 13, layout: { visibility: "none" },
       paint: {
-        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 6], 0, "#c9d6e8", 40, "#9fb6d6", 120, "#7d9cc8"],
-        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
-        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-        "fill-extrusion-opacity": 0.88,
+        // El satélite sigue visible a través del modelo; los tonos piedra evitan cubiertas blancas.
+        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 5], 0, "#8f918b", 35, "#89919a", 120, "#818b9b"],
+        "fill-extrusion-height": ["max", 3, ["coalesce", ["get", "render_height"], 5]],
+        "fill-extrusion-base": ["max", 0, ["coalesce", ["get", "render_min_height"], 0]],
+        "fill-extrusion-opacity": 0.66,
+        "fill-extrusion-vertical-gradient": true,
       },
     }, "hotspots-glow");
   }
@@ -313,7 +315,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     });
   }, [ready, reveal, bbox, recenterKey]);
 
-  // Vista 3D a ras de suelo: relieve con sombras, cielo con bruma, edificios en ciudades y giro lento de dron
+  // Vista 3D: relieve y edificios cartografiados en la ubicación, sin depender del tipo de riesgo.
   const terrainOn = useRef(false);
   useEffect(() => {
     const map = mapRef.current;
@@ -323,10 +325,10 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     for (const m of [map, after]) {
       if (!m) continue;
       try {
-        if (terrain) prepare3D(m, scene);
+        if (terrain) prepare3D(m);
         m.setTerrain(terrain ? { source: "dem", exaggeration: scene.exaggeration } : null);
         m.setLayoutProperty("hillshade", "visibility", terrain ? "visible" : "none");
-        if (m.getLayer("buildings")) m.setLayoutProperty("buildings", "visibility", terrain && scene.buildings ? "visible" : "none");
+        if (m.getLayer("buildings")) m.setLayoutProperty("buildings", "visibility", terrain ? "visible" : "none");
         m.setSky(terrain ? SKY : { "atmosphere-blend": 0 } as never);
       } catch {
         /* sin relieve: la vista inclinada sigue funcionando */
