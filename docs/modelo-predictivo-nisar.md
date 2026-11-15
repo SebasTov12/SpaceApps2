@@ -62,14 +62,15 @@ El módulo rechaza filas `data_mode` distintas de `real`, fechas repetidas, mezc
 
 ## Persistencia en la base de datos SAROS
 
-`pipeline/sql/004_nisar_forecast.sql` crea tablas idempotentes de observaciones, ejecuciones y pronósticos. Sus restricciones excluyen datos sintéticos. Los HDF5, COG y cubos Zarr van en almacenamiento de archivos u objetos. PostgreSQL conserva catálogo, referencias, IDs de entrada, calidad y métricas. La migración está escrita, falta aplicarla a la base de SAROS.
+`pipeline/sql/004_nisar_forecast.sql` crea tablas idempotentes de observaciones, ejecuciones y pronósticos. Sus restricciones excluyen datos sintéticos. Los HDF5, COG y cubos Zarr van en almacenamiento de archivos u objetos. PostgreSQL conserva catálogo, referencias, IDs de entrada, calidad y métricas. La migración ya fue aplicada en el PostgreSQL SAROS del servidor; las tres tablas están vacías hasta recibir observaciones LOS verificadas.
 
 La API del servidor incorpora `POST /api/v1/nisar/observations` para almacenar
 observaciones reales de forma idempotente y
 `POST /api/v1/nisar/forecasts/run` para ejecutar y guardar la tendencia y su
 backtest temporal. Ambos requieren el token Bearer de SAROS. El segundo exige
 un `processing_version` único y exacto para no mezclar series calculadas con
-algoritmos diferentes. Aplicar primero la migración:
+algoritmos diferentes. La migración ya se aplicó en el servidor. Para repetir
+su creación idempotente en otro entorno:
 
 ```sh
 docker compose -f infra/saros/docker-compose.yml --profile migration run --rm nisar-migrate

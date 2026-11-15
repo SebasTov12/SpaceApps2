@@ -7,8 +7,9 @@ Fecha de actualización: 14 de noviembre de 2026
 Se revisó la rama `main`, el estado local y el commit `57e9ff2` antes de editar.
 La rama estaba limpia al inicio. El primer `fetch` fue denegado por permisos;
 al repetirlo con acceso aprobado, `origin/main` confirmó `57e9ff2` sin cambios
-entrantes. El checkout del servidor está limpio en `ebf616a`, cuatro commits
-detrás de `origin/main`. Esta edición aún no se ha publicado ni desplegado.
+entrantes. El checkout del servidor estaba limpio en `ebf616a`, cuatro commits
+detrás de `origin/main`; se actualizó por fast-forward a `426b2c8`. La edición
+actual del informe aún requiere publicarse.
 
 El repositorio ya incluía búsquedas ASF/CMR, análisis de pares GUNW,
 descargador HTTPS, backend/API y una U-Net para detección de cambios entre
@@ -68,8 +69,8 @@ primero producir el CSV de desplazamiento LOS válido desde los pares GUNW.
    reemplazan por cero.
 4. Generar el CSV exigido por el pronosticador, correr backtest, reportar
    MAE/RMSE y decidir si hay soporte para el horizonte elegido.
-5. Aplicar la migración SQL al entorno SAROS con autorización y conectar la
-   escritura idempotente de observaciones/resultados.
+5. Conectar el procesador científico para escribir observaciones idempotentes
+   por la API protegida; la migración SQL ya está aplicada en el servidor.
 6. Evaluar IDEAM, SGC, DEM y validación independiente de Neiva. Las alertas
    municipales de deslizamiento son contexto, no etiquetas LOS confirmadas.
 
@@ -92,9 +93,17 @@ livianos y documentación de procedencia.
   en mm; seis orígenes solo son un mínimo de cribado y exigen validación
   externa. Aún no hay serie LOS procesada ni métricas reales.
 - El servidor `orivia` tiene SAROS API y frontend saludables, PostgreSQL
-  ejecutándose y predictor NISAR en estado `unhealthy`. Aún no se ha aplicado
-  esta edición ni se han descargado HDF5. La siguiente mejora científica
-  depende de inspeccionar el HDF5 real, producir
+  ejecutándose y predictor NISAR en estado `unhealthy`. Se aplicó la migración
+  NISAR directamente al PostgreSQL existente (Compose intentó crear un
+  contenedor duplicado por tratarse de un contenedor previo sin etiquetas); no
+  se recreó la base ni se tocó su volumen. Se verificaron las tablas
+  `observations`, `forecast_runs` y `forecasts`; las tres tienen cero filas.
+- Se reconstruyó solo `spaceapps2-api`; Docker la reporta `healthy`. Frontend
+  y PostgreSQL siguieron activos. El predictor ONNX existente continúa
+  `unhealthy` y requiere un artefacto de modelo aparte; esto no bloquea las
+  nuevas rutas del modelo temporal LOS.
+- No hay archivos `.h5`/`.hdf5` en `pipeline/data` del servidor. La siguiente
+  mejora científica depende de inspeccionar el HDF5 real, producir
   observaciones trazables y validarlas contra persistencia en cortes
   temporales. Las salidas de demostración y semillas sintéticas siguen fuera
   del entrenamiento/almacenamiento científico.
