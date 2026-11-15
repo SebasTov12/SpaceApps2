@@ -125,47 +125,66 @@ def main() -> int:
         parser.error(f"Output directory is not empty; refusing to overwrite: {output_dir}")
 
     client = Client(auth=(username, password))
-    request = Request(
-        collection=Collection(id=args.collection),
-        spatial=BBox(*bbox),
-        granule_name=[args.granule_name],
-        variables=args.variables,
-        max_results=1,
-        format="image/tiff",
-        skip_preview=True,
-    )
-    if not request.is_valid():
-        parser.error("Harmony rejected the variable, granule, collection, or spatial request")
-
-    job_id = client.submit(request)
-    downloads = client.download_all(job_id, directory=str(output_dir), overwrite=False)
-    output_files = [Path(item.result()).resolve() for item in downloads]
-    cogs = [path for path in output_files if path.suffix.lower() in {".tif", ".tiff"}]
-    if not cogs:
-        raise RuntimeError(f"Harmony job {job_id} completed without GeoTIFF outputs")
-    for path in cogs:
+    jobs: list[dict[str, str | None]] = []
+    output_records: list[dict[str, object]] = []
+    for index, variable in enumerate(args.variables, start=1):
+        layer_name = re.sub(r"[^A-Za-z0-9._-]+", "_", variable.strip("/"))
+        layer_dir = output_dir / f"{index:02d}_{layer_name}"
+        layer_dir.mkdir()
+        request = Request(
+            collection=Collection(id=args.collection),
+            spatial=BBox(*bbox),
+            granule_name=[args.granule_name],
+            variables=[variable],
+            max_results=1,
+            format="image/tiff",
+            skip_preview=True,
+        )
+        if not request.is_valid():
+            raise ValueError(f"Harmony rejected the request for variable {variable}")
+        submission = client.submit(request)
+        job_id = submission if isinstance(submission, str) else None
+        jobs.append({
+            "job_id": job_id,
+            "variable": variable,
+            "submission_mode": "job" if job_id else "direct_response",
+        })
+        downloads = client.download_all(submission, directory=str(layer_dir), overwrite=False)
+        output_files = [Path(item.result()).resolve() for item in downloads]
+        cogs = [path for path in output_files if path.suffix.lower() in {".tif", ".tiff"}]
+        if len(cogs) != 1:
+            raise RuntimeError(
+                f"Harmony request {job_id or 'direct-response'} for {variable} "
+                f"returned {len(cogs)} GeoTIFF files; expected one"
+            )
+        path = cogs[0]
         if not path.is_file() or path.stat().st_size == 0:
             raise RuntimeError(f"Harmony returned a missing or empty output: {path}")
+        output_records.append({
+            "variable": variable,
+            "metadata": variable_map[variable],
+            "job_id": job_id,
+            "path": str(path),
+            "bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        })
 
     manifest = {
         "data_mode": "real",
         "source": "NASA-ISRO NISAR via ASF DAAC and NASA Harmony",
         "collection": args.collection,
         "granule_name": args.granule_name,
-        "harmony_job_id": str(job_id),
+        "harmony_jobs": jobs,
         "requested_bbox_wgs84": list(bbox),
-        "variables": [variable_map[name] for name in args.variables],
+        "variables": args.variables,
         "submitted_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "outputs": [
-            {"path": str(path), "bytes": path.stat().st_size, "sha256": sha256_file(path)}
-            for path in cogs
-        ],
+        "outputs": output_records,
         "note": "Layer paths come from the live Harmony capabilities response. Inspect COG metadata and grids before analysis.",
     }
     (output_dir / "harmony-manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
-    print(json.dumps({"job_id": str(job_id), "cog_count": len(cogs), "manifest": str(output_dir / "harmony-manifest.json")}, indent=2))
+    print(json.dumps({"request_count": len(jobs), "cog_count": len(output_records), "manifest": str(output_dir / "harmony-manifest.json")}, indent=2))
     return 0
 
 

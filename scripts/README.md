@@ -158,8 +158,8 @@ docker compose --env-file .env -f infra/saros/docker-compose.yml --profile proce
   --output pipeline/data/neiva-core/harmony/<granule-id>
 ```
 
-La salida conserva un manifiesto con las rutas exactas entregadas por Harmony,
-ID del job, tamaño y SHA-256 de cada COG. El proceso limita la consulta a un
+El proceso crea una solicitud por variable para asociar cada ruta con su COG y guarda
+en el manifiesto el ID de job cuando Harmony usa procesamiento asíncrono, tamaño y SHA-256. Limita la consulta a un
 granule y rechaza una carpeta de salida no vacía. Los COG todavía requieren
 inspección de rejilla, máscara, unidades y metadatos antes de construir una
 observación LOS. Harmony no elimina la necesidad de usar una referencia estable

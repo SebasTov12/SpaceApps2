@@ -271,6 +271,19 @@ livianos y documentación de procedencia.
   consultada. La exportación COG evita fijar nombres internos supuestos.
 - Se adaptó el contrato de ingesta para guardar SHA-256 por capa de entrada
   (fase, coherencia, máscara y componentes conectados), compatible con capas
-  Harmony y con capas descubiertas dentro de HDF5. El cambio local aún requiere
-  despliegue. El conteo de observaciones real sigue en cero; sin los archivos no
-  hay validación de unidades, referencia LOS, apilado ni métricas predictivas.
+  Harmony y con capas descubiertas dentro de HDF5. La API se reconstruyó y
+  quedó `healthy`; la tabla mantiene cero observaciones.
+- Se reconstruyó el contenedor de proceso con `harmony-py==1.8.0`. Ejecuté
+  `--list-variables` contra las capacidades reales de
+  `NISAR_L2_GUNW_PROVISIONAL_V1`: devolvió `bbox=true`, `variable=true` y las
+  capas de interferometría sin descargar archivos. El producto consultado más
+  reciente declara `mainBandPolarization=[HH]`; se debe pedir coherencia,
+  componentes y fase HH del mismo stack, además de la máscara común. La lista
+  de capacidades es la oferta de la colección; no prueba que una variable esté
+  presente en cada granule individual.
+- El exportador ya se desplegó y permite enumerar esas rutas. Estoy afinando su
+  manifiesto para vincular sin ambigüedad cada COG con la variable solicitada,
+  tanto si Harmony devuelve un ID de job como una respuesta directa. Todavía no
+  se ejecutó extracción: los dos `.env` privados carecen de Earthdata Login y
+  el HDF5 directo respondió 403. Sin COGs reales no hay validación de unidades,
+  referencia LOS, apilado, ni métricas predictivas.
