@@ -1,5 +1,4 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+// Con cacheComponents las rutas POST ya son dinámicas y usan Node: no hace falta declarar runtime ni dynamic.
 
 const requestTimes = new Map<string, number[]>();
 
