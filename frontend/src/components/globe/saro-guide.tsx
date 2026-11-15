@@ -16,6 +16,17 @@ export const SECTOR_EVENT = "saros:sector";
 /** Evento con el que Saro pide al mapa señalar puntos o explicar colores. */
 export const POINT_EVENT = "saros:point";
 
+/** Texto del asistente sin marcas de formato (para mostrarlo y leerlo en voz alta). */
+function plainText(t: string) {
+  return t
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/\*\*|__|`|#{1,6}\s?/g, "")
+    .replace(/^\s*[-*•]\s+/gm, "• ")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}
+
 /** Un paso del recorrido: lo que Saru dice, qué señala en el mapa y qué resalta en el panel. */
 type TourStep = { text: string; action?: SaroAction; tour?: TourKey; openSector?: SectorKey };
 
@@ -245,6 +256,11 @@ export default function SaroGuide() {
   const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  const historyRef = useRef<{ from: "user" | "saro"; text: string }[]>([]);
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
   const [role, setRole] = useState<SectorKey | null>(null);
   const zoneRef = useRef<string | null>(null);
   const manifestRef = useRef<SiteManifest | null>(null);
@@ -369,7 +385,7 @@ export default function SaroGuide() {
       }
     }
     if (!("speechSynthesis" in window)) { done(); return; }
-    const parts = sentences(t);
+    const parts = sentences(t.replace(/•/g, " "));
     const best = voices[0];
     parts.forEach((part, i) => {
       const u = new SpeechSynthesisUtterance(part);
@@ -389,7 +405,7 @@ export default function SaroGuide() {
   }, [aside, lines.length]);
   const autoNext = playing && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
   useEffect(() => {
-    if (minimized || (!playing && !reply && !aside)) { stopAll(); return; }   // en pausa: calla
+    if (minimized || thinking || (!playing && !reply && !aside)) { stopAll(); return; }   // en pausa o pensando: calla
     const canSpeak = voice && unlocked;
     if (canSpeak) {
       speak(text, () => { if (autoNext) window.setTimeout(advance, 650); });
@@ -402,28 +418,54 @@ export default function SaroGuide() {
     const wait = Math.max(2600, text.length * 55);
     const id = window.setTimeout(advance, wait);
     return () => window.clearTimeout(id);
-  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside]);
+  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking]);
 
   const talking = typed.length < text.length || (voice && unlocked && speaking);
   // mientras señala algo en el mapa, Saru se inclina hacia él
   const pointing = !reply && !aside && (current?.action?.type === "point" || current?.action?.type === "hotspots");
 
   // ---------- preguntas ----------
-  const ask = useCallback((question: string) => {
+  const ask = useCallback(async (question: string) => {
     const q = question.trim();
-    if (!q) return;
+    if (!q || thinking) return;
     const z = riskZones.find((r) => r.id === zoneRef.current) ?? null;
-    const r = answer(q, { zone: z, manifest: manifestRef.current, role });
-    if (r.role) setRole(r.role);
-    setHistory((list) => [...list, { from: "user" as const, text: q }, { from: "saro" as const, text: r.text }].slice(-12));
+    // Saru entiende la pregunta para mover el mapa (abrir zona, señalar puntos, explicar colores)
+    const local = answer(q, { zone: z, manifest: manifestRef.current, role });
+    if (local.role) setRole(local.role);
+    const past = historyRef.current;
+    setHistory((list) => [...list, { from: "user" as const, text: q }].slice(-12));
     setInput("");
     setAside(null);
-    setReply(r.text);
     setPlaying(false);
     setMinimized(false);
-    if (r.action?.type === "open") focusZone(r.action.zoneId);
-    else window.setTimeout(() => window.dispatchEvent(new CustomEvent(POINT_EVENT, { detail: r.action ?? null })), 350);
-  }, [role]);
+    if (local.action?.type === "open") focusZone(local.action.zoneId);
+    else window.setTimeout(() => window.dispatchEvent(new CustomEvent(POINT_EVENT, { detail: local.action ?? null })), 350);
+
+    // la respuesta la da el asistente SAROS (Groq, con la evidencia de la base); Saru la muestra y la lee
+    setThinking(true);
+    setReply(es ? "Déjame revisar los datos…" : "Let me check the data…");
+    const context = z ? `Estoy viendo la zona «${z.name.es}» (${z.place.es}). ` : "";
+    const messages = [
+      ...past.slice(-6).map((m) => ({ role: m.from === "user" ? "user" : "assistant", content: m.text.slice(0, 1400) })),
+      { role: "user", content: (context + q).slice(0, 1450) },
+    ].slice(-8);
+    let text = local.text;
+    try {
+      const response = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { answer?: string };
+      if (response.ok && payload.answer?.trim()) text = plainText(payload.answer);
+    } catch {
+      /* sin asistente disponible: responde Saru con los datos de la zona */
+    }
+    setThinking(false);
+    setReply(text);
+    setHistory((list) => [...list, { from: "saro" as const, text }].slice(-12));
+  }, [role, thinking, es]);
   const listen = () => {
     const W = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike };
     const Rec = W.SpeechRecognition ?? W.webkitSpeechRecognition;
@@ -441,14 +483,14 @@ export default function SaroGuide() {
 
   return (
     <>
-      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}`}>
+      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}`}>
         <div className="saru-row">
         <AnimatePresence initial={false}>
           {!minimized && (
             <motion.div key="caption" className="saru-caption" role="status" aria-live="polite"
               initial={{ opacity: 0, x: -12, scale: 0.95 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -10, scale: 0.95 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}>
-              <p className="saru-text">{typed}{talking && <span className="saro-caret" aria-hidden="true" />}</p>
+              <p className="saru-text">{typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
               <div className="saru-bar">
                 <span className="saru-name">Saru</span>
                 {!reply && lines.length > 1 && (

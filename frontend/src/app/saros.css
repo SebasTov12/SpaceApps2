@@ -3077,3 +3077,14 @@ html body .saro .saru-ask,html body .saro .saru-ask.in-zone{position:relative;le
 .zs-sector:nth-child(2){animation-delay:.05s}.zs-sector:nth-child(3){animation-delay:.1s}.zs-sector:nth-child(4){animation-delay:.15s}.zs-sector:nth-child(5){animation-delay:.2s}.zs-sector:nth-child(6){animation-delay:.25s}
 @keyframes zs-pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){[data-tour].is-tour::after,.zs-sector{animation:none}.saro.is-pointing .saro-fig{transform:none}}
+
+/* ---------- Saru y el asistente: un solo chat ---------- */
+.saru-text{max-height:168px;overflow-y:auto;white-space:pre-line;scrollbar-width:thin}
+.saru-dots-think{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}
+.saru-dots-think i{width:5px;height:5px;border-radius:50%;background:#5ef0ff;animation:saru-think 1s ease-in-out infinite}
+.saru-dots-think i:nth-child(2){animation-delay:.15s}.saru-dots-think i:nth-child(3){animation-delay:.3s}
+@keyframes saru-think{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+.saro.is-thinking .saro-dish{animation-duration:.7s}
+.saro.is-thinking .saro-tip{animation-duration:.5s}
+.saro.is-thinking .saru-caption{border-color:rgba(94,240,255,.5)}
+@media(prefers-reduced-motion:reduce){.saru-dots-think i{animation:none;opacity:.7}}
