@@ -177,13 +177,22 @@ def rolling_backtest(
             }
         )
 
+    target_use: dict[str, int] = {}
+    for origin in origins:
+        target_use[origin["target_date"]] = target_use.get(origin["target_date"], 0) + 1
+
     return {
         "requested_horizon_days": horizon_days,
         "tolerance_days": tolerance_days,
         "origins": origins,
+        # Rolling origins can share the same future acquisition. Keep the
+        # effective sample size visible so dependent errors are not mistaken
+        # for independent validation evidence.
+        "unique_target_count": len(target_use),
+        "target_reuse_counts": target_use,
         "persistence": score_errors(persistence_errors),
         "robust_linear_trend": score_errors(trend_errors),
-        "status": "evaluated" if len(origins) >= 2 else "insufficient_backtest_origins",
+        "status": "evaluated" if len(target_use) >= 2 else "insufficient_independent_targets",
     }
 
 
@@ -204,7 +213,7 @@ def build_forecast(
 
     trend_mae = (backtest.get("robust_linear_trend") or {}).get("mae_mm")
     persistence_mae = (backtest.get("persistence") or {}).get("mae_mm")
-    if len(backtest["origins"]) < 6:
+    if backtest["unique_target_count"] < 6:
         reliability = "insufficient_backtest_origins"
     elif trend_mae is None or persistence_mae is None or trend_mae >= persistence_mae:
         reliability = "trend_does_not_beat_persistence"
@@ -217,7 +226,7 @@ def build_forecast(
         "status": "forecast_exploratory",
         "model": {
             "name": "robust_linear_trend_by_aoi",
-            "version": "1.0",
+            "version": "1.1",
             "equation": "LOS_mm(t) = beta0 + beta1 * days_since_first_observation",
             "slope_mm_per_day": slope,
             "intercept_mm": intercept,
@@ -236,7 +245,7 @@ def build_forecast(
             "last_observation_date": latest.day.isoformat(),
             "confidence_interval_status": "not_calibrated",
             "reliability_status": reliability,
-            "reliability_note": "Report MAE/RMSE in millimetres; percentage error is unstable when LOS is near zero. Six origins is only a minimum screening rule, not proof of reliability.",
+            "reliability_note": "Report MAE/RMSE in millimetres; percentage error is unstable when LOS is near zero. Six distinct future target acquisitions is only a minimum screening rule, not proof of reliability. Rolling origins that reuse a target are dependent.",
         },
         "backtest": backtest,
         "provenance": provenance,

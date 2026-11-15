@@ -155,3 +155,14 @@ livianos y documentación de procedencia.
   ICMP. La API y el procesador estaban sanos antes de esa reconstrucción. El
   resultado del build web y la salud actual del host quedan pendientes de
   reconexión; no se afirma que el despliegue completo haya terminado.
+- Se endureció localmente el criterio de fiabilidad del backtest: ahora cuenta
+  fechas objetivo distintas y expone cuántas veces se reutilizó cada una. Los
+  orígenes que comparten una observación futura se reconocen como dependientes;
+  seis fechas objetivo distintas siguen siendo solo una condición mínima de
+  cribado. Se versionó el algoritmo como 1.1. Este ajuste aún no está
+  desplegado en la API porque el host sigue sin aceptar SSH.
+- La documentación técnica se precisó con la especificación ASF: la fase GUNW
+  está en radianes, hay capas distintas de coherencia a 20/80 m, y correcciones
+  externas no se aplican automáticamente. También se registran las limitaciones
+  vigentes de fase/desenvolvimiento; no se debe construir una observación LOS
+  con solo convertir y acumular la capa de fase.

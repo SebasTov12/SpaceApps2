@@ -68,6 +68,27 @@ El archivo de entrada debe tener una fila por fecha y un único AOI/stack. No se
 
 Antes de producirlo se verifican fase desenrollada, coherencia, máscara, componentes de desenvolvimiento, referencia estable y conectividad de pares. La serie acumulada debe reconstruirse desde el grafo de pares y conservar faltantes como faltantes. `NaN` no equivale a desplazamiento cero. Una sola órbita entrega LOS, no desplazamiento vertical puro.
 
+El GUNW oficial entrega fase desenrollada en radianes y coherencia normalizada,
+además de connected components, máscaras y capas de corrección externa. Las
+correcciones externas no se aplican necesariamente a las capas GUNW por
+defecto. Por eso la lectura por sufijo del prototipo no basta para crear una
+observación LOS: hay que inspeccionar el HDF5, validar rejilla y atributos,
+aplicar criterios de máscara, restar una referencia estable por interferograma
+y documentar el tratamiento atmosférico antes de acumular los pares. La fase
+desenrollada y coherencia tienen posting nominal de 80 m; la coherencia a 20 m
+corresponde a otra capa y no debe combinarse a ciegas. Véanse la
+[especificación GUNW](https://nisar-docs.asf.alaska.edu/gunw/) y la guía de
+[fase y coherencia](https://nisar-docs.asf.alaska.edu/phase/).
+
+La colección PROVISIONAL usada en el inventario es CRID P05023. ASF documenta
+que los productos VALIDATED mejoran máscaras, coregistro y desenvolvimiento,
+pero todavía mantiene avisos sobre artefactos de fase GUNW y errores de
+desenvolvimiento. Los VALIDATED disponibles en noviembre de 2026 cubren
+adquisiciones desde el 21 de octubre, que aún no intersecaban el AOI consultado
+de Neiva. Mantener madurez y CRID separados es obligatorio para este piloto;
+ver [notas de versión](https://hyp3-docs.asf.alaska.edu/nisar-docs/release-notes/)
+y [disponibilidad](https://hyp3-docs.asf.alaska.edu/nisar-docs/availability-overview/).
+
 ## Ejecución
 
 Desde la raíz del repositorio, cuando exista un CSV procesado de mediciones reales:
@@ -106,10 +127,13 @@ su fecha secundaria. La actualización solo incorpora metadatos. Una serie sin
 checkpoint real se rechaza y requiere completar primero la ingesta inicial.
 
 El servidor marca las salidas como exploratorias incluso cuando hay más de un
-corte de validación. Seis orígenes temporales son solo una regla mínima de
-cribado; no equivalen a una demostración de fiabilidad. El error principal se
-expresa en milímetros, porque el porcentaje de error se vuelve inestable si el
-LOS real está cerca de cero.
+corte de validación. El backtest informa tanto los orígenes como la cantidad
+de fechas objetivo futuras distintas, porque varios orígenes pueden reutilizar
+el mismo valor observado y sus errores no son independientes. Seis fechas
+objetivo distintas son solo una regla mínima de cribado; no equivalen a una
+demostración de fiabilidad. El error principal se expresa en milímetros,
+porque el porcentaje de error se vuelve inestable si el LOS real está cerca de
+cero.
 
 Las semillas sintéticas de `pipeline/sql/002` y `pipeline/sql/003` no son entradas para el esquema científico `nisar`.
 
