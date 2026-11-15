@@ -101,3 +101,14 @@ con tendencia lineal robusta y genera JSON con procedencia y evaluación
 temporal. No genera observaciones a partir de capas demo. El procesador
 HDF5→CSV y la aplicación de la migración SQL son pasos pendientes hasta
 disponer de acceso a los archivos y al entorno de base de datos.
+
+Para inspeccionar hasta tres HDF5 descargados en el servidor sin cargar sus
+matrices ráster en memoria:
+
+```sh
+docker compose -f infra/saros/docker-compose.yml --profile processing run --rm processor scripts/inspect_nisar_hdf5.py pipeline/data/neiva-core --max-files 3 --output pipeline/data/neiva-core/hdf5-inventory.json
+```
+
+El inventario reporta rutas, dimensiones, tipos y atributos. Los candidatos
+por nombre son solo pistas; confirma semántica, unidades, georreferenciación y
+calidad con la documentación oficial antes de procesar las matrices.

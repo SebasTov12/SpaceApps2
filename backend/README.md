@@ -9,7 +9,19 @@
 - `GET /api/v1/headlines`: returns an empty list while the reviewed publication pipeline is not connected; the frontend then uses its sourced static data.
 - `GET /api/v1/manifest` and `GET /api/v1/datasets`: return database provenance counts for DIAN/NASA prediction records, separating synthetic, real and unclassified rows. The NASA table contains forecasts, not source granules.
 - `POST /api/v1/predictions`: accepts an NPZ body as `application/octet-stream`, requires `Authorization: Bearer <SAROS_PREDICTION_TOKEN>`, proxies the patch to the private predictor, and stores its result summary in PostgreSQL.
+- `POST /api/v1/nisar/observations`: accepts quality-controlled real LOS observations with granule provenance, requires the same bearer token, and inserts idempotently into `nisar.observations`.
+- `POST /api/v1/nisar/forecasts/run`: accepts `aoi_id`, `stack_id`, and optional backtest parameters; reads only real observations from PostgreSQL, compares robust linear trend with persistence, and saves the run and forecast in the NISAR tables.
 
 Prediction inputs must contain finite, co-registered `before` and `after` arrays. See [the model contract](../ml/nisar_change/README.md). The API stores the prediction ID, time, threshold, dimensions, and changed fraction; large pixel masks remain in the response rather than the database.
 
 Set `SAROS_POSTGRES_PASSWORD` to the existing database password and generate a private `SAROS_PREDICTION_TOKEN` in the server's ignored `.env`. The frontend, API, database, model, trainer, and NISAR processor are grouped under one Compose project. Training and processing services start only when their Compose profiles are selected.
+
+Before using the two NISAR routes, apply the schema once from the repository root:
+
+```sh
+docker compose -f infra/saros/docker-compose.yml --profile migration run --rm nisar-migrate
+```
+
+The processing worker must first produce calibrated, referenced LOS observations from actual ASF granules. `POST /api/v1/nisar/observations` expects an object with a non-empty `observations` array. Each observation requires `aoi_id`, `stack_id`, ISO `observation_date`, finite `los_mm`, `valid_fraction` from 0 to 1, documented `reference_method`, non-empty `source_granules`, `source_collection`, `source_maturity`, `processing_version`, and `data_mode: "real"`. Optional fields are positive `uncertainty_mm` and a JSON `quality` object. Duplicate AOI/stack/date/version rows are ignored.
+
+The forecast route body requires `aoi_id`, `stack_id`, and one exact `processing_version` so a series cannot silently mix processing algorithms; optional parameters are `horizon_days`, `tolerance_days`, `min_train_observations`, and `min_valid_fraction`. The API reports backtest errors in millimetres and marks every forecast exploratory. It does not claim reliability from a small number of dates.

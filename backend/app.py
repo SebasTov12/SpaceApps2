@@ -5,11 +5,15 @@ import os
 import urllib.error
 import urllib.request
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import psycopg
+import numpy as np
 from flask import Flask, jsonify, request
+from psycopg.types.json import Jsonb
 from werkzeug.exceptions import RequestEntityTooLarge
+
+from nisar_forecast.forecast import Observation, build_forecast
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("SAROS_MAX_REQUEST_BYTES", str(32 * 1024 * 1024)))
@@ -52,6 +56,51 @@ def model_ready() -> bool:
             return response.status == 200
     except (urllib.error.URLError, TimeoutError):
         return False
+
+
+def has_prediction_auth() -> bool:
+    return bool(PREDICTION_TOKEN) and request.headers.get("Authorization") == f"Bearer {PREDICTION_TOKEN}"
+
+
+def validate_nisar_observation(row: object) -> dict[str, object]:
+    if not isinstance(row, dict):
+        raise ValueError("Each observation must be a JSON object")
+    required = {
+        "aoi_id", "stack_id", "observation_date", "los_mm", "valid_fraction",
+        "reference_method", "source_granules", "source_collection", "source_maturity",
+        "processing_version", "data_mode",
+    }
+    missing = required - row.keys()
+    if missing:
+        raise ValueError(f"Missing observation fields: {sorted(missing)}")
+    if row["data_mode"] != "real":
+        raise ValueError("Only real NISAR observations are accepted")
+    for field in ("aoi_id", "stack_id", "reference_method", "source_collection", "source_maturity", "processing_version"):
+        if not isinstance(row[field], str) or not row[field].strip():
+            raise ValueError(f"{field} must be a non-empty string")
+    if not isinstance(row["source_granules"], list) or not row["source_granules"]:
+        raise ValueError("source_granules must be a non-empty list")
+    try:
+        date.fromisoformat(str(row["observation_date"]))
+        los_mm = float(row["los_mm"])
+        valid_fraction = float(row["valid_fraction"])
+        uncertainty = row.get("uncertainty_mm")
+        uncertainty = float(uncertainty) if uncertainty is not None else None
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Invalid date or numeric observation field") from exc
+    if not np.isfinite(los_mm) or not 0 <= valid_fraction <= 1:
+        raise ValueError("LOS must be finite and valid_fraction must be in [0, 1]")
+    if uncertainty is not None and (not np.isfinite(uncertainty) or uncertainty <= 0):
+        raise ValueError("uncertainty_mm must be positive when provided")
+    return {
+        **row,
+        "observation_date": date.fromisoformat(str(row["observation_date"])),
+        "los_mm": los_mm,
+        "valid_fraction": valid_fraction,
+        "uncertainty_mm": uncertainty,
+        "quality": row.get("quality") or {},
+        "source_granules": [str(item) for item in row["source_granules"]],
+    }
 
 
 def dataset_catalog() -> list[dict[str, object]]:
@@ -142,7 +191,7 @@ def manifest():
 def create_prediction():
     if not PREDICTION_TOKEN:
         return jsonify({"error": "prediction_endpoint_not_configured"}), 503
-    if request.headers.get("Authorization") != f"Bearer {PREDICTION_TOKEN}":
+    if not has_prediction_auth():
         return jsonify({"error": "unauthorized"}), 401
     if request.mimetype != "application/octet-stream":
         return jsonify({"error": "expected_application_octet_stream_npz"}), 415
@@ -194,6 +243,131 @@ def create_prediction():
     prediction["id"] = prediction_id
     prediction["created_at"] = created_at.isoformat()
     return jsonify(prediction)
+
+
+@app.post("/api/v1/nisar/observations")
+def ingest_nisar_observations():
+    """Persist quality-controlled, provenance-rich measurements from the worker."""
+    if not PREDICTION_TOKEN:
+        return jsonify({"error": "nisar_ingest_not_configured"}), 503
+    if not has_prediction_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not isinstance(body.get("observations"), list) or not body["observations"]:
+        return jsonify({"error": "expected_non_empty_observations_array"}), 400
+    try:
+        rows = [validate_nisar_observation(row) for row in body["observations"]]
+    except ValueError as exc:
+        return jsonify({"error": "invalid_nisar_observation", "detail": str(exc)}), 400
+    try:
+        with connect_db() as connection:
+            inserted = 0
+            for row in rows:
+                result = connection.execute(
+                    """
+                    INSERT INTO nisar.observations
+                        (aoi_id, stack_id, observation_date, los_mm, uncertainty_mm,
+                         valid_fraction, reference_method, quality, source_granules,
+                         source_collection, source_maturity, processing_version, data_mode)
+                    VALUES (%(aoi_id)s, %(stack_id)s, %(observation_date)s, %(los_mm)s,
+                            %(uncertainty_mm)s, %(valid_fraction)s, %(reference_method)s,
+                            %(quality)s, %(source_granules)s, %(source_collection)s,
+                            %(source_maturity)s, %(processing_version)s, %(data_mode)s)
+                    ON CONFLICT (aoi_id, stack_id, observation_date, processing_version) DO NOTHING
+                    """,
+                    {**row, "quality": Jsonb(row["quality"])},
+                )
+                inserted += result.rowcount
+        return jsonify({"received": len(rows), "inserted": inserted, "duplicates_ignored": len(rows) - inserted}), 201
+    except psycopg.Error:
+        return jsonify({"error": "nisar_observation_persistence_failed", "hint": "Apply pipeline/sql/004_nisar_forecast.sql first."}), 503
+
+
+@app.post("/api/v1/nisar/forecasts/run")
+def run_nisar_forecast():
+    """Run a real-data temporal backtest and persist one forecast target."""
+    if not PREDICTION_TOKEN:
+        return jsonify({"error": "nisar_forecast_not_configured"}), 503
+    if not has_prediction_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return jsonify({"error": "expected_json_object"}), 400
+    aoi_id, stack_id, processing_version = body.get("aoi_id"), body.get("stack_id"), body.get("processing_version")
+    if any(not isinstance(value, str) or not value.strip() for value in (aoi_id, stack_id, processing_version)):
+        return jsonify({"error": "aoi_id_stack_id_and_processing_version_required"}), 400
+    try:
+        horizon_days = int(body.get("horizon_days", 24))
+        tolerance_days = int(body.get("tolerance_days", 8))
+        min_train_observations = int(body.get("min_train_observations", 5))
+        min_valid_fraction = float(body.get("min_valid_fraction", 0.5))
+        if horizon_days < 1 or tolerance_days < 0 or min_train_observations < 3 or not 0 <= min_valid_fraction <= 1:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid_forecast_parameters"}), 400
+    try:
+        with connect_db() as connection:
+            rows = connection.execute(
+                """
+                SELECT observation_id, observation_date, los_mm, valid_fraction,
+                       uncertainty_mm, source_granules
+                  FROM nisar.observations
+                 WHERE aoi_id = %s AND stack_id = %s AND processing_version = %s AND data_mode = 'real'
+                   AND valid_fraction >= %s
+                 ORDER BY observation_date
+                """,
+                (aoi_id.strip(), stack_id.strip(), processing_version.strip(), min_valid_fraction),
+            ).fetchall()
+            if len(rows) < 2:
+                return jsonify({"error": "insufficient_real_observations", "count": len(rows)}), 422
+            observations = [
+                Observation(day=row[1], los_mm=row[2], valid_fraction=row[3], aoi_id=aoi_id.strip(),
+                            stack_id=stack_id.strip(), granule_ids=";".join(row[5]), uncertainty_mm=row[4])
+                for row in rows
+            ]
+            provenance = {
+                "aoi_id": aoi_id.strip(), "stack_id": stack_id.strip(),
+                "processing_version": processing_version.strip(),
+                "observation_ids": [row[0] for row in rows],
+                "source_granules": sorted({granule for row in rows for granule in row[5]}),
+                "accepted_observations": len(rows), "data_mode": "real",
+            }
+            result = build_forecast(observations, provenance, horizon_days, tolerance_days,
+                                    min_train_observations, min_valid_fraction)
+            run_id = uuid.uuid4()
+            backtest = result["backtest"]
+            params = {"horizon_days": horizon_days, "tolerance_days": tolerance_days,
+                      "min_train_observations": min_train_observations,
+                 "min_valid_fraction": min_valid_fraction,
+                 "processing_version": processing_version.strip()}
+            connection.execute(
+                """
+                INSERT INTO nisar.forecast_runs
+                    (run_id, aoi_id, stack_id, model_name, model_version, origin_date,
+                     horizon_days, training_observation_count, observation_ids,
+                     input_granules, metrics, parameters, data_mode)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'real')
+                """,
+                (run_id, aoi_id.strip(), stack_id.strip(), result["model"]["name"],
+                 result["model"]["version"], observations[-1].day, horizon_days, len(rows),
+                 provenance["observation_ids"], provenance["source_granules"],
+                 Jsonb(backtest), Jsonb(params)),
+            )
+            target = date.fromisoformat(result["forecast"]["target_date"])
+            connection.execute(
+                """
+                INSERT INTO nisar.forecasts
+                    (run_id, target_date, predicted_los_mm, lower_los_mm, upper_los_mm,
+                     interval_status, quality_status)
+                VALUES (%s, %s, %s, NULL, NULL, %s, %s)
+                """,
+                (run_id, target, result["forecast"]["los_mm"],
+                 result["quality"]["confidence_interval_status"], result["status"]),
+            )
+        result["run_id"] = str(run_id)
+        return jsonify(result), 201
+    except psycopg.Error:
+        return jsonify({"error": "nisar_forecast_persistence_failed", "hint": "Apply pipeline/sql/004_nisar_forecast.sql first."}), 503
 
 
 @app.errorhandler(RequestEntityTooLarge)

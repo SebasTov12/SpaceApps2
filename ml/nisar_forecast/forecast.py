@@ -202,9 +202,19 @@ def build_forecast(
     elapsed = (forecast_date - observations[0].day).days
     forecast_los = intercept + slope * elapsed
 
+    trend_mae = (backtest.get("robust_linear_trend") or {}).get("mae_mm")
+    persistence_mae = (backtest.get("persistence") or {}).get("mae_mm")
+    if len(backtest["origins"]) < 6:
+        reliability = "insufficient_backtest_origins"
+    elif trend_mae is None or persistence_mae is None or trend_mae >= persistence_mae:
+        reliability = "trend_does_not_beat_persistence"
+    else:
+        reliability = "provisional_candidate_requires_external_validation"
+
     return {
         "schema_version": "1.0",
-        "status": "forecast_exploratory" if backtest["status"] != "evaluated" else "forecast_evaluated",
+        # A few rolling origins cannot establish operational reliability.
+        "status": "forecast_exploratory",
         "model": {
             "name": "robust_linear_trend_by_aoi",
             "version": "1.0",
@@ -225,6 +235,8 @@ def build_forecast(
             "first_observation_date": observations[0].day.isoformat(),
             "last_observation_date": latest.day.isoformat(),
             "confidence_interval_status": "not_calibrated",
+            "reliability_status": reliability,
+            "reliability_note": "Report MAE/RMSE in millimetres; percentage error is unstable when LOS is near zero. Six origins is only a minimum screening rule, not proof of reliability.",
         },
         "backtest": backtest,
         "provenance": provenance,

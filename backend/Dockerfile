@@ -4,10 +4,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
-COPY requirements.txt ./
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --system --uid 10001 --no-create-home appuser
-COPY app.py ./app.py
+COPY backend/app.py ./app.py
+COPY ml/nisar_forecast ./nisar_forecast
 USER appuser
 EXPOSE 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "120", "app:app"]

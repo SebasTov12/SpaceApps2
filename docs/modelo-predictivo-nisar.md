@@ -64,6 +64,23 @@ El módulo rechaza filas `data_mode` distintas de `real`, fechas repetidas, mezc
 
 `pipeline/sql/004_nisar_forecast.sql` crea tablas idempotentes de observaciones, ejecuciones y pronósticos. Sus restricciones excluyen datos sintéticos. Los HDF5, COG y cubos Zarr van en almacenamiento de archivos u objetos. PostgreSQL conserva catálogo, referencias, IDs de entrada, calidad y métricas. La migración está escrita, falta aplicarla a la base de SAROS.
 
+La API del servidor incorpora `POST /api/v1/nisar/observations` para almacenar
+observaciones reales de forma idempotente y
+`POST /api/v1/nisar/forecasts/run` para ejecutar y guardar la tendencia y su
+backtest temporal. Ambos requieren el token Bearer de SAROS. El segundo exige
+un `processing_version` único y exacto para no mezclar series calculadas con
+algoritmos diferentes. Aplicar primero la migración:
+
+```sh
+docker compose -f infra/saros/docker-compose.yml --profile migration run --rm nisar-migrate
+```
+
+El servidor marca las salidas como exploratorias incluso cuando hay más de un
+corte de validación. Seis orígenes temporales son solo una regla mínima de
+cribado; no equivalen a una demostración de fiabilidad. El error principal se
+expresa en milímetros, porque el porcentaje de error se vuelve inestable si el
+LOS real está cerca de cero.
+
 Las semillas sintéticas de `pipeline/sql/002` y `pipeline/sql/003` no son entradas para el esquema científico `nisar`.
 
 ## Pendientes para completar el flujo
@@ -72,6 +89,8 @@ Las semillas sintéticas de `pipeline/sql/002` y `pipeline/sql/003` no son entra
 - Descargar con espacio suficiente o pedir COGs recortados vía Harmony, tras verificar que contengan las variables requeridas.
 - Reemplazar la caja inicial por AOI oficial de Neiva y definir municipios cercanos según cobertura y fenómeno.
 - Inspeccionar HDF5 real y descubrir rutas internas con `h5py`.
+- Ejecutar `scripts/inspect_nisar_hdf5.py` sobre los archivos del servidor y
+  confirmar cada variable contra sus atributos y la guía oficial GUNW.
 - Confirmar referencia estable con GNSS, nivelación u otra evidencia local.
 - Construir el procesador de pares GUNW reales que produzca el CSV descrito. El pronosticador está implementado, pero no puede evaluarse hasta generar esa serie validada.
 

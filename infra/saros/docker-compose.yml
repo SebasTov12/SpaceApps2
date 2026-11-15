@@ -37,8 +37,8 @@ services:
   api:
     container_name: spaceapps2-api
     build:
-      context: ../../backend
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: backend/Dockerfile
     image: spaceapps2-api:latest
     restart: unless-stopped
     environment:
@@ -96,6 +96,25 @@ services:
       start_period: 20s
     networks:
       - saros_private
+
+  nisar-migrate:
+    profiles: [migration]
+    image: postgres:16-alpine
+    environment:
+      PGHOST: spaceapps2-postgres
+      PGPORT: "5432"
+      PGDATABASE: ${SAROS_POSTGRES_DB:-spaceapps2}
+      PGUSER: ${SAROS_POSTGRES_USER:-spaceapps2_admin}
+      PGPASSWORD: ${SAROS_POSTGRES_PASSWORD:?Set SAROS_POSTGRES_PASSWORD in the server .env}
+    volumes:
+      - ../../pipeline/sql:/migrations:ro
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/004_nisar_forecast.sql"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - saros_private
+    restart: "no"
 
   predictor:
     container_name: spaceapps2-model
@@ -174,6 +193,8 @@ services:
       NISAR_END_DATE: ${NISAR_END_DATE:-}
       NISAR_FILTERED_DIR: /workspace/data/filtered
       NISAR_COLOMBIA_BBOX: ${NISAR_COLOMBIA_BBOX:--82.5,-5,-66.5,14}
+      SAROS_API_URL: http://spaceapps2-api:8000
+      SAROS_PREDICTION_TOKEN: ${SAROS_PREDICTION_TOKEN:?Set SAROS_PREDICTION_TOKEN in the server .env}
     volumes:
       - ../../data:/workspace/data
       - ../../pipeline/data:/workspace/pipeline/data
