@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import json
+import unicodedata
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+
+def _normalize_admin(value: str) -> str:
+    ascii_text = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    return " ".join(ascii_text.upper().split())
 
 
 def load_bundle(path: Path) -> dict[str, Any]:
@@ -38,8 +44,8 @@ def impact_estimates(bundle: dict[str, Any], municipality: str, department: str)
     targets = model["targets"]
     estimates: dict[str, float] = {}
     for target, item in targets.items():
-        normalized_department = department.strip().upper()
-        normalized_municipality = municipality.strip().upper()
+        normalized_department = _normalize_admin(department)
+        normalized_municipality = _normalize_admin(municipality)
         by_municipality = item["municipality"].get(f"{normalized_department}|{normalized_municipality}")
         by_department = item["department"].get(normalized_department)
         estimate = by_municipality if by_municipality is not None else by_department

@@ -108,6 +108,7 @@ export default function ZoneView() {
   const panelRef = useRef<HTMLElement | null>(null);
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [selectedHazard, setSelectedHazard] = useState<HazardPoint | null>(null);
+  const [hazardPoints, setHazardPoints] = useState<HazardPoint[]>([]);
   const [modelPoints, setModelPoints] = useState<HazardPoint[]>([]);
   const [mapVisible, setMapVisible] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -201,7 +202,11 @@ export default function ZoneView() {
     window.addEventListener(HAZARD_POINT_SELECT, onHazardPoint);
     window.addEventListener("keydown", onKey);
     loadAvailability().then(setAvailability).catch(() => setAvailability(null));
-    loadHazardPoints().then((data) => setModelPoints(data?.points.filter((point) => point.kind === "model_assessment") ?? []));
+    loadHazardPoints().then((data) => {
+      const points = data?.points ?? [];
+      setHazardPoints(points.filter((point) => point.kind !== "model_assessment"));
+      setModelPoints(points.filter((point) => point.kind === "model_assessment"));
+    });
     return () => {
       clearTimeout(timer);
       window.removeEventListener(GLOBE_SELECT, onSelect);
@@ -245,6 +250,11 @@ export default function ZoneView() {
     .map((point) => ({ point, distance: Math.hypot((point.lat - zone.lat) * 111, (point.lon - zone.lon) * 111 * Math.cos(zone.lat * Math.PI / 180)) }))
     .filter(({ distance }) => distance <= 1)
     .sort((a, b) => a.distance - b.distance)[0]?.point.model_assessment ?? null : null;
+  const nearbyHazards = zone ? hazardPoints
+    .map((point) => ({ point, distanceKm: Math.hypot((point.lat - zone.lat) * 111, (point.lon - zone.lon) * 111 * Math.cos(zone.lat * Math.PI / 180)) }))
+    .filter(({ distanceKm }) => distanceKm <= 25)
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, 3) : [];
   const level: AttentionLevel = modelAssessment?.priority === "P1" ? "alta" : modelAssessment?.priority === "P2" ? "moderada" : "baja";
   const colombia = zone?.country === "CO";
   // El mapa ya tiene imagen: la cámara se zambulle, sube la bruma y en su punto máximo aparece el mapa
@@ -446,7 +456,7 @@ export default function ZoneView() {
             <h2 className="zone-title">{zone.name[lang]}</h2>
             <p className="zone-place"><MapPin size={13} /> {zone.place[lang]} · {formatCoord(zone.lat, zone.lon)}</p>
             <TerritorialImpact key={zone.id} zoneId={zone.id} lat={zone.lat} lon={zone.lon} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
-            <div className="zone-level" data-tour="level" style={{ "--level": levelInfo[level].color } as React.CSSProperties}>
+            <div className="zone-level" data-tour="level" style={{ "--level": modelAssessment ? levelInfo[level].color : "#8993ad" } as React.CSSProperties}>
               <i />{modelAssessment ? `${modelAssessment.priority} · ${lang === "es" ? "prioridad exploratoria" : "exploratory priority"}` : (lang === "es" ? "Sin evaluación del modelo" : "No model assessment")}
               {assessment?.accelerating && <b><AlertTriangle size={12} /> {c.accel}</b>}
             </div>
@@ -464,7 +474,7 @@ export default function ZoneView() {
                 {tab === "simple" ? (
                   <ZoneSimple
                     zone={zone} active={active} level={level} colombia={colombia} siteId={siteId} lang={lang} impacts={impacts}
-                    modelAssessment={modelAssessment}
+                    modelAssessment={modelAssessment} nearbyHazards={nearbyHazards}
                     noData={!siteId ? (
                       <div className="zs-card">
                         <p className="zone-nodata"><ProtectedTerms text={c.noData} /></p>

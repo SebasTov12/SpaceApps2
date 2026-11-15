@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
 import {
-  Beef, ChevronDown, CircleCheck, CloudRain, Coins, Crosshair, Droplets, Fish, Gauge, HeartPulse, History, House, Info,
+  Beef, ChevronDown, CircleCheck, CloudRain, Coins, Crosshair, Database, Droplets, Fish, Gauge, HeartPulse, History, House, Info,
   Landmark, ListChecks, Megaphone, Phone, Pickaxe, Route, ShieldAlert, Sparkles, Store, Trees, TrendingDown, TrendingUp, Wheat,
   type LucideIcon,
 } from "lucide-react";
@@ -10,9 +10,9 @@ import { useEffect, useRef, useState } from "react";
 import { emergencyFor, telHref } from "@/lib/emergency";
 import { adviceNote, levelInfo, recommendations } from "@/lib/insights";
 import { riskKindInfo, type RiskZone } from "@/lib/risk-zones";
-import { exposureNames, sectorNames, type SectorImpact, type SectorKey } from "@/lib/sector-impacts";
+import { sectorNames, type SectorImpact, type SectorKey } from "@/lib/sector-impacts";
 import { longDate, type AttentionLevel, type SiteManifest } from "@/lib/sites";
-import type { HazardPoint } from "@/lib/hazard-points";
+import { HAZARD_POINT_SELECT, type HazardPoint } from "@/lib/hazard-points";
 
 const sectorIcons: Record<SectorKey, LucideIcon> = {
   agriculture: Wheat, livestock: Beef, mining: Pickaxe, housing: House, roads: Route, forest: Trees, water: Droplets,
@@ -24,11 +24,11 @@ const copy = {
     now: "Qué está pasando", nowSub: "Lo que mide el radar en las últimas pasadas",
     rate: "Ritmo actual", d90: "En 90 días", points: "Puntos a vigilar", pointsSub: "marcados en el mapa",
     accel: "acelerando", steady: "estable", trend: "Si la tendencia continúa", today: "hoy", plus90: "+90 días",
-    impact: "A quién afecta", impactSub: "Toca un sector para ver qué le pasa y cómo reforzarlo",
+    impact: "Sectores potencialmente expuestos", impactSub: "Orientación general; no es una medición local de exposición",
     what: "Qué le pasa", how: "Cómo reforzar",
     history: "Qué pasó aquí", todo: "Qué hacer", todoSub: "Pasos concretos para la gente de la zona",
     call: "Emergencias · 123", official: "Información oficial", about: "Sobre estos datos",
-    impactNote: "Escenario ilustrativo (DEMO): muestra exposición posible, no daños confirmados ni probabilidades. SAROS no predice terremotos.",
+    impactNote: "Los sectores y niveles mostrados son escenarios orientativos generales: no miden exposición local ni daños. Solo una evaluación del modelo aparece como tal. SAROS no predice terremotos.",
     model: "Resultado del modelo SAROS", modelSub: "Priorización relativa, no probabilidad ni alerta",
     noModel: "No hay una salida del modelo guardada para esta ubicación. Sin escena NISAR procesada, no se genera predicción.",
     watch: "Señales de extracción", suspicious: "Cambio sospechoso", conf: "confianza",
@@ -43,11 +43,11 @@ const copy = {
     now: "What is happening", nowSub: "What radar measured over the latest passes",
     rate: "Current rate", d90: "In 90 days", points: "Watch points", pointsSub: "marked on the map",
     accel: "accelerating", steady: "steady", trend: "If the trend continues", today: "today", plus90: "+90 days",
-    impact: "Who is affected", impactSub: "Tap a sector to see what happens and how to reinforce it",
+    impact: "Potentially exposed sectors", impactSub: "General guidance; not a local exposure measurement",
     what: "What happens", how: "How to reinforce",
     history: "What happened here", todo: "What to do", todoSub: "Concrete steps for people in the area",
     call: "Emergencies · 123", official: "Official information", about: "About this data",
-    impactNote: "Illustrative scenario (DEMO): shows possible exposure, not confirmed damage or probabilities. SAROS does not predict earthquakes.",
+    impactNote: "Sectors and levels are general illustrative scenarios; they do not measure local exposure or damage. Only actual model output is labeled as an assessment. SAROS does not predict earthquakes.",
     model: "SAROS model result", modelSub: "Relative prioritization, not a probability or alert",
     noModel: "No saved model output for this location. Without a processed NISAR scene, no prediction is generated.",
     watch: "Extraction signals", suspicious: "Suspicious change", conf: "confidence",
@@ -116,11 +116,12 @@ type Props = {
   lang: "es" | "en";
   impacts: SectorImpact[];
   modelAssessment: HazardPoint["model_assessment"];
+  nearbyHazards: { point: HazardPoint; distanceKm: number }[];
   noData: React.ReactNode;
 };
 
 /** Vista simple de la zona, en tarjetas: resumen en burbujas, sectores que se despliegan y pasos con iconos. */
-export default function ZoneSimple({ zone, active, level, colombia, siteId, lang, impacts, modelAssessment, noData }: Props) {
+export default function ZoneSimple({ zone, active, level, colombia, siteId, lang, impacts, modelAssessment, nearbyHazards, noData }: Props) {
   const c = copy[lang];
   const reduce = useReducedMotion();
   const [openSector, setOpenSector] = useState<SectorKey | null>(null);
@@ -174,6 +175,22 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
         </> : <p className="zone-muted">{c.noModel}</p>}
       </motion.section>
 
+      <motion.section className="zs-card" variants={item}>
+        <SectionHead icon={Database} title={lang === "es" ? "Registros oficiales cercanos" : "Nearby official records"}
+          sub={lang === "es" ? "Datos de la base UNGRD / SGC; no son mediciones satelitales" : "UNGRD / SGC database records; not satellite measurements"} tone="#38bdf8" />
+        {nearbyHazards.length ? <div className="zs-nearby-records">
+          {nearbyHazards.map(({ point, distanceKm }) => <article key={point.id} className="zs-nearby-record">
+            <strong>{point.place || point.type || (lang === "es" ? "Evento reportado" : "Reported event")}</strong>
+            <small>{point.type} · {point.n.toLocaleString(lang === "es" ? "es-CO" : "en-US")} {lang === "es" ? "registros" : "records"} · {distanceKm.toFixed(1)} km</small>
+            <small>{Array.from(new Set(point.sources)).join(" · ")} · {point.first ?? "—"}{point.last && point.last !== point.first ? ` – ${point.last}` : ""}</small>
+            {(point.affected > 0 || point.homes > 0) && <small>{point.affected > 0 ? `${point.affected.toLocaleString(lang === "es" ? "es-CO" : "en-US")} ${lang === "es" ? "personas reportadas" : "people reported"}` : ""}{point.affected > 0 && point.homes > 0 ? " · " : ""}{point.homes > 0 ? `${point.homes.toLocaleString(lang === "es" ? "es-CO" : "en-US")} ${lang === "es" ? "viviendas reportadas" : "homes reported"}` : ""}</small>}
+            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: point }))}>
+              {lang === "es" ? "Abrir análisis del registro →" : "Open record analysis →"}
+            </button>
+          </article>)}
+        </div> : <p className="zone-muted">{lang === "es" ? "No hay eventos UNGRD/SGC georreferenciados en un radio de 25 km en la base actual." : "No georeferenced UNGRD/SGC events within 25 km in the current database."}</p>}
+      </motion.section>
+
       {/* 2 · Señales de extracción (vigilancia ambiental) */}
       {x && (() => {
         const confColor = x.confidence === "alta" ? "#f43f5e" : x.confidence === "media" ? "#f59e0b" : "#94a3c4";
@@ -213,13 +230,13 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
           <div className="zs-sectors">
             {impacts.map((s) => {
               const Icon = sectorIcons[s.sector];
-              const color = exposureNames[s.exposure].color;
+              const color = "#a78bfa";
               const isOpen = openSector === s.sector;
               return (
-                <button key={s.sector} type="button" className={`zs-sector${isOpen ? " is-open" : ""}${s.exposure === "high" ? " is-high" : ""}`}
+                <button key={s.sector} type="button" className={`zs-sector${isOpen ? " is-open" : ""}`}
                   style={{ "--exp": color } as React.CSSProperties} aria-expanded={isOpen} onClick={() => { setOpenSector(isOpen ? null : s.sector); window.dispatchEvent(new CustomEvent("saros:sector", { detail: isOpen ? null : s.sector })); }}>
                   <span className="zs-sector-icon"><Icon size={17} /></span>
-                  <span className="zs-sector-name">{sectorNames[s.sector][lang]}<small>{exposureNames[s.exposure][lang]}</small></span>
+                  <span className="zs-sector-name">{sectorNames[s.sector][lang]}<small>{lang === "es" ? "Sin medición local" : "No local measurement"}</small></span>
                   <ChevronDown size={14} className="zs-chevron" />
                 </button>
               );
@@ -227,7 +244,7 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
           </div>
           <AnimatePresence mode="wait" initial={false}>
             {open && (
-              <motion.div key={open.sector} className="zs-detail" style={{ "--exp": exposureNames[open.exposure].color } as React.CSSProperties}
+              <motion.div key={open.sector} className="zs-detail" style={{ "--exp": "#a78bfa" } as React.CSSProperties}
                 initial={{ opacity: 0, y: -8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
                 <div><small>{c.what}</small><p>{open.effect[lang]}</p></div>
                 <div><small>{c.how}</small><p>{open.reinforce[lang]}</p></div>

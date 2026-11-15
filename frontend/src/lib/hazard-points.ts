@@ -34,6 +34,18 @@ export type HazardPoint = {
     created_at: string;
     data_mode: "real_exploratory";
   } | null;
+  model_context?: {
+    model_version: string;
+    municipality: string;
+    department: string;
+    method: string;
+    training_period: string;
+    estimated_historical_impacts: Record<string, number>;
+    historical_impact_percentile: number;
+    estimate_geography: Record<string, "municipality" | "department" | "national">;
+    data_mode: "real_historical_context";
+    interpretation: string;
+  } | null;
   mode?: "real" | "real_exploratory";
   priority?: string | null;
   model_anomaly_index?: number | null;

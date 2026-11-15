@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import io
 import os
+import unicodedata
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import numpy as np
 import onnxruntime as ort
 from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel
 
-from composite import analyze_patch, load_bundle
+from composite import analyze_patch, impact_estimates, load_bundle
 
 MODEL_PATH = Path(os.getenv("MODEL_PATH", "/models/nisar-change/best.onnx"))
 COMPOSITE_MODEL_PATH = Path(os.getenv("COMPOSITE_MODEL_PATH", "/models/nisar-change/composite_model.json"))
@@ -35,6 +37,15 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="NISAR Change Inference", version="0.1.0", lifespan=lifespan)
+
+
+def fold_admin_name(value: str) -> str:
+    ascii_value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    return " ".join(ascii_value.upper().split())
+
+
+class ContextRequest(BaseModel):
+    locations: list[dict[str, str]]
 
 
 @app.get("/health")
@@ -84,6 +95,45 @@ async def analyze(request: Request) -> dict[str, object]:
         return analyze_patch(composite_bundle, features, track_id, municipality, department)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/context/batch")
+def historical_context(body: ContextRequest) -> dict[str, object]:
+    """Estimate municipal historical impact baselines, never current movement or future risk."""
+    if composite_bundle is None:
+        raise HTTPException(status_code=503, detail="Composite model is not available")
+    if not body.locations or len(body.locations) > 250:
+        raise HTTPException(status_code=422, detail="locations must contain between 1 and 250 items")
+    results = []
+    targets = composite_bundle["impact_model"]["targets"]
+    for location in body.locations:
+        municipality = location.get("municipality", "").strip()
+        department = location.get("department", "").strip()
+        if not municipality or not department or len(municipality) > 100 or len(department) > 100:
+            continue
+        dept_key, muni_key = fold_admin_name(department), fold_admin_name(municipality)
+        coverage = {
+            name: ("municipality" if f"{dept_key}|{muni_key}" in target.get("municipality", {})
+                   else "department" if dept_key in target.get("department", {}) else "national")
+            for name, target in targets.items() if name != "deaths"
+        }
+        if all(level == "national" for level in coverage.values()):
+            continue
+        estimates, percentile = impact_estimates(composite_bundle, municipality, department)
+        estimates.pop("deaths", None)
+        results.append({
+            "municipality": municipality,
+            "department": department,
+            "model_version": composite_bundle["model_version"],
+            "method": composite_bundle["impact_model"].get("method"),
+            "training_period": composite_bundle.get("training_provenance", {}).get("impact_split"),
+            "estimated_historical_impacts": estimates,
+            "historical_impact_percentile": percentile,
+            "estimate_geography": coverage,
+            "data_mode": "real_historical_context",
+            "interpretation": "Historical municipal baseline from reported impact data; not a current event assessment, causal attribution, probability, or forecast.",
+        })
+    return {"contexts": results}
 
 
 @app.post("/predict")

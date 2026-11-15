@@ -86,13 +86,14 @@ def has_assistant_auth() -> bool:
     return bool(ASSISTANT_TOKEN) and request.headers.get("Authorization") == f"Bearer {ASSISTANT_TOKEN}"
 
 
-def assistant_data_context() -> dict[str, object]:
+def assistant_data_context(selected_point_id: str | None = None) -> dict[str, object]:
     """Build a compact, database-backed context; keep forecasts and observations distinct."""
     context: dict[str, object] = {
         "nisar_real_observations": {"count": 0, "latest_date": None},
         "nisar_forecasts": [],
         "historical_hazard_records": {"count": 0, "latest_event_date": None},
         "latest_composite_assessment": None,
+        "selected_hazard_point": None,
         "limitations": [
             "NISAR observations and model screening do not predict earthquakes.",
             "No future movement forecast exists unless it is listed in nisar_forecasts.",
@@ -157,7 +158,42 @@ def assistant_data_context() -> dict[str, object]:
                 },
                 "recommendation": row[10], "data_mode": row[11], "created_at": row[12].isoformat(),
             }
+    if selected_point_id:
+        if not re.fullmatch(r"(?:hazard|model)-[a-f0-9]{18}", selected_point_id):
+            raise ValueError("invalid_point_id")
+        selected = next((p for p in build_hazard_points()["points"] if p["id"] == selected_point_id), None)
+        if selected:
+            context["selected_hazard_point"] = {
+                key: selected.get(key) for key in (
+                    "id", "kind", "place", "lat", "lon", "n", "first", "last", "type",
+                    "sources", "location_precision", "impact_reports", "affected", "homes",
+                    "events", "model_assessment", "model_context",
+                )
+            }
     return context
+
+
+def fetch_historical_model_context(locations: list[dict[str, str]]) -> dict[tuple[str, str], dict[str, object]]:
+    """Ask the trained composite model for historical municipal baselines, not live risk."""
+    if not locations:
+        return {}
+    output: dict[tuple[str, str], dict[str, object]] = {}
+    for start in range(0, len(locations), 250):
+        body = json.dumps({"locations": locations[start:start + 250]}).encode("utf-8")
+        upstream = urllib.request.Request(
+            f"{MODEL_URL}/context/batch", data=body,
+            headers={"Content-Type": "application/json", "User-Agent": "SAROS/1.0"}, method="POST",
+        )
+        try:
+            with urllib.request.urlopen(upstream, timeout=8) as response:
+                payload = json.loads(response.read())
+            output.update({
+                (_fold(str(item.get("department", ""))), _fold(str(item.get("municipality", "")))): item
+                for item in payload.get("contexts", []) if isinstance(item, dict)
+            })
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, TypeError, ValueError):
+            continue
+    return output
 
 
 def validate_nisar_observation(row: object) -> dict[str, object]:
@@ -526,6 +562,14 @@ def build_hazard_points() -> dict[str, object]:
             lonlat = None
         location_precision = "record_coordinates" if (isinstance(geometry, dict) and geometry.get("type") == "Point") or (lat_text and lon_text) else "geometry_centroid"
         place_muni, place_dept = muni, dept
+        if code:
+            digits = "".join(ch for ch in str(code) if ch.isdigit())
+            administrative_centroid = centroid_by_code.get(digits.zfill(5)) if digits else None
+            if administrative_centroid:
+                if not place_muni or str(place_muni).strip().isdigit():
+                    place_muni = administrative_centroid[2]
+                if not place_dept or str(place_dept).strip().isdigit():
+                    place_dept = administrative_centroid[3]
         if lonlat is not None:
             key_place = f"{lonlat[1]:.2f},{lonlat[0]:.2f}"
             if not place_muni and centroids:
@@ -533,6 +577,12 @@ def build_hazard_points() -> dict[str, object]:
                 near = min(centroids, key=lambda c: (c[0] - lonlat[0]) ** 2 + (c[1] - lonlat[1]) ** 2)
                 if (near[0] - lonlat[0]) ** 2 + (near[1] - lonlat[1]) ** 2 < 0.09:
                     place_muni, place_dept = near[2], near[3]
+            elif place_muni and not place_dept:
+                candidates = centroid_by_municipality.get(_fold(place_muni), [])
+                if candidates:
+                    near = min(candidates, key=lambda c: (c[0] - lonlat[0]) ** 2 + (c[1] - lonlat[1]) ** 2)
+                    if (near[0] - lonlat[0]) ** 2 + (near[1] - lonlat[1]) ** 2 < 0.09:
+                        place_dept = near[3]
         else:
             centroid = None
             if code:
@@ -580,11 +630,20 @@ def build_hazard_points() -> dict[str, object]:
             "homes": int(float(destroyed or 0) + float(damaged or 0)) if destroyed is not None or damaged is not None else None,
         })
 
+    # Attach a distinct model output to each point when the trained model has historical
+    # coverage for that municipality. Do not turn this baseline into a live risk score.
+    location_keys = {
+        (_fold(str(group["dept"])), _fold(str(group["muni"]))): {
+            "department": str(group["dept"] or ""), "municipality": str(group["muni"] or "")
+        }
+        for group in groups.values() if group["dept"] and group["muni"]
+    }
+    model_contexts = fetch_historical_model_context(list(location_keys.values()))
     points = []
     for group_key, group in groups.items():
         types = sorted(group["types"].items(), key=lambda item: -item[1])
         point_id = hashlib.sha256(f"{group_key[0]}|{group['kind']}".encode()).hexdigest()[:18]
-        points.append({
+        point = {
             "id": f"hazard-{point_id}",
             "lat": round(float(group["lat"]), 4), "lon": round(float(group["lon"]), 4),
             "kind": group["kind"], "n": group["n"], "first": group["first"], "last": group["last"],
@@ -595,7 +654,9 @@ def build_hazard_points() -> dict[str, object]:
             "events": sorted(group["events"], key=lambda event: event["date"] or "", reverse=True)[:5],
             # Historic incident groups are not model outputs. Model assessments are separate pins below.
             "model_assessment": None,
-        })
+            "model_context": model_contexts.get((_fold(str(group["dept"])), _fold(str(group["muni"])))),
+        }
+        points.append(point)
     model_point_count = 0
     for municipality, department, anomaly_index, priority, created_at, model_version, track_id, changed_fraction, impact_percentile, priority_score, historical_impacts, recommendation in model_rows:
         matches = centroid_by_municipality.get(_fold(municipality), [])
@@ -1161,8 +1222,13 @@ def assistant_chat():
     if clean_messages[-1]["role"] != "user":
         return jsonify({"error": "last_message_must_be_user"}), 400
 
+    selected_point_id = body.get("point_id") if isinstance(body, dict) else None
+    if selected_point_id is not None and not isinstance(selected_point_id, str):
+        return jsonify({"error": "invalid_point_id"}), 400
     try:
-        context = assistant_data_context()
+        context = assistant_data_context(selected_point_id)
+    except ValueError:
+        return jsonify({"error": "invalid_point_id"}), 400
     except psycopg.Error:
         return jsonify({"error": "assistant_database_context_unavailable"}), 503
     system_message = {
@@ -1173,7 +1239,9 @@ def assistant_chat():
             "la pidan. Basa afirmaciones del proyecto solo en el JSON de contexto; indica la fuente o fecha "
             "si está disponible y di claramente cuando falta el dato. Distingue reportes históricos, mediciones "
             "NISAR, resultados del modelo y pronósticos. Nunca inventes movimiento, fechas, probabilidades, "
-            "daños, personas afectadas, recomendaciones oficiales ni rutas seguras. Una evaluación SAROS es "
+            "daños, personas afectadas, recomendaciones oficiales ni rutas seguras. Usa selected_hazard_point "
+            "si existe para responder sobre el punto pulsado; sus eventos y cifras son reportes históricos y "
+            "model_context es solo una línea base histórica municipal, nunca un diagnóstico actual. Una evaluación SAROS es "
             "priorización exploratoria; las cifras de impacto son contexto histórico municipal, no daños causados "
             "por esa escena ni pérdidas futuras. Solo menciona un pronóstico si existe un resultado de pronóstico "
             "guardado en el contexto. NISAR no predice terremotos. No muestres el indicador de fallecimientos. "
