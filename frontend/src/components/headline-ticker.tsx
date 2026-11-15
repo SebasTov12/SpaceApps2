@@ -6,6 +6,33 @@ import { SarosStar } from "@/components/saros-logo";
 import { loadHeadlines, type Headline } from "@/lib/headlines";
 import { useI18n } from "@/lib/i18n";
 
+const LIVE_BY_LANG: Record<string, string> = {
+  es: "ÚLTIMA HORA",
+  en: "BREAKING",
+  pt: "ÚLTIMA HORA",
+  it: "ULTIM'ORA",
+  fr: "DERNIÈRE HEURE",
+  de: "EILMELDUNG",
+  "zh-CN": "突发快讯",
+  ja: "速報",
+  ko: "속보",
+  ru: "ПОСЛЕДНИЙ ЧАС",
+  ar: "عاجل",
+  hi: "ताज़ा खबर",
+  nl: "LAATSTE NIEUWS",
+  pl: "NA ŻYWO",
+  tr: "SON DAKİKA",
+  vi: "TIN MỚI NHẤT",
+  id: "TERKINI",
+  uk: "ОСТАННІЙ ЧАС",
+  sv: "SENASTE NYTT",
+  no: "SISTE NYTT",
+  el: "ΕΚΤΑΚΤΟ",
+  he: "מבזק",
+  th: "ข่าวด่วน",
+  tl: "BALITA",
+};
+
 const label = {
   es: { live: "ÚLTIMA HORA", region: "Últimas actualizaciones de afectaciones", demo: "DEMO", real: "NISAR", loading: "Cargando actualizaciones…",
     severity: { alta: "ALTA", media: "MEDIA", baja: "BAJA", info: "DATO" } },
@@ -16,9 +43,11 @@ const label = {
 /** Cintillo de titulares tipo noticiero con las últimas actualizaciones de afectaciones. */
 export default function HeadlineTicker({ className }: { className?: string }) {
   const { lang, globalLang } = useI18n();
-  const isEs = globalLang === "es" || (!globalLang && lang === "es");
+  const currentCode = globalLang || lang || "es";
+  const isEs = currentCode === "es";
   const activeLang = isEs ? "es" : "en";
   const l = label[activeLang];
+  const liveLabel = LIVE_BY_LANG[currentCode] || LIVE_BY_LANG[currentCode.split("-")[0]] || "ÚLTIMA HORA";
   const [items, setItems] = useState<Headline[]>([]);
 
   useEffect(() => {
@@ -36,7 +65,7 @@ export default function HeadlineTicker({ className }: { className?: string }) {
   };
 
   const renderItem = (item: Headline, copy: boolean) => (
-    <button key={`${item.id}-${copy ? "b" : "a"}-${globalLang || lang}`} type="button" className="ticker-item" onClick={() => open(item.siteId)}
+    <button key={`${item.id}-${copy ? "b" : "a"}-${currentCode}`} type="button" className="ticker-item" onClick={() => open(item.siteId)}
       tabIndex={copy ? -1 : undefined} aria-hidden={copy || undefined}>
       <b className={`ticker-sev sev-${item.severity}`}>{l.severity[item.severity]}</b>
       <span className="ticker-title">{item.title[activeLang]}</span>
@@ -54,13 +83,13 @@ export default function HeadlineTicker({ className }: { className?: string }) {
     <div className={`ticker ${className ?? ""}`} role="region" aria-label={l.region}>
       <span className="ticker-label">
         <i aria-hidden="true" />
-        <span key={globalLang || lang} className="ticker-label-text">
-          {l.live}
+        <span key={currentCode} className="ticker-label-text notranslate" translate="no">
+          {liveLabel}
         </span>
       </span>
       <div className="ticker-viewport">
         {items.length === 0 ? <span className="ticker-loading">{l.loading}</span> : (
-          <div key={globalLang || lang} className="ticker-track" style={{ animationDuration: `${duration}s` }}>
+          <div key={currentCode} className="ticker-track" style={{ animationDuration: `${duration}s` }}>
             {items.map((item) => renderItem(item, false))}
             {items.map((item) => renderItem(item, true))}
           </div>
