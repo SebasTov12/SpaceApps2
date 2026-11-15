@@ -21,6 +21,19 @@ docker compose -f infra/saros/docker-compose.yml up -d --build
 
 Agrega el bloque de `Caddyfile` al Caddyfile activo de Orivia y valida/recarga Caddy. Caddy obtiene y renueva automáticamente el certificado TLS para `saros.tobaru.xyz`; para ello el DNS debe resolver al servidor y los puertos 80/443 deben llegar a Caddy. La ruta `/api/*` llega a Flask; las demás rutas llegan al frontend. La base de datos y el predictor solo están disponibles en la red privada de SAROS. No ejecutes `docker compose down -v`: el volumen PostgreSQL contiene los datos.
 
+### Actualización automática desde `main`
+
+En Orivia, instala el servicio y timer versionados en `systemd/` y habilita el timer:
+
+```sh
+sudo install -m 0644 infra/saros/systemd/spaceapps2-auto-update.service /etc/systemd/system/
+sudo install -m 0644 infra/saros/systemd/spaceapps2-auto-update.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now spaceapps2-auto-update.timer
+```
+
+Cada 10 minutos el host revisa `origin/main`. Si hay un fast-forward y el checkout está limpio, hace pull y reconstruye/actualiza los servicios SAROS. Si detecta cambios locales o una divergencia, se detiene sin sobrescribirlos. Consulta el resultado con `journalctl -u spaceapps2-auto-update.service`.
+
 El trabajador de filtros y capas se ejecuta bajo el perfil `processing`:
 
 ```sh

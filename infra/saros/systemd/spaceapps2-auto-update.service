@@ -1,0 +1,13 @@
+[Unit]
+Description=Fast-forward SAROS from origin/main and rebuild changed services
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=admin
+WorkingDirectory=/home/admin/spaceapps2
+Environment=GIT_TERMINAL_PROMPT=0
+ExecStart=/usr/bin/bash /home/admin/spaceapps2/infra/saros/scripts/update-from-main.sh
+TimeoutStartSec=30min
