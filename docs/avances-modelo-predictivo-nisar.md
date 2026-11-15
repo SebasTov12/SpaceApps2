@@ -148,3 +148,10 @@ livianos y documentación de procedencia.
   ni continuar a ASF. Así se comprobó la protección de la actualización, pero
   todavía no una consulta de productos posteriores. No se pueden reportar
   RMSE/MAE de predicción hasta producir una serie LOS científica real.
+- El checkout del servidor se avanzó a `8417ba6`, igual que `origin/main`,
+  preservando un commit remoto concurrente de interfaz que se inspeccionó.
+  Después se inició la reconstrucción de la imagen web para aplicar ese cambio;
+  el proceso dejó de responder y el host pasó a ser inaccesible por SSH e
+  ICMP. La API y el procesador estaban sanos antes de esa reconstrucción. El
+  resultado del build web y la salud actual del host quedan pendientes de
+  reconexión; no se afirma que el despliegue completo haya terminado.
