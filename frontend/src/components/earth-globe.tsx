@@ -59,7 +59,8 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
   return (
     <group ref={userGroup}>
     <group rotation={[-0.25, 0, -0.08]}>
-      <group ref={surface} rotation={[0, -Math.PI / 2 + 65 * Math.PI / 180, 0]}>
+      {/* Vista inicial neutral sobre África y el Atlántico; no centra Latinoamérica al cargar. */}
+      <group ref={surface} rotation={[0, -Math.PI / 2, 0]}>
         <mesh>
           <sphereGeometry args={[1, ...earthSegments]} />
           <meshPhongMaterial map={day} normalMap={normal} normalScale={new Vector2(0.55, 0.55)}

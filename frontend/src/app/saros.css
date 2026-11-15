@@ -848,6 +848,7 @@ html body .earth-stage[data-zoomed="true"] .earth-orbit {
   bottom: 56px;
   width: min(480px, 40vw);
   overflow-y: auto;
+  overflow-anchor: none;
   padding: 22px 22px 18px;
   pointer-events: auto;
   border: 1px solid rgba(104, 25, 147, .55);

@@ -37,7 +37,11 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
   useEffect(() => {
     const onReveal = (event: Event) => setShown(Boolean((event as CustomEvent<boolean>).detail));
     window.addEventListener(UI_REVEAL, onReveal);
-    return () => window.removeEventListener(UI_REVEAL, onReveal);
+    const frame = requestAnimationFrame(() => setShown(globeState.uiRevealed));
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener(UI_REVEAL, onReveal);
+    };
   }, []);
   const [mode, setMode] = useState<"all" | "risk" | "watch">("all");
   const changeMode = (next: "all" | "risk" | "watch") => setMode(next);
