@@ -1,4 +1,32 @@
-# NISAR pairwise change model
+# NISAR and historical-impact models
+
+The container loads a real-data **composite exploratory model** (`composite_model.json`) with two fitted components:
+
+1. An unsupervised, per-orbit anomaly model trained from robustly standardized GUNW phase and coherence pixels.
+2. A department/municipality shrinkage estimator trained on UNGRD reported movement-in-mass impacts from 2019–2022, with 2025 held out for time-based validation.
+
+Train it locally from the ingested data:
+
+```powershell
+python ml/nisar_change/train_composite.py --device cuda
+```
+
+The command writes `models/nisar-change/composite_model.json` and `composite_training_report.json`. `--device auto` selects CUDA when available; `--device cuda` requires a CUDA-enabled PyTorch build. CUDA fits the NISAR phase/coherence distribution; the impact estimator remains an empirical statistical model. It uses real raster hashes and actual reports. The NISAR branch has no expert event labels, and the impact branch predicts historical reported consequences rather than household vulnerability. The composite produces relative screening priorities; it does not estimate event probabilities or guarantee safety.
+
+## Composite analysis API
+
+`POST /api/v1/analysis?track_id=047-A-003&municipality=NEIVA&department=HUILA` accepts an `application/octet-stream` NPZ body with a `features` array shaped `[2,height,width]`, ordered `[unwrapped_phase_rad, coherence_magnitude]`. Provide a single same-grid GUNW phase/coherence pair, with matching track. The API returns the anomaly fraction, historical impact estimates, relative priority, and a planning recommendation. The mask is an exploratory anomaly screen; it is not a landslide classification.
+
+The result is persisted in `analysis.composite_assessments` after applying `pipeline/sql/007_composite_model.sql`. Apply the migration before enabling the route.
+
+Example request body creation:
+
+```python
+import numpy as np
+np.savez_compressed("patch.npz", features=np.stack([phase_rad, coherence]))
+```
+
+Send the file with `Content-Type: application/octet-stream` and the SAROS bearer token. The API route requires `track_id`, `municipality`, and `department` query parameters.
 
 This first training baseline is a supervised pixel-level change detector. It takes two co-registered, same-product NISAR patches, concatenates the earlier scene, later scene, and absolute per-channel difference, then predicts a binary change mask with a U-Net. It does not estimate landslide probability, predict an event, or calculate losses.
 
@@ -49,7 +77,7 @@ docker compose -f infra/saros/docker-compose.yml up -d --build
 
 The backend checks model readiness at `http://predictor:8001/health` and forwards authenticated requests to its `/predict` endpoint. The input contract is an `application/octet-stream` body containing an `.npz` with `before` and `after` float arrays shaped `[channels,height,width]`. Arrays must be co-registered, consistently calibrated/normalized, finite, and have dimensions divisible by 16. Input size and pixel count are bounded by `ML_MAX_REQUEST_BYTES` and `ML_MAX_PIXELS`.
 
-There is currently no trained checkpoint or labeled patch dataset in the repository. Until the training workflow produces `models/nisar-change/best.onnx`, `/health` reports `model_missing` and `/predict` returns HTTP 503; this prevents the service from presenting random output as a real prediction. The predictor detects the target change class represented by the training labels; it does not inherently identify landslides or predict events.
+The composite inference service is healthy when `composite_model.json` exists. The legacy supervised U-Net endpoint `/predict` still requires `best.onnx` and a labeled patch manifest; it remains unavailable until expert-reviewed pixel labels exist. The composite endpoint `/analyze` is the current deployed real-data path.
 
 ## Limits of this baseline
 

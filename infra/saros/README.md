@@ -42,7 +42,7 @@ docker compose -f infra/saros/docker-compose.yml --profile processing run --rm p
 
 El contenedor de procesamiento usa una red de salida dedicada para consultar ASF/CMR y descargar productos por HTTPS; no se conecta a la red privada de la base. La búsqueda pública del catálogo no requiere Earthdata Login. La descarga sí requiere `EARTHDATA_USERNAME` y `EARTHDATA_PASSWORD` en `.env`. El acceso S3 directo de NISAR solo funciona desde AWS `us-west-2`; desde otras regiones usa el flujo HTTPS de `earthaccess`.
 
-El entrenamiento se ejecuta bajo el perfil `training` y escribe `best.onnx` en `models/nisar-change/`, donde el predictor lo monta como solo lectura.
+El entrenamiento supervisado U-Net se ejecuta bajo el perfil `training` y escribe `best.onnx` en `models/nisar-change/`; requiere una colección de parches etiquetados. El modelo compuesto exploratorio se entrena con `python ml/nisar_change/train_composite.py` y escribe `composite_model.json` en el mismo directorio. El predictor monta ambos artefactos en solo lectura. `/health` comprueba el modelo compuesto; `/api/v1/analysis` expone el análisis combinado, mientras que `/api/v1/predictions` depende del U-Net supervisado.
 
 ## Estado esperado
 
@@ -50,4 +50,4 @@ El entrenamiento se ejecuta bajo el perfil `training` y escribe `best.onnx` en `
 docker compose -f infra/saros/docker-compose.yml ps
 ```
 
-Frontend, API y PostgreSQL deben estar saludables. El predictor queda `unhealthy` hasta que exista `models/nisar-change/best.onnx`; el resto del stack puede iniciar mientras se prepara y valida el modelo. `/ready` informa la disponibilidad de PostgreSQL y del predictor.
+Frontend, API y PostgreSQL deben estar saludables. El predictor requiere `models/nisar-change/composite_model.json`; el endpoint U-Net legado sigue no disponible hasta que exista `best.onnx`. `/ready` informa la disponibilidad de PostgreSQL y del predictor compuesto.
