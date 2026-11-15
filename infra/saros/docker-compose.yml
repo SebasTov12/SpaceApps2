@@ -8,8 +8,12 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_SAROS_API: ${SAROS_API_PUBLIC_URL:-https://saros.tobaru.xyz}
-    image: spaceapps2-saros:latest
+    image: ghcr.io/sebastov12/spaceapps2-saros:${SAROS_IMAGE_TAG:-latest}
     restart: unless-stopped
+    # Orivia has 2 vCPUs / 2 GiB RAM. Keep about 0.75 CPU and 0.5 GiB free
+    # for Debian, Caddy, Docker and short host maintenance spikes.
+    cpus: 0.25
+    mem_limit: 320m
     environment:
       SAROS_INTERNAL_API_URL: http://spaceapps2-api:8000
       SAROS_ASSISTANT_TOKEN: ${SAROS_ASSISTANT_TOKEN:-}
@@ -42,8 +46,10 @@ services:
     build:
       context: ../..
       dockerfile: backend/Dockerfile
-    image: spaceapps2-api:latest
+    image: ghcr.io/sebastov12/spaceapps2-api:${SAROS_IMAGE_TAG:-latest}
     restart: unless-stopped
+    cpus: 0.30
+    mem_limit: 384m
     environment:
       # `postgres` is already aliased to Orivia's separate `orivia` database
       # on the shared proxy network. Use SAROS's existing database container.
@@ -87,6 +93,8 @@ services:
     container_name: spaceapps2-postgres
     image: postgres:16-alpine
     restart: unless-stopped
+    cpus: 0.35
+    mem_limit: 384m
     environment:
       POSTGRES_DB: ${SAROS_POSTGRES_DB:-spaceapps2}
       POSTGRES_USER: ${SAROS_POSTGRES_USER:-spaceapps2_admin}
@@ -107,6 +115,8 @@ services:
   nisar-migrate:
     profiles: [migration]
     image: postgres:16-alpine
+    cpus: 0.20
+    mem_limit: 256m
     environment:
       PGHOST: spaceapps2-postgres
       PGPORT: "5432"
@@ -128,13 +138,18 @@ services:
     build:
       context: ../../ml/nisar_change
       dockerfile: Dockerfile.inference
-    image: spaceapps2-nisar-model:latest
+    image: ghcr.io/sebastov12/spaceapps2-nisar-model:${SAROS_IMAGE_TAG:-latest}
     restart: unless-stopped
+    cpus: 0.35
+    mem_limit: 384m
     environment:
       MODEL_PATH: /models/nisar-change/best.onnx
       ML_THRESHOLD: ${ML_THRESHOLD:-0.5}
       ML_MAX_REQUEST_BYTES: ${ML_MAX_REQUEST_BYTES:-33554432}
       ML_MAX_PIXELS: ${ML_MAX_PIXELS:-262144}
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
     volumes:
       - ../../models/nisar-change:/models/nisar-change:ro
     expose:
@@ -161,6 +176,8 @@ services:
       context: ../../ml/nisar_change
       dockerfile: Dockerfile
     image: spaceapps2-nisar-trainer:latest
+    cpus: 0.40
+    mem_limit: 448m
     environment:
       ML_MANIFEST: ${ML_MANIFEST:-./data/filtered/manifest.parquet}
       ML_OUTPUT_DIR: /workspace/models/nisar-change
@@ -185,6 +202,8 @@ services:
       context: ../..
       dockerfile: pipeline/Dockerfile
     image: spaceapps2-nisar-processor:latest
+    cpus: 0.20
+    mem_limit: 320m
     working_dir: /workspace
     entrypoint: ["python"]
     command: ["scripts/filter_nisar_colombia.py"]

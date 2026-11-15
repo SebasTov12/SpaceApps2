@@ -13,13 +13,17 @@ No levantes otro PostgreSQL sobre `spaceapps2_postgres_data` mientras `spaceapps
 
 ## Despliegue
 
-Desde la raíz del repositorio:
+Para desarrollo local, desde la raíz del repositorio:
 
 ```sh
 docker compose -f infra/saros/docker-compose.yml up -d --build
 ```
 
-Agrega el bloque de `Caddyfile` al Caddyfile activo de Orivia y valida/recarga Caddy. Caddy obtiene y renueva automáticamente el certificado TLS para `saros.tobaru.xyz`; para ello el DNS debe resolver al servidor y los puertos 80/443 deben llegar a Caddy. La ruta `/api/*` llega a Flask; las demás rutas llegan al frontend. La base de datos y el predictor solo están disponibles en la red privada de SAROS. No ejecutes `docker compose down -v`: el volumen PostgreSQL contiene los datos.
+Agrega el bloque de `Caddyfile` al Caddyfile activo de Orivia y valida/recarga Caddy. Caddy obtiene y renueva automáticamente el certificado TLS para `saros.tobaru.xyz`; para ello el DNS debe resolver al servidor y los puertos 80/443 deben llegar a Caddy. `/api/assistant` llega al frontend Next.js, `/api/v1/*` y las rutas de salud llegan a Flask, y las demás rutas llegan al frontend. La base de datos y el predictor solo están disponibles en la red privada de SAROS. No ejecutes `docker compose down -v`: el volumen PostgreSQL contiene los datos.
+
+El chat usa la ruta de servidor del frontend `POST /api/assistant`, que reenvía a Flask por la red Docker privada. Caddy debe dirigir exactamente `/api/assistant` al frontend y `/api/v1/*` a Flask, como en este `Caddyfile`; no envíes `/api/assistant` directamente a Flask.
+
+La clave de Groq se configura en el `.env` privado de la raíz del proyecto en Orivia (`/home/admin/spaceapps2/.env`), en la variable `GROQ_API_KEY`. Configura también `SAROS_ASSISTANT_TOKEN` con el mismo valor en el frontend y en la API; el frontend lo usa solo en servidor para autenticar su proxy interno. No guardes ninguna de estas claves en `frontend/.env`, `NEXT_PUBLIC_*`, el navegador ni Git. Protege el `.env` con `chmod 600`.
 
 ### Actualización automática desde `main`
 
@@ -32,7 +36,11 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now spaceapps2-auto-update.timer
 ```
 
-Cada 10 minutos el host revisa `origin/main`. Si hay un fast-forward y el checkout está limpio, hace pull y reconstruye/actualiza `saros`, `api` y `predictor`. Omite dependencias: en Orivia PostgreSQL ya corre en un contenedor existente que no pertenece a este Compose. Si detecta cambios locales o una divergencia, se detiene sin sobrescribirlos. Consulta el resultado con `journalctl -u spaceapps2-auto-update.service`.
+Un workflow de GitHub Actions construye y publica las imágenes del frontend, API y predictor en GHCR, etiquetadas con el SHA completo del commit. El auto-deploy de Orivia descarga esa etiqueta antes de aplicar migraciones o reemplazar contenedores; si todavía no está disponible o falla la descarga, conserva los contenedores actuales y vuelve a intentar en el siguiente ciclo. Orivia ya no compila esos tres servicios, evitando el pico de memoria de Next.js en la VM de 2 GiB. El Compose conserva los bloques `build` para desarrollo local.
+
+Cada minuto el host revisa `origin/main`. Si hay un fast-forward y el checkout está limpio, hace pull y actualiza `saros`, `api` y `predictor` usando las imágenes inmutables de GHCR. Omite dependencias: en Orivia PostgreSQL ya corre en un contenedor existente que no pertenece a este Compose. Si detecta cambios locales o una divergencia, se detiene sin sobrescribirlos. Consulta el resultado con `journalctl -u spaceapps2-auto-update.service`.
+
+Las imágenes deben poder descargarse desde Orivia. Si los paquetes GHCR son privados, configura un token de solo lectura (`read:packages`) con `docker login ghcr.io` en el servidor antes de activar este flujo. No pongas el token en Git ni en los logs.
 
 El trabajador de filtros y capas se ejecuta bajo el perfil `processing`:
 
@@ -43,6 +51,10 @@ docker compose -f infra/saros/docker-compose.yml --profile processing run --rm p
 El contenedor de procesamiento usa una red de salida dedicada para consultar ASF/CMR y descargar productos por HTTPS; no se conecta a la red privada de la base. La búsqueda pública del catálogo no requiere Earthdata Login. La descarga sí requiere `EARTHDATA_USERNAME` y `EARTHDATA_PASSWORD` en `.env`. El acceso S3 directo de NISAR solo funciona desde AWS `us-west-2`; desde otras regiones usa el flujo HTTPS de `earthaccess`.
 
 El entrenamiento supervisado U-Net se ejecuta bajo el perfil `training` y escribe `best.onnx` en `models/nisar-change/`; requiere una colección de parches etiquetados. El modelo compuesto exploratorio se entrena con `python ml/nisar_change/train_composite.py` y escribe `composite_model.json` en el mismo directorio. El predictor monta ambos artefactos en solo lectura. `/health` comprueba el modelo compuesto; `/api/v1/analysis` expone el análisis combinado, mientras que `/api/v1/predictions` depende del U-Net supervisado.
+
+### Límites de recursos para Orivia
+
+Orivia tiene 2 vCPU y 2 GiB RAM. Compose limita los servicios permanentes a un máximo combinado de 1.25 CPU y 1,472 MiB de memoria, dejando capacidad para Debian, Caddy y Docker. El predictor y la API también limitan sus hilos. `trainer`, `processor` y las migraciones tienen límites propios; el auto-deploy omite una reconstrucción cuando la memoria libre es menor a 900 MiB o la carga de un minuto supera 1.25. No ejecutes entrenamiento o procesamiento pesado en producción. Estos límites reducen los picos, pero no evitan caídas causadas por falta de crédito de CPU en Lightsail: para eso conviene compilar fuera del servidor o subir el plan.
 
 ## Estado esperado
 
