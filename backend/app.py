@@ -469,6 +469,8 @@ def _valid_lonlat(lon: float, lat: float) -> bool:
 
 
 def build_hazard_points() -> dict[str, object]:
+    import hashlib
+
     with connect_db() as connection:
         municipalities = connection.execute(
             """
@@ -487,7 +489,9 @@ def build_hazard_points() -> dict[str, object]:
         ).fetchall()
         model_rows = connection.execute(
             """
-            SELECT municipality, department, anomaly_index, priority, created_at
+            SELECT municipality, department, anomaly_index, priority, created_at,
+                   model_version, track_id, changed_fraction, impact_percentile,
+                   priority_score, estimated_historical_impacts, recommendation
               FROM analysis.composite_assessments
              WHERE data_mode = 'real_exploratory'
              ORDER BY created_at DESC LIMIT 100
@@ -519,6 +523,7 @@ def build_hazard_points() -> dict[str, object]:
                 lonlat = None
         if lonlat is not None and not _valid_lonlat(*lonlat):
             lonlat = None
+        location_precision = "record_coordinates" if (isinstance(geometry, dict) and geometry.get("type") == "Point") or (lat_text and lon_text) else "geometry_centroid"
         place_muni, place_dept = muni, dept
         if lonlat is not None:
             key_place = f"{lonlat[1]:.2f},{lonlat[0]:.2f}"
@@ -538,6 +543,7 @@ def build_hazard_points() -> dict[str, object]:
                 unlocated += 1
                 continue
             lonlat = (centroid[0], centroid[1])
+            location_precision = "municipality_centroid"
             place_muni = place_muni or centroid[2]
             place_dept = place_dept or centroid[3]
             key_place = f"m{code or _fold(muni)}"
@@ -546,7 +552,8 @@ def build_hazard_points() -> dict[str, object]:
         group = groups.setdefault((key_place, kind), {
             "lat": 0.0, "lon": 0.0, "kind": kind, "n": 0, "first": None, "last": None,
             "muni": place_muni, "dept": place_dept, "deaths": 0.0, "affected": 0.0, "homes": 0.0,
-            "sources": set(), "types": {},
+            "sources": set(), "types": {}, "events": [], "impact_reports": 0,
+            "location_precision": location_precision,
         })
         n = int(group["n"])
         group["lat"] = (float(group["lat"]) * n + lonlat[1]) / (n + 1)
@@ -556,27 +563,45 @@ def build_hazard_points() -> dict[str, object]:
             iso = day.isoformat()
             group["first"] = min(filter(None, [group["first"], iso]))
             group["last"] = max(filter(None, [group["last"], iso]))
+        if any(value is not None for value in (deaths, affected, destroyed, damaged)):
+            group["impact_reports"] = int(group["impact_reports"]) + 1
         for field, value in (("deaths", deaths), ("affected", affected), ("homes", destroyed), ("homes", damaged)):
             if value is not None:
                 group[field] = float(group[field]) + float(value)
         group["sources"].add(source)
         label = str(event_type or RECORD_TYPE_LABELS.get(record_type, record_type)).strip().upper()[:60]
         group["types"][label] = group["types"].get(label, 0) + 1
+        group["events"].append({
+            "date": day.isoformat() if day else None,
+            "type": label,
+            "source": source,
+            "affected": int(affected) if affected is not None else None,
+            "homes": int(float(destroyed or 0) + float(damaged or 0)) if destroyed is not None or damaged is not None else None,
+        })
 
     points = []
-    for group in groups.values():
+    for group_key, group in groups.items():
         types = sorted(group["types"].items(), key=lambda item: -item[1])
+        point_id = hashlib.sha256(f"{group_key[0]}|{group['kind']}".encode()).hexdigest()[:18]
         points.append({
+            "id": f"hazard-{point_id}",
             "lat": round(float(group["lat"]), 4), "lon": round(float(group["lon"]), 4),
             "kind": group["kind"], "n": group["n"], "first": group["first"], "last": group["last"],
             "place": ", ".join(str(v).title() for v in (group["muni"], group["dept"]) if v),
             "deaths": int(group["deaths"]), "affected": int(group["affected"]), "homes": int(group["homes"]),
-            "type": types[0][0].capitalize() if types else "",
-            "sources": sorted(group["sources"]),
+            "type": types[0][0].capitalize() if types else "", "sources": sorted(group["sources"]),
+            "location_precision": group["location_precision"], "impact_reports": group["impact_reports"],
+            "events": sorted(group["events"], key=lambda event: event["date"] or "", reverse=True)[:5],
+            # Historic incident groups are not model outputs. Model assessments are separate pins below.
+            "model_assessment": None,
         })
     model_point_count = 0
-    for municipality, department, anomaly_index, priority, created_at in model_rows:
+    for municipality, department, anomaly_index, priority, created_at, model_version, track_id, changed_fraction, impact_percentile, priority_score, historical_impacts, recommendation in model_rows:
         matches = centroid_by_municipality.get(_fold(municipality), [])
+        if department:
+            department_matches = [entry for entry in matches if _fold(entry[3]) == _fold(department)]
+            if department_matches:
+                matches = department_matches
         unique_coordinates = {(entry[0], entry[1]): entry for entry in matches}
         # Avoid placing an assessment when municipality name alone is ambiguous.
         if len(unique_coordinates) != 1:
@@ -584,13 +609,23 @@ def build_hazard_points() -> dict[str, object]:
         lon, lat, resolved_municipality, resolved_department = next(iter(unique_coordinates.values()))
         day = created_at.date().isoformat()
         points.append({
+            "id": f"model-{hashlib.sha256(f'{department}|{municipality}|{track_id}|{created_at.isoformat()}'.encode()).hexdigest()[:18]}",
             "lat": round(lat, 4), "lon": round(lon, 4),
             "kind": "model_assessment", "n": 1, "first": day, "last": day,
             "place": f"{resolved_municipality}, {department or resolved_department}",
             "deaths": 0, "affected": 0, "homes": 0,
+            "location_precision": "municipality_centroid", "impact_reports": 0, "events": [],
             "type": f"Evaluación exploratoria {priority}", "sources": ["saros_model"],
             "mode": "real_exploratory", "priority": priority,
             "model_anomaly_index": float(anomaly_index) if anomaly_index is not None else None,
+            "model_assessment": {
+                "model_version": model_version, "track_id": track_id,
+                "anomaly_index": float(anomaly_index), "priority": priority,
+                "changed_fraction": float(changed_fraction), "impact_percentile": float(impact_percentile),
+                "priority_score": float(priority_score), "estimated_historical_impacts": historical_impacts,
+                "recommendation": recommendation, "created_at": created_at.isoformat(),
+                "data_mode": "real_exploratory",
+            },
             "record_label": {"es": "evaluación exploratoria", "en": "exploratory assessment"},
         })
         model_point_count += 1
@@ -1000,14 +1035,16 @@ def assistant_chat():
     system_message = {
         "role": "system",
         "content": (
-            "Eres el asistente territorial SAROS. Responde en español claro y distingue observaciones, "
-            "anomalías, pronósticos y escenarios históricos. Basa cualquier afirmación sobre el estado "
-            "del proyecto únicamente en el contexto JSON adjunto. Si el contexto no contiene un pronóstico, "
-            "di que no hay uno disponible. No inventes fechas, probabilidades, daños, sectores afectados, "
-            "rutas seguras ni recomendaciones oficiales. El modelo compuesto actual da priorización relativa "
-            "exploratoria; sus impactos son estimaciones históricas municipales, no causalidad ni pérdidas "
-            "futuras. No muestres el indicador de fallecimientos. NISAR no predice terremotos. Para acciones urgentes remite a autoridades locales y "
-            "organismos oficiales. El usuario puede pedir acciones; presenta límites y fuente de cada dato.\n\n"
+            "Eres Saru, guía breve de SAROS. Contesta en el idioma del usuario, en 1–3 frases cortas; "
+            "usa como máximo un emoji pertinente. Ve directo a la respuesta y a una acción práctica cuando "
+            "la pidan. Basa afirmaciones del proyecto solo en el JSON de contexto; indica la fuente o fecha "
+            "si está disponible y di claramente cuando falta el dato. Distingue reportes históricos, mediciones "
+            "NISAR, resultados del modelo y pronósticos. Nunca inventes movimiento, fechas, probabilidades, "
+            "daños, personas afectadas, recomendaciones oficiales ni rutas seguras. Una evaluación SAROS es "
+            "priorización exploratoria; las cifras de impacto son contexto histórico municipal, no daños causados "
+            "por esa escena ni pérdidas futuras. Solo menciona un pronóstico si existe un resultado de pronóstico "
+            "guardado en el contexto. NISAR no predice terremotos. No muestres el indicador de fallecimientos. "
+            "Ante una emergencia, remite a autoridades oficiales.\n\n"
             "Contexto actual de la base SAROS (JSON):\n" + json.dumps(context, ensure_ascii=False, default=str)
         ),
     }
@@ -1015,7 +1052,7 @@ def assistant_chat():
         "model": GROQ_MODEL,
         "messages": [system_message, *clean_messages],
         "temperature": 0.2,
-        "max_completion_tokens": 650,
+        "max_completion_tokens": 300,
     }).encode("utf-8")
     upstream = urllib.request.Request(
         GROQ_API_URL,

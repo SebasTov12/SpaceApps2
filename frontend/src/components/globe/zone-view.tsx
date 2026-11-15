@@ -1,16 +1,18 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Box, Database, Info, MapPin, MapPinned, MousePointerClick, Radar, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, Database, Info, MapPin, MapPinned, MousePointerClick, Radar, Sparkles, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import ZoneSimple from "./zone-simple";
+import HazardPointDetail from "./hazard-point-detail";
+import { HAZARD_POINT_SELECT, loadHazardPoints, type HazardPoint } from "@/lib/hazard-points";
 import { POINT_EVENT } from "./saro-guide";
 import { TOUR_EVENT, type LegendKind, type SaroAction, type TourKey } from "@/lib/saro-brain";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
-import { levelInfo, trendSentence } from "@/lib/insights";
+import { levelInfo } from "@/lib/insights";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
 import { riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { sectorImpacts } from "@/lib/sector-impacts";
@@ -105,6 +107,8 @@ export default function ZoneView() {
   const wrapper = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement | null>(null);
   const [zoneId, setZoneId] = useState<string | null>(null);
+  const [selectedHazard, setSelectedHazard] = useState<HazardPoint | null>(null);
+  const [modelPoints, setModelPoints] = useState<HazardPoint[]>([]);
   const [mapVisible, setMapVisible] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [diving, setDiving] = useState(false);
@@ -145,6 +149,7 @@ export default function ZoneView() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const onSelect = (event: Event) => {
       const id = (event as CustomEvent<string | null>).detail;
+      setSelectedHazard(null);
       clearTimeout(timer);
       setZoneId(id);
       setTab("simple");
@@ -181,16 +186,27 @@ export default function ZoneView() {
       if (id) focusZone(id);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && globeState.zoom > 0) closeZone();
+      if (event.key === "Escape") {
+        setSelectedHazard(null);
+        if (globeState.zoom > 0) closeZone();
+      }
+    };
+    const onHazardPoint = (event: Event) => {
+      const point = (event as CustomEvent<HazardPoint | null>).detail;
+      if (point) closeZone();
+      setSelectedHazard(point ?? null);
     };
     window.addEventListener(GLOBE_SELECT, onSelect);
     window.addEventListener(SITE_EVENT, onSite);
+    window.addEventListener(HAZARD_POINT_SELECT, onHazardPoint);
     window.addEventListener("keydown", onKey);
     loadAvailability().then(setAvailability).catch(() => setAvailability(null));
+    loadHazardPoints().then((data) => setModelPoints(data?.points.filter((point) => point.kind === "model_assessment") ?? []));
     return () => {
       clearTimeout(timer);
       window.removeEventListener(GLOBE_SELECT, onSelect);
       window.removeEventListener(SITE_EVENT, onSite);
+      window.removeEventListener(HAZARD_POINT_SELECT, onHazardPoint);
       window.removeEventListener("keydown", onKey);
     };
   }, []);
@@ -224,8 +240,12 @@ export default function ZoneView() {
   const legend = active ? (mode === "change" ? active.changeLegend : active.legend) : null;
   const real = availability?.sites.find((s) => s.id === siteId);
   const currentValue = pointSeries?.[dateIndex];
-  const assessment = active?.assessment;
-  const level: AttentionLevel = assessment?.level ?? (zone?.event ? "moderada" : "baja");
+  const assessment = active?.source.mode === "real" ? active.assessment : undefined;
+  const modelAssessment = zone ? modelPoints
+    .map((point) => ({ point, distance: Math.hypot((point.lat - zone.lat) * 111, (point.lon - zone.lon) * 111 * Math.cos(zone.lat * Math.PI / 180)) }))
+    .filter(({ distance }) => distance <= 1)
+    .sort((a, b) => a.distance - b.distance)[0]?.point.model_assessment ?? null : null;
+  const level: AttentionLevel = modelAssessment?.priority === "P1" ? "alta" : modelAssessment?.priority === "P2" ? "moderada" : "baja";
   const colombia = zone?.country === "CO";
   // El mapa ya tiene imagen: la cámara se zambulle, sube la bruma y en su punto máximo aparece el mapa
   const onMapReady = useCallback(() => {
@@ -427,7 +447,7 @@ export default function ZoneView() {
             <p className="zone-place"><MapPin size={13} /> {zone.place[lang]} · {formatCoord(zone.lat, zone.lon)}</p>
             <TerritorialImpact key={zone.id} zoneId={zone.id} lat={zone.lat} lon={zone.lon} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
             <div className="zone-level" data-tour="level" style={{ "--level": levelInfo[level].color } as React.CSSProperties}>
-              <i />{levelInfo[level].label[lang]}
+              <i />{modelAssessment ? `${modelAssessment.priority} · ${lang === "es" ? "prioridad exploratoria" : "exploratory priority"}` : (lang === "es" ? "Sin evaluación del modelo" : "No model assessment")}
               {assessment?.accelerating && <b><AlertTriangle size={12} /> {c.accel}</b>}
             </div>
 
@@ -444,7 +464,7 @@ export default function ZoneView() {
                 {tab === "simple" ? (
                   <ZoneSimple
                     zone={zone} active={active} level={level} colombia={colombia} siteId={siteId} lang={lang} impacts={impacts}
-                    trend={assessment && active ? trendSentence(assessment, active.change, zone.kind, lang) : null}
+                    modelAssessment={modelAssessment}
                     noData={!siteId ? (
                       <div className="zs-card">
                         <p className="zone-nodata"><ProtectedTerms text={c.noData} /></p>
@@ -461,7 +481,7 @@ export default function ZoneView() {
                   />
                 ) : (
                   <div className="zone-analysis">
-                    {!active ? <p className="zone-muted">{siteId ? c.loading : c.noDataNow}</p> : (
+                    {!active ? <p className="zone-muted">{siteId ? c.loading : c.noDataNow}</p> : active.source.mode === "demo" ? <p className="zone-nodata">{lang === "es" ? "Esta serie y sus capas son DEMO; no se muestran como mediciones ni predicciones reales." : "This series and its layers are DEMO; they are not presented as real measurements or predictions."}</p> : (
                       <>
                         <div className="zone-modes" role="radiogroup" aria-label={t.mapView}>
                           {([["single", t.viewSingle], ["swipe", t.viewSwipe], ["change", t.viewChange]] as const).map(([value, label]) => (
@@ -508,12 +528,19 @@ export default function ZoneView() {
                             <dl>
                               <div><dt>{c.early}</dt><dd>{assessment.rate.early} {en ? assessment.rate.unitEn : assessment.rate.unit}</dd></div>
                               <div><dt>{c.recent}</dt><dd>{assessment.rate.recent} {en ? assessment.rate.unitEn : assessment.rate.unit}</dd></div>
-                              <div><dt>{c.p30}</dt><dd>{assessment.projection.d30} {assessment.projection.unit}</dd></div>
-                              <div><dt>{c.p90}</dt><dd>{assessment.projection.d90} {assessment.projection.unit}</dd></div>
                             </dl>
-                            <p className="zone-muted">{en ? assessment.basisEn : assessment.basis}</p>
+                            <p className="zone-muted">{lang === "es" ? "Ritmo observado en la serie; el modelo no ha generado un pronóstico para esta ubicación." : "Observed rate in the series; the model has not generated a forecast for this location."}</p>
                           </div>
                         )}
+
+                        <div className="zone-trend">
+                          <strong><Sparkles size={13} /> {lang === "es" ? "Modelo SAROS" : "SAROS model"}</strong>
+                          {modelAssessment ? <>
+                            <p><b>{modelAssessment.priority}</b> · {modelAssessment.anomaly_index.toFixed(1)} / 100</p>
+                            <p>{modelAssessment.recommendation}</p>
+                            <p className="zone-muted">{lang === "es" ? "Priorización exploratoria; no es una probabilidad ni una alerta." : "Exploratory prioritization; not a probability or alert."}</p>
+                          </> : <p className="zone-muted">{lang === "es" ? "Sin resultado del modelo para esta ubicación." : "No model result for this location."}</p>}
+                        </div>
 
                         {explainer && (
                           <div className="zone-explain">
@@ -534,6 +561,9 @@ export default function ZoneView() {
             </AnimatePresence>
           </motion.aside>
         )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedHazard && <HazardPointDetail key={selectedHazard.id ?? `${selectedHazard.lat}-${selectedHazard.lon}`} point={selectedHazard} lang={lang} onClose={() => setSelectedHazard(null)} />}
       </AnimatePresence>
     </div>
   );

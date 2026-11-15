@@ -5,7 +5,7 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleGeometry, Color, Group, InstancedMesh, MeshBasicMaterial, Object3D, Quaternion, Vector3 } from "three";
 import { useI18n } from "@/lib/i18n";
-import { HAZARDS_EVENT, hazardKind, pointCountry, loadHazardPoints, sourceName, type HazardPoint } from "@/lib/hazard-points";
+import { HAZARD_POINT_SELECT, HAZARDS_EVENT, hazardKind, pointCountry, loadHazardPoints, sourceName, type HazardPoint } from "@/lib/hazard-points";
 import { RELIEF, globeState } from "./globe-state";
 import { spherePosition } from "./risk-markers";
 
@@ -123,9 +123,11 @@ export default function HazardPoints() {
   const onOut = () => { setHover(null); document.body.style.cursor = ""; };
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     const i = nearest(e);
-    if (i === null) { setPinned(null); return; }
+    if (i === null) { setPinned(null); window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: null })); return; }
     e.stopPropagation();
-    setPinned((p) => (p === i ? null : i));
+    const next = pinned === i ? null : i;
+    setPinned(next);
+    window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: next === null ? null : points[next] }));
   };
 
   const shown = pinned ?? hover;

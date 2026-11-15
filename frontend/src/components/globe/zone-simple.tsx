@@ -12,6 +12,7 @@ import { adviceNote, levelInfo, recommendations } from "@/lib/insights";
 import { riskKindInfo, type RiskZone } from "@/lib/risk-zones";
 import { exposureNames, sectorNames, type SectorImpact, type SectorKey } from "@/lib/sector-impacts";
 import { longDate, type AttentionLevel, type SiteManifest } from "@/lib/sites";
+import type { HazardPoint } from "@/lib/hazard-points";
 
 const sectorIcons: Record<SectorKey, LucideIcon> = {
   agriculture: Wheat, livestock: Beef, mining: Pickaxe, housing: House, roads: Route, forest: Trees, water: Droplets,
@@ -28,6 +29,8 @@ const copy = {
     history: "Qué pasó aquí", todo: "Qué hacer", todoSub: "Pasos concretos para la gente de la zona",
     call: "Emergencias · 123", official: "Información oficial", about: "Sobre estos datos",
     impactNote: "Escenario ilustrativo (DEMO): muestra exposición posible, no daños confirmados ni probabilidades. SAROS no predice terremotos.",
+    model: "Resultado del modelo SAROS", modelSub: "Priorización relativa, no probabilidad ni alerta",
+    noModel: "No hay una salida del modelo guardada para esta ubicación. Sin escena NISAR procesada, no se genera predicción.",
     watch: "Señales de extracción", suspicious: "Cambio sospechoso", conf: "confianza",
     watchNote: "SAROS detecta el cambio; no identifica responsables ni dice si es legal. Requiere verificación en campo.",
     lost: "Bosque perdido", recent30: "Últimos 30 días", pits: "Piscinas nuevas", water: "Agua en el área",
@@ -45,6 +48,8 @@ const copy = {
     history: "What happened here", todo: "What to do", todoSub: "Concrete steps for people in the area",
     call: "Emergencies · 123", official: "Official information", about: "About this data",
     impactNote: "Illustrative scenario (DEMO): shows possible exposure, not confirmed damage or probabilities. SAROS does not predict earthquakes.",
+    model: "SAROS model result", modelSub: "Relative prioritization, not a probability or alert",
+    noModel: "No saved model output for this location. Without a processed NISAR scene, no prediction is generated.",
     watch: "Extraction signals", suspicious: "Suspicious change", conf: "confidence",
     watchNote: "SAROS detects the change; it does not identify who is responsible or whether it is legal. Field verification required.",
     lost: "Forest lost", recent30: "Last 30 days", pits: "New ponds", water: "Water in the area",
@@ -110,12 +115,12 @@ type Props = {
   siteId: string | null;
   lang: "es" | "en";
   impacts: SectorImpact[];
-  trend: string | null;
+  modelAssessment: HazardPoint["model_assessment"];
   noData: React.ReactNode;
 };
 
 /** Vista simple de la zona, en tarjetas: resumen en burbujas, sectores que se despliegan y pasos con iconos. */
-export default function ZoneSimple({ zone, active, level, colombia, siteId, lang, impacts, trend, noData }: Props) {
+export default function ZoneSimple({ zone, active, level, colombia, siteId, lang, impacts, modelAssessment, noData }: Props) {
   const c = copy[lang];
   const reduce = useReducedMotion();
   const [openSector, setOpenSector] = useState<SectorKey | null>(null);
@@ -125,8 +130,8 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
     window.addEventListener("saros:open-sector", onOpen);
     return () => window.removeEventListener("saros:open-sector", onOpen);
   }, []);
-  const a = active?.assessment;
-  const x = active?.extraction ?? null;
+  const a = active?.source.mode === "real" ? active.assessment : undefined;
+  const x = active?.source.mode === "real" ? active.extraction ?? null : null;
   const advice = recommendations(zone.kind, level, colombia, lang);
   const emergency = advice.find((t) => /123/.test(t));
   const steps = advice.filter((t) => t !== emergency);
@@ -135,19 +140,6 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
   const open = impacts.find((i) => i.sector === openSector) ?? null;
   const lvl = levelInfo[level];
 
-  // minigráfica: hoy y la proyección a 30 y 90 días (línea discontinua)
-  const spark = (() => {
-    if (!a) return null;
-    const vals = [0, a.current, a.projection.d30, a.projection.d90];
-    const min = Math.min(...vals), max = Math.max(...vals);
-    const span = max - min || 1;
-    const xs = [0, 62, 78, 100];
-    const pts = vals.map((v, i) => [xs[i] * 2.4, 46 - ((v - min) / span) * 40] as const);
-    const solid = `M${pts[0][0]} ${pts[0][1]} C${pts[0][0] + 60} ${pts[0][1]} ${pts[1][0] - 50} ${pts[1][1]} ${pts[1][0]} ${pts[1][1]}`;
-    const dashed = `M${pts[1][0]} ${pts[1][1]} L${pts[2][0]} ${pts[2][1]} L${pts[3][0]} ${pts[3][1]}`;
-    return { solid, dashed, end: pts[3], now: pts[1] };
-  })();
-
   return (
     <motion.div className="zone-simple zs" variants={list} initial={reduce ? false : "hidden"} animate="show">
       {/* 1 · Resumen en burbujas */}
@@ -155,16 +147,11 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
         <SectionHead icon={Gauge} title={c.now} sub={c.nowSub} tone={lvl.color} />
         {a ? (
           <>
-            <div className="zs-bubbles">
+            <div className="zs-bubbles zs-bubbles-2">
               <div className="zs-bubble">
                 <small>{c.rate}</small>
                 <strong>{a.rate.recent > 0 ? "+" : "−"}<CountUp value={Math.abs(a.rate.recent)} decimals={1} /><span className="zs-u">{lang === "es" ? a.rate.unit : a.rate.unitEn}</span></strong>
                 <em className={a.accelerating ? "is-hot" : ""}>{a.accelerating ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{a.accelerating ? c.accel : c.steady}</em>
-              </div>
-              <div className="zs-bubble">
-                <small>{c.d90}</small>
-                <strong><CountUp value={a.projection.d90} decimals={0} /><span className="zs-u">{a.projection.unit}</span></strong>
-                <em>{c.trend}</em>
               </div>
               <div className="zs-bubble">
                 <small>{c.points}</small>
@@ -172,25 +159,19 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
                 <em>{c.pointsSub}</em>
               </div>
             </div>
-            {spark && (
-              <svg className="zs-spark" viewBox="0 0 240 52" aria-hidden="true">
-                <defs><linearGradient id={`zs-g-${zone.id}`} x1="0" x2="1"><stop offset="0" stopColor="#8b5cf6" /><stop offset="1" stopColor={lvl.color} /></linearGradient></defs>
-                <motion.path d={spark.solid} fill="none" stroke={`url(#zs-g-${zone.id})`} strokeWidth="2.5" strokeLinecap="round"
-                  initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }} />
-                <motion.path d={spark.dashed} fill="none" stroke={lvl.color} strokeWidth="2" strokeDasharray="4 4"
-                  initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 0.5 }} />
-                <circle cx={spark.now[0]} cy={spark.now[1]} r="3.5" fill="#fff" />
-                <circle className="zs-ping" cx={spark.end[0]} cy={spark.end[1]} r="4" fill={lvl.color} />
-                <text x="2" y="51" className="zs-spark-l">{c.today === "hoy" ? "hace 3 meses" : "3 months ago"}</text>
-                <text x={spark.now[0] - 8} y="51" className="zs-spark-l">{c.today}</text>
-                <text x="226" y="51" textAnchor="end" className="zs-spark-l">{c.plus90}</text>
-              </svg>
-            )}
-            {trend && <p className="zs-lead" style={{ fontSize: 12, lineHeight: 1.5, color: "#9aa6c6" }}>{trend}</p>}
           </>
         ) : (
-          <p className="zs-lead">{siteId ? "…" : riskKindInfo[zone.kind][lang]}</p>
+          <p className="zs-lead">{active?.source.mode === "demo" ? (lang === "es" ? "Esta capa es DEMO: no representa una medición real." : "This layer is DEMO: it is not a real measurement.") : siteId ? "…" : riskKindInfo[zone.kind][lang]}</p>
         )}
+      </motion.section>
+
+      <motion.section className="zs-card" variants={item}>
+        <SectionHead icon={Sparkles} title={c.model} sub={c.modelSub} tone="#a78bfa" />
+        {modelAssessment ? <>
+          <p><b>{modelAssessment.priority}</b> · {lang === "es" ? "prioridad exploratoria" : "exploratory priority"} · {modelAssessment.anomaly_index.toFixed(1)} / 100</p>
+          <p>{modelAssessment.recommendation}</p>
+          <p className="zone-muted">{lang === "es" ? "No es probabilidad de evento ni pronóstico a 30/90 días." : "Not an event probability or a 30/90-day forecast."}</p>
+        </> : <p className="zone-muted">{c.noModel}</p>}
       </motion.section>
 
       {/* 2 · Señales de extracción (vigilancia ambiental) */}
