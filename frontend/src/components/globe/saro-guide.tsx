@@ -261,11 +261,17 @@ export default function SaroGuide() {
   const [aside, setAside] = useState<string | null>(null);
   const [reply, setReply] = useState<string | null>(null);
   const [prog, setProg] = useState({ text: "", n: 0 });
+  // El primer HTML debe coincidir en servidor y navegador; activa escritura tras hidratar.
+  const [hydrated, setHydrated] = useState(false);
   const [minimized, setMinimized] = useState(false);
   // Saru llega cuando se baja con el scroll (o al abrir una zona); arriba del todo no está
   const [arrived, setArrived] = useState(false);
   const [arrivals, setArrivals] = useState(0);
   const arrivedRef = useRef(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setHydrated(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   useEffect(() => {
     const onReveal = (event: Event) => {
       const on = Boolean((event as CustomEvent<boolean>).detail);
@@ -385,7 +391,7 @@ export default function SaroGuide() {
   }, [current, reply, aside]);
 
   // escritura progresiva (solo cambia el texto)
-  const typed = instant ? text : text.slice(0, prog.text === text ? prog.n : 0);
+  const typed = instant || !hydrated ? text : text.slice(0, prog.text === text ? prog.n : 0);
   useEffect(() => {
     if (instant) return;
     const id = window.setInterval(() => {
@@ -503,7 +509,7 @@ export default function SaroGuide() {
     return () => window.clearTimeout(id);
   }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away]);
 
-  const talking = typed.length < text.length || (voice && unlocked && speaking);
+  const talking = hydrated && (typed.length < text.length || (voice && unlocked && speaking));
   // mientras señala algo en el mapa, Saru se inclina hacia él
   const pointing = !reply && !aside && (current?.action?.type === "point" || current?.action?.type === "hotspots");
 
