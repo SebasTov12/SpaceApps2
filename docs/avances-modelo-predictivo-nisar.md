@@ -59,9 +59,9 @@ primero producir el CSV de desplazamiento LOS válido desde los pares GUNW.
 
 ## Pendiente para funcionar con mediciones
 
-1. Habilitar acceso HTTPS Earthdata privado para descargar uno o dos HDF5 o
-   COGs recortados Harmony. No existe `.env` local y no se guardarán secretos
-   en el repositorio.
+1. Habilitar `EARTHDATA_USERNAME` y `EARTHDATA_PASSWORD` en el `.env` privado
+   del servidor: ambos campos están vacíos actualmente. No compartir ni
+   versionar esos secretos.
 2. Inspeccionar la estructura real del HDF5 y descubrir rutas, rejillas,
    unidades, máscaras y atributos del granule seleccionado.
 3. Procesar coherencia, componentes, referencia estable y la red de pares.
@@ -102,7 +102,8 @@ livianos y documentación de procedencia.
   y PostgreSQL siguieron activos. El predictor ONNX existente continúa
   `unhealthy` y requiere un artefacto de modelo aparte; esto no bloquea las
   nuevas rutas del modelo temporal LOS.
-- No hay archivos `.h5`/`.hdf5` en `pipeline/data` del servidor. La siguiente
+- Las variables de Earthdata están vacías en el `.env` del servidor y no hay
+  archivos `.h5`/`.hdf5` en `pipeline/data`. La siguiente
   mejora científica depende de inspeccionar el HDF5 real, producir
   observaciones trazables y validarlas contra persistencia en cortes
   temporales. Las salidas de demostración y semillas sintéticas siguen fuera
