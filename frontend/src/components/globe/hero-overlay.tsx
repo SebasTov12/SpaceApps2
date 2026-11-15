@@ -7,6 +7,7 @@ import { levelInfo } from "@/lib/insights";
 import { useI18n } from "@/lib/i18n";
 import { riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { loadSites, type SiteSummary } from "@/lib/sites";
+import LanguageModal from "@/components/language-modal";
 import { focusZone, globeState } from "./globe-state";
 
 const copy = {
@@ -81,6 +82,7 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
 
   return (
     <div className="hero-overlay">
+      <LanguageModal />
       <button
         type="button"
         className="hero-search-btn"

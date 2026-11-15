@@ -8,7 +8,7 @@ import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
 import { adviceNote, levelInfo, recommendations, trendSentence } from "@/lib/insights";
-import { LanguageToggle, useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { riskKindInfo, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { exposureNames, sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import {
@@ -328,7 +328,6 @@ export default function ZoneView() {
             <header className="zone-head">
               <span className="zone-kind" style={{ color: riskKinds[zone.kind].color }}>{riskKinds[zone.kind][lang]}</span>
               <div className="zone-head-actions">
-                <LanguageToggle />
                 <button type="button" className="zone-close" onClick={closeZone} aria-label={c.close}><X size={17} /></button>
               </div>
             </header>

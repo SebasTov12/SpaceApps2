@@ -131,10 +131,58 @@ const en: typeof es = {
 const dictionary = { es, en };
 export type Dictionary = typeof es;
 
-type I18n = { lang: Lang; setLang: (lang: Lang) => void; t: Dictionary };
-const I18nContext = createContext<I18n>({ lang: "es", setLang: () => {}, t: dictionary.es });
+export type LanguageOption = {
+  code: string;
+  name: string;
+  native: string;
+  flag: string;
+};
+
+export const AVAILABLE_LANGUAGES: LanguageOption[] = [
+  { code: "es", name: "Español", native: "Español", flag: "🇪🇸" },
+  { code: "en", name: "Inglés", native: "English", flag: "🇺🇸" },
+  { code: "pt", name: "Portugués", native: "Português", flag: "🇧🇷" },
+  { code: "fr", name: "Francés", native: "Français", flag: "🇫🇷" },
+  { code: "de", name: "Alemán", native: "Deutsch", flag: "🇩🇪" },
+  { code: "it", name: "Italiano", native: "Italiano", flag: "🇮🇹" },
+  { code: "zh-CN", name: "Chino", native: "简体中文", flag: "🇨🇳" },
+  { code: "ja", name: "Japonés", native: "日本語", flag: "🇯🇵" },
+  { code: "ko", name: "Coreano", native: "한국어", flag: "🇰🇷" },
+  { code: "ru", name: "Ruso", native: "Русский", flag: "🇷🇺" },
+  { code: "ar", name: "Árabe", native: "العربية", flag: "🇸🇦" },
+  { code: "hi", name: "Hindi", native: "हिन्दी", flag: "🇮🇳" },
+  { code: "nl", name: "Holandés", native: "Nederlands", flag: "🇳🇱" },
+  { code: "pl", name: "Polaco", native: "Polski", flag: "🇵🇱" },
+  { code: "tr", name: "Turco", native: "Türkçe", flag: "🇹🇷" },
+  { code: "vi", name: "Vietnamita", native: "Tiếng Việt", flag: "🇻🇳" },
+  { code: "id", name: "Indonesio", native: "Bahasa Indonesia", flag: "🇮🇩" },
+  { code: "uk", name: "Ucraniano", native: "Українська", flag: "🇺🇦" },
+  { code: "sv", name: "Sueco", native: "Svenska", flag: "🇸🇪" },
+  { code: "no", name: "Noruego", native: "Norsk", flag: "🇳🇴" },
+  { code: "el", name: "Griego", native: "Ελληνικά", flag: "🇬🇷" },
+  { code: "he", name: "Hebreo", native: "עברית", flag: "🇮🇱" },
+  { code: "th", name: "Tailandés", native: "ไทย", flag: "🇹🇭" },
+  { code: "tl", name: "Tagalo / Filipino", native: "Filipino", flag: "🇵🇭" },
+];
+
+type I18n = {
+  lang: Lang;
+  globalLang: string;
+  setLang: (lang: Lang) => void;
+  setGlobalLang: (code: string) => void;
+  t: Dictionary;
+};
+
+const I18nContext = createContext<I18n>({
+  lang: "es",
+  globalLang: "es",
+  setLang: () => {},
+  setGlobalLang: () => {},
+  t: dictionary.es,
+});
 
 const STORAGE_KEY = "saros-lang";
+const GLOBAL_STORAGE_KEY = "saros-global-lang";
 const CHANGE_EVENT = "saros-lang-change";
 
 // El idioma vive en localStorage; useSyncExternalStore lo lee sin desajustes de hidratación.
@@ -142,6 +190,17 @@ function readLang(): Lang {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     return saved === "en" ? "en" : "es";
+  } catch {
+    return "es";
+  }
+}
+
+function readGlobalLang(): string {
+  try {
+    const saved = window.localStorage.getItem(GLOBAL_STORAGE_KEY);
+    if (saved) return saved;
+    const base = window.localStorage.getItem(STORAGE_KEY);
+    return base === "en" ? "en" : "es";
   } catch {
     return "es";
   }
@@ -158,27 +217,99 @@ function subscribe(onChange: () => void) {
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const lang = useSyncExternalStore(subscribe, readLang, () => "es" as Lang);
+  const globalLang = useSyncExternalStore(subscribe, readGlobalLang, () => "es");
 
   useEffect(() => {
-    document.documentElement.lang = lang;
-  }, [lang]);
+    document.documentElement.lang = globalLang || lang;
+  }, [globalLang, lang]);
+
+  // Inicializar script de Google Translate para traducción global
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    (window as any).googleTranslateElementInit = () => {
+      try {
+        if ((window as any).google?.translate?.TranslateElement) {
+          new (window as any).google.translate.TranslateElement(
+            {
+              pageLanguage: "es",
+              includedLanguages: AVAILABLE_LANGUAGES.map((l) => l.code).join(","),
+              autoDisplay: false,
+            },
+            "google_translate_element"
+          );
+        }
+      } catch {
+        // silenciar si falla la inicialización externa
+      }
+    };
+
+    if (!document.getElementById("google-translate-script")) {
+      const script = document.createElement("script");
+      script.id = "google-translate-script";
+      script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
 
   const setLang = useCallback((next: Lang) => {
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
+      window.localStorage.setItem(GLOBAL_STORAGE_KEY, next);
     } catch {
-      // sin almacenamiento: el cambio no se recuerda
+      // sin almacenamiento
     }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   }, []);
 
-  const value = useMemo(() => ({ lang, setLang, t: dictionary[lang] }), [lang, setLang]);
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  const setGlobalLang = useCallback((code: string) => {
+    const base: Lang = code === "es" ? "es" : "en";
+    try {
+      window.localStorage.setItem(STORAGE_KEY, base);
+      window.localStorage.setItem(GLOBAL_STORAGE_KEY, code);
+    } catch {
+      // sin almacenamiento
+    }
+
+    if (typeof document !== "undefined") {
+      try {
+        if (code === "es") {
+          document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${window.location.hostname}; path=/;`;
+        } else {
+          const cookieVal = `/auto/${code}`;
+          document.cookie = `googtrans=${cookieVal}; path=/;`;
+          document.cookie = `googtrans=${cookieVal}; domain=${window.location.hostname}; path=/;`;
+        }
+        const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
+        if (select) {
+          select.value = code;
+          select.dispatchEvent(new Event("change"));
+        }
+      } catch {
+        // silenciar errores de cookies
+      }
+    }
+
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  }, []);
+
+  const value = useMemo(
+    () => ({ lang, globalLang, setLang, setGlobalLang, t: dictionary[lang] }),
+    [lang, globalLang, setLang, setGlobalLang]
+  );
+
+  return (
+    <I18nContext.Provider value={value}>
+      <div id="google_translate_element" style={{ display: "none" }} aria-hidden="true" />
+      {children}
+    </I18nContext.Provider>
+  );
 }
 
 export const useI18n = () => useContext(I18nContext);
 
-/** Botón ES | EN. */
+/** Botón ES | EN heredado para compatibilidad si fuera requerido. */
 export function LanguageToggle({ className }: { className?: string }) {
   const { lang, setLang, t } = useI18n();
   return (
