@@ -304,9 +304,62 @@ def ready():
 
 @app.get("/api/v1/headlines")
 def headlines():
-    # The frontend falls back to its sourced ASF and demo data until the
-    # publication pipeline begins writing reviewed headlines to the API.
-    return jsonify({"headlines": []})
+    """Publish recent database-backed NISAR observations and historical events."""
+    try:
+        with connect_db() as connection:
+            observations = connection.execute(
+                """
+                SELECT observation_id, aoi_id, observation_date, los_mm, source_collection
+                  FROM nisar.observations
+                 WHERE data_mode = 'real'
+                 ORDER BY observation_date DESC, observation_id DESC
+                 LIMIT 8
+                """
+            ).fetchall()
+            events = connection.execute(
+                """
+                SELECT source_id, source_record_id, event_date, department, municipality, event_type
+                  FROM hazards.records
+                 WHERE data_mode = 'real' AND record_type = 'event_impact' AND event_date IS NOT NULL
+                 ORDER BY event_date DESC, source_record_id
+                 LIMIT 8
+                """
+            ).fetchall()
+    except psycopg.Error:
+        return jsonify({"error": "headline_data_unavailable"}), 503
+
+    items: list[dict[str, object]] = []
+    for observation_id, aoi_id, day, los_mm, collection in observations:
+        items.append({
+            "id": f"nisar-{observation_id}",
+            "kind": "observation",
+            "severity": "info",
+            "title": {
+                "es": f"Observación NISAR en {aoi_id}: desplazamiento LOS {los_mm:.1f} mm",
+                "en": f"NISAR observation at {aoi_id}: LOS displacement {los_mm:.1f} mm",
+            },
+            "time": f"{day.isoformat()}T12:00:00Z",
+            "source": f"NASA-ISRO NISAR · {collection}",
+            "demo": False,
+        })
+    for source, record_id, day, department, municipality, event_type in events:
+        location = ", ".join(value for value in (municipality, department) if value) or "Colombia"
+        event_name = event_type or "amenaza"
+        items.append({
+            "id": f"event-{source}-{record_id}",
+            "kind": "historical_event",
+            "severity": "info",
+            "title": {
+                "es": f"Registro histórico de {event_name} en {location}",
+                "en": f"Historical {event_name} record in {location}",
+            },
+            "place": {"es": location, "en": location},
+            "time": f"{day.isoformat()}T12:00:00Z",
+            "source": source,
+            "demo": False,
+        })
+    items.sort(key=lambda item: str(item["time"]), reverse=True)
+    return jsonify({"headlines": items[:12]})
 
 
 @app.get("/api/v1/datasets")
@@ -348,7 +401,7 @@ def territorial_municipalities():
                        health_facility_count, school_site_count, geometry_geojson,
                        source_snapshot_ids, quality, data_mode, updated_at
                   FROM territorial.municipal_profiles
-                 WHERE (%s IS NULL OR department_code = %s)
+                 WHERE (%s::text IS NULL OR department_code = %s)
                  ORDER BY divipola
                 """,
                 (department, department),
@@ -423,7 +476,7 @@ def territorial_agriculture():
                        crop_cycle, area_sown_ha, area_harvested_ha, production_tonnes,
                        yield_tonnes_per_ha, snapshot_id
                   FROM territorial.agricultural_production
-                 WHERE divipola = %s AND (%s IS NULL OR year = %s)
+                 WHERE divipola = %s AND (%s::integer IS NULL OR year = %s)
                  ORDER BY year DESC, period, crop_name
                  LIMIT 5000
                 """, (divipola, year, year),

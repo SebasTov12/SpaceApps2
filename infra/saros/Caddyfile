@@ -3,7 +3,15 @@
 saros.tobaru.xyz {
 	encode zstd gzip
 
-	@api path /health /ready /api/*
-	reverse_proxy @api spaceapps2-api:8000
-	reverse_proxy spaceapps2-saros:3000
+	# The assistant route is a Next.js server endpoint. It adds the private
+	# bearer token before forwarding the request to Flask.
+	route {
+		@assistant path /api/assistant
+		reverse_proxy @assistant spaceapps2-saros:3000
+
+		@api path /health /ready /api/v1/*
+		reverse_proxy @api spaceapps2-api:8000
+
+		reverse_proxy spaceapps2-saros:3000
+	}
 }

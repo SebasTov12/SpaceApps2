@@ -7,8 +7,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import ZoneSimple from "./zone-simple";
-import LiveTimeline from "@/components/live/live-timeline";
-import { buildLive } from "@/components/live/live-data";
 import { POINT_EVENT } from "./saro-guide";
 import { TOUR_EVENT, type LegendKind, type SaroAction, type TourKey } from "@/lib/saro-brain";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
@@ -215,8 +213,6 @@ export default function ZoneView() {
   }, [siteId]);
 
   const active = manifest && manifest.id === siteId ? manifest : null;
-  // «Zona viva»: datos del relieve animado (los del backend para la zona; sin ellos, ilustración)
-  const live = useMemo(() => (zone ? buildLive(zone, active, active ? series : null) : null), [zone, active, series]);
   const pointSeries = useMemo(() => (series && pick && active ? seriesAt(series, pick.lon, pick.lat) : null), [series, pick, active]);
   const sd = (iso: string) => shortDate(iso, lang);
   const isDemo = active?.source.mode !== "real";
@@ -375,11 +371,7 @@ export default function ZoneView() {
               onZoomOut={closeZone}
               splitValue={split}
               padding={padding}
-              live={live}
             />
-            <AnimatePresence>
-              {terrain && live && <LiveTimeline key={`${zone.id}-${live.measured}`} input={live} lang={lang} />}
-            </AnimatePresence>
             <AnimatePresence>
               {explain && active && legend && (
                 <motion.div key={explain.nonce} className="sp-explain" initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
@@ -390,7 +382,7 @@ export default function ZoneView() {
                 </motion.div>
               )}
             </AnimatePresence>
-            {active && legend && !terrain && (
+            {active && legend && (
               <div className="zone-legend">
                 <strong>{mode === "change" ? `${t.changeFrom} ${sd(active.dates[0])} → ${sd(active.dates[lastIndex])}` : metric}</strong>
                 <span className="legend-bar" style={{ background: `linear-gradient(90deg, ${legend.colors.join(",")})` }} />
@@ -433,7 +425,7 @@ export default function ZoneView() {
             </header>
             <h2 className="zone-title">{zone.name[lang]}</h2>
             <p className="zone-place"><MapPin size={13} /> {zone.place[lang]} · {formatCoord(zone.lat, zone.lon)}</p>
-            <TerritorialImpact key={zone.id} zoneId={zone.id} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
+            <TerritorialImpact key={zone.id} zoneId={zone.id} lat={zone.lat} lon={zone.lon} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
             <div className="zone-level" data-tour="level" style={{ "--level": levelInfo[level].color } as React.CSSProperties}>
               <i />{levelInfo[level].label[lang]}
               {assessment?.accelerating && <b><AlertTriangle size={12} /> {c.accel}</b>}
