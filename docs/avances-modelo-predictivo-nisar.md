@@ -223,3 +223,11 @@ livianos y documentación de procedencia.
   par más reciente de ese stack sigue siendo 5–17 de octubre de 2026; no hay
   adquisición posterior utilizable de esas colecciones para Neiva en esta
   consulta. No se descargaron archivos.
+- En la caja ampliada de Huila, la misma consulta devolvió 34 GUNW PROVISIONAL
+  y cero VALIDATED. Se agrupan en cuatro stacks separados: A-047-003-2000-SH
+  (9 pares, 17-jun a 15-oct), D-083-087-2000-SH (9, 19-jun a 17-oct),
+  A-148-003-4000-SH (8, 24-jun a 10-oct) y D-011-087-4000-SH (8, 26-jun a
+  12-oct), todos CRID P05023. Los dos stacks 4000 amplían la cobertura
+  espacial del AOI amplio, pero son órbitas/modos diferentes y no se mezclan
+  con los stacks del núcleo ni entre sí para aumentar artificialmente el
+  tamaño de la serie. Consulta metadata-only, sin descarga.
