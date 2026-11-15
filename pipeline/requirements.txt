@@ -1,6 +1,7 @@
 asf_search>=10,<11
 earthaccess>=0.14,<1
 h5py>=3.10,<4
+harmony-py==1.8.0
 numpy>=2,<3
 Pillow>=10,<13
 pyproj>=3.6,<4

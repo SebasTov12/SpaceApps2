@@ -248,3 +248,29 @@ livianos y documentación de procedencia.
   quedó limpio en el mismo commit. No se recreó la base de datos; el conteo de
   `nisar.observations` sigue en cero y no hay HDF5 real en el servidor. Por eso
   aún no es posible calcular ni calibrar errores del pronóstico.
+
+## Ruta de datos con Harmony para el AOI pequeño
+
+- Repetí en Orivia la consulta del AOI núcleo con `asf_search 10.3.0`. ASF
+  devuelve los mismos 18 GUNW PROVISIONAL (9 ascendentes y 9 descendentes),
+  cero VALIDATED y cero BETA; el par más reciente conserva fecha secundaria
+  2026-10-17. El catálogo no ha añadido pares nuevos para Neiva.
+- El primer GUNW inspeccionado en metadatos tiene tamaño catalogado de
+  2,281,701,376 bytes. Una solicitud HTTP HEAD anónima al HDF5 devolvió 403;
+  `EARTHDATA_USERNAME` y `EARTHDATA_PASSWORD` están vacíos en los dos `.env`
+  privados revisados del servidor. No descargué el HDF5.
+- La API pública de capacidades Harmony confirmó para la colección GUNW
+  PROVISIONAL compatibilidad con variable y bbox subsetting y enumeró las
+  variables disponibles. El servicio ASF documenta salida COG GeoTIFF; esto
+  permite solicitar capas del AOI pequeño en vez del HDF5 completo. La
+  autenticación Earthdata sigue siendo requerida para extraerlas.
+- Se añadió `scripts/export_nisar_harmony.py`: puede listar variables actuales
+  sin credenciales; al exportar valida cada ruta contra las capacidades vivas,
+  limita la petición a un granule y registra job, rutas, bytes y SHA-256 de los
+  COG. Se fijó `harmony-py==1.8.0`, la versión publicada más reciente
+  consultada. La exportación COG evita fijar nombres internos supuestos.
+- Se adaptó el contrato de ingesta para guardar SHA-256 por capa de entrada
+  (fase, coherencia, máscara y componentes conectados), compatible con capas
+  Harmony y con capas descubiertas dentro de HDF5. El cambio local aún requiere
+  despliegue. El conteo de observaciones real sigue en cero; sin los archivos no
+  hay validación de unidades, referencia LOS, apilado ni métricas predictivas.

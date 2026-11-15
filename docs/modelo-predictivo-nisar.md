@@ -122,10 +122,11 @@ algoritmos diferentes. La migración ya se aplicó en el servidor. Para repetir
 su creación idempotente en otro entorno:
 
 La API rechaza procedencia que no corresponda a una colección GUNW y madurez
-conocida, así como observaciones sin evidencia de inspección del HDF5,
-coherencia, máscaras, componentes conectados y referencia estable. Los nombres
-de datasets se guardan como rutas descubiertas en cada archivo, sin asumir
-rutas internas fijas. `quality` exige SHA-256 del archivo, rutas de fase,
+conocida, así como observaciones sin evidencia de fase, coherencia, máscaras,
+componentes conectados y referencia estable. Los nombres de datasets se guardan
+como rutas descubiertas en el árbol HDF5 o en las capacidades actuales de
+Harmony, sin asumir rutas internas fijas. `quality` exige SHA-256 por capa de
+entrada, rutas de fase,
 coherencia, máscara y connected components, ID de la geometría de referencia,
 umbral de coherencia, conteos de píxeles válidos y de referencia y confirmación
 de que se aplicó una referencia estable. Así `data_mode: real` por sí solo no
@@ -177,12 +178,18 @@ Las semillas sintéticas de `pipeline/sql/002` y `pipeline/sql/003` no son entra
 - Inspeccionar HDF5 real y descubrir rutas internas con `h5py`.
 - Ejecutar `scripts/inspect_nisar_hdf5.py` sobre los archivos del servidor y
   confirmar cada variable contra sus atributos y la guía oficial GUNW.
+- Para la alternativa Harmony, autenticar Earthdata, solicitar capas de un
+  granule a la vez y verificar rejilla, unidades, máscaras y hashes de cada COG.
 - Confirmar referencia estable con GNSS, nivelación u otra evidencia local.
-- Construir el procesador de pares GUNW reales que produzca el CSV descrito. El pronosticador está implementado, pero no puede evaluarse hasta generar esa serie validada.
+- Construir el procesador de pares GUNW reales (HDF5 o COGs Harmony) que
+  produzca el CSV descrito. El pronosticador está implementado, pero no puede
+  evaluarse hasta generar esa serie validada.
 
 ## Fuentes
 
 - [Guía ASF de GUNW](https://nisar-docs.asf.alaska.edu/gunw/)
+- [Extracción y recorte de variables GUNW con Harmony](https://nisar-docs.asf.alaska.edu/harmony/)
+- [API Harmony y parámetros de subconjunto](https://harmony.earthdata.nasa.gov/docs)
 - [Madurez y productos NISAR](https://nisar-docs.asf.alaska.edu/products-overview/)
 - [Alertas de deslizamientos IDEAM](https://www.datos.gov.co/Ambiente-y-Desarrollo-Sostenible/Alertas-de-Deslizamientos/m3en-ptx7)
 - [Catálogo Nacional de Estaciones IDEAM](https://www.datos.gov.co/Ambiente-y-Desarrollo-Sostenible/Cat-logo-Nacional-de-Estaciones-del-IDEAM/hp9r-jxuu)

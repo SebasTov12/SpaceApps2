@@ -126,6 +126,43 @@ El inventario reporta rutas, dimensiones, tipos y atributos. Los candidatos
 por nombre son solo pistas; confirma semántica, unidades, georreferenciación y
 calidad con la documentación oficial antes de procesar las matrices.
 
+### Extracción recortada con Harmony
+
+Un HDF5 GUNW reciente del AOI de Neiva tiene aproximadamente 2.28 GB. Como
+alternativa para el servidor, Harmony puede extraer variables seleccionadas de
+GUNW como COG GeoTIFF y recortarlas al bbox. El script consulta primero las
+capacidades públicas de la colección; `--list-variables` imprime los nombres
+disponibles en ese momento. No hay rutas de datasets codificadas en el script.
+La descarga requiere Earthdata Login configurado en el `.env` privado.
+
+```sh
+docker compose --env-file .env -f infra/saros/docker-compose.yml --profile processing run --rm processor \
+  scripts/export_nisar_harmony.py \
+  --collection NISAR_L2_GUNW_PROVISIONAL_V1 --list-variables
+```
+
+Selecciona los nombres exactos que reporte Harmony y solicita un granule por
+ejecución. El siguiente ejemplo muestra la forma del comando; sustituye cada
+`--variable` por un nombre copiado de la salida anterior:
+
+```sh
+docker compose --env-file .env -f infra/saros/docker-compose.yml --profile processing run --rm processor \
+  scripts/export_nisar_harmony.py \
+  --collection NISAR_L2_GUNW_PROVISIONAL_V1 \
+  --granule-name NISAR_L2_PR_GUNW_... \
+  --bbox=-75.34,2.88,-75.24,2.98 \
+  --variable '<ruta de fase>' --variable '<ruta de coherencia>' \
+  --variable '<ruta de máscara>' --variable '<ruta de componentes>' \
+  --output pipeline/data/neiva-core/harmony/<granule-id>
+```
+
+La salida conserva un manifiesto con las rutas exactas entregadas por Harmony,
+ID del job, tamaño y SHA-256 de cada COG. El proceso limita la consulta a un
+granule y rechaza una carpeta de salida no vacía. Los COG todavía requieren
+inspección de rejilla, máscara, unidades y metadatos antes de construir una
+observación LOS. Harmony no elimina la necesidad de usar una referencia estable
+ni de validar la conectividad temporal de pares.
+
 ### Actualización incremental desde el checkpoint SAROS
 
 `update_nisar_catalog.py` consulta el último día de observación LOS real

@@ -96,7 +96,7 @@ def validate_nisar_observation(row: object) -> dict[str, object]:
     if not isinstance(quality, dict):
         raise ValueError("quality must be an object with inspected source and quality evidence")
     evidence_fields = {
-        "hdf5_sha256", "phase_dataset_path", "coherence_dataset_path",
+        "source_asset_sha256", "phase_dataset_path", "coherence_dataset_path",
         "mask_dataset_path", "connected_components_dataset_path",
         "reference_geometry_id", "stable_reference_applied",
         "coherence_threshold", "valid_pixel_count", "reference_pixel_count",
@@ -104,10 +104,15 @@ def validate_nisar_observation(row: object) -> dict[str, object]:
     missing_evidence = evidence_fields - quality.keys()
     if missing_evidence:
         raise ValueError(f"Missing quality evidence fields: {sorted(missing_evidence)}")
-    if (not isinstance(quality["hdf5_sha256"], str)
-            or len(quality["hdf5_sha256"]) != 64
-            or any(char not in "0123456789abcdefABCDEF" for char in quality["hdf5_sha256"])):
-        raise ValueError("quality.hdf5_sha256 must be a 64-character SHA-256 hex digest")
+    asset_hashes = quality["source_asset_sha256"]
+    asset_roles = {"phase", "coherence", "mask", "connected_components"}
+    if not isinstance(asset_hashes, dict) or asset_roles - asset_hashes.keys():
+        raise ValueError("quality.source_asset_sha256 must map every required layer role to its SHA-256 digest")
+    for role in asset_roles:
+        digest = asset_hashes[role]
+        if (not isinstance(digest, str) or len(digest) != 64
+                or any(char not in "0123456789abcdefABCDEF" for char in digest)):
+            raise ValueError(f"quality.source_asset_sha256.{role} must be a SHA-256 hex digest")
     for field in ("phase_dataset_path", "coherence_dataset_path", "mask_dataset_path",
                   "connected_components_dataset_path", "reference_geometry_id"):
         if not isinstance(quality[field], str) or not quality[field].strip():
