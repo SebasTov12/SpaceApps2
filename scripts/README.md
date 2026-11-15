@@ -142,7 +142,9 @@ docker compose --env-file .env -f infra/saros/docker-compose.yml --profile proce
 ```
 
 Selecciona los nombres exactos que reporte Harmony y solicita un granule por
-ejecución. El siguiente ejemplo muestra la forma del comando; sustituye cada
+ejecución. Para fase, coherencia y componentes, usa la polarización que ASF
+reporta en `mainBandPolarization` para ese granule; no combines `HH` y `VV`.
+La máscara puede ser común a la interferometría. El siguiente ejemplo muestra la forma del comando; sustituye cada
 `--variable` por un nombre copiado de la salida anterior:
 
 ```sh
@@ -162,6 +164,9 @@ granule y rechaza una carpeta de salida no vacía. Los COG todavía requieren
 inspección de rejilla, máscara, unidades y metadatos antes de construir una
 observación LOS. Harmony no elimina la necesidad de usar una referencia estable
 ni de validar la conectividad temporal de pares.
+La descripción de extracción y recorte está en la [guía ASF de Harmony](https://nisar-docs.asf.alaska.edu/harmony/)
+y los parámetros de colección, variable y `granuleName` en la
+[API oficial de Harmony](https://harmony.earthdata.nasa.gov/docs).
 
 ### Actualización incremental desde el checkpoint SAROS
 

@@ -79,10 +79,14 @@ def main() -> int:
     except Exception as exc:
         parser.error(f"Cannot inspect Harmony collection capabilities: {exc}")
     if args.list_variables:
+        unwrapped_variables = [
+            variable for variable in variable_map.values()
+            if "/unwrappedInterferogram/" in str(variable.get("name", ""))
+        ]
         print(json.dumps({
             "collection": args.collection,
             "summary": caps.get("summary"),
-            "variables": list(variable_map.values()),
+            "variables": unwrapped_variables,
         }, indent=2, ensure_ascii=False))
         return 0
 
