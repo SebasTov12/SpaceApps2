@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cinzel, Inter, Orbitron } from "next/font/google";
+import AssistantWidget from "@/components/assistant-widget";
 import "./globals.css";
 
 // Identidad SAROS: Orbitron para títulos, display y logo; Inter para texto e interfaz
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <a className="skip-link" href="#zonas">Ir a las zonas de riesgo</a>
         {children}
+        <AssistantWidget />
       </body>
     </html>
   );

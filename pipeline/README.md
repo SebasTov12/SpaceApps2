@@ -1,5 +1,7 @@
 # Pipeline de datos NISAR
 
+La ingesta real de las fuentes públicas, el catálogo ASF, los recortes NASA Harmony y el estado de entrenamiento están documentados en [docs/ingesta-datos-reales.md](../docs/ingesta-datos-reales.md).
+
 Convierte productos NISAR en las capas que muestra el explorador (`frontend/public/data`).
 El frontend no habla con ASF: solo lee los archivos estáticos que genera este pipeline.
 

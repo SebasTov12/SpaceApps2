@@ -64,9 +64,6 @@ def summarize_layer(item: dict[str, Any]) -> dict[str, Any]:
             minimum = min(minimum, float(finite.min()))
             maximum = max(maximum, float(finite.max()))
 
-        if count == 0:
-            raise ValueError(f"No finite, unmasked pixels found in {path}")
-
         return {
             "variable": item.get("variable"),
             "path": str(path),
@@ -89,10 +86,11 @@ def summarize_layer(item: dict[str, Any]) -> dict[str, Any]:
             "band_tags": dataset.tags(1),
             "valid_pixel_count": count,
             "valid_fraction": count / (dataset.width * dataset.height),
-            "minimum": minimum,
-            "maximum": maximum,
-            "mean": mean,
-            "standard_deviation": math.sqrt(m2 / count),
+            "minimum": minimum if count else None,
+            "maximum": maximum if count else None,
+            "mean": mean if count else None,
+            "standard_deviation": math.sqrt(m2 / count) if count else None,
+            "quality_status": "valid_pixels_present" if count else "all_pixels_masked_or_nodata",
         }
 
 
@@ -111,32 +109,36 @@ def main() -> int:
         parser.error("Manifest contains no Harmony outputs")
     if any(not isinstance(item, dict) or not item.get("variable") for item in outputs):
         parser.error("Every output must map to a variable from Harmony capabilities")
-    variable_names = [item["variable"] for item in outputs]
-    if len(set(variable_names)) != len(variable_names):
-        parser.error("Manifest contains duplicate variable outputs")
+    identities = [(item.get("granule_name", manifest.get("granule_name")), item["variable"]) for item in outputs]
+    if len(set(identities)) != len(identities):
+        parser.error("Manifest contains duplicate granule-variable outputs")
 
     layers = [summarize_layer(item) for item in outputs]
-    reference = layers[0]
-    reference_transform = np.asarray(reference["transform"], dtype=np.float64)
-    for layer in layers[1:]:
-        same_grid = (
-            layer["width"] == reference["width"]
-            and layer["height"] == reference["height"]
-            and layer["crs"] == reference["crs"]
-            and np.allclose(layer["transform"], reference_transform, rtol=0, atol=1e-9)
-        )
-        if not same_grid:
-            raise ValueError(
-                "Harmony layer grids differ; do not combine or resample implicitly: "
-                f"{reference['variable']} vs {layer['variable']}"
+    by_granule: dict[str, list[dict[str, Any]]] = {}
+    for item, layer in zip(outputs, layers):
+        by_granule.setdefault(item.get("granule_name", manifest.get("granule_name", "unknown")), []).append(layer)
+    for granule, granule_layers in by_granule.items():
+        reference = granule_layers[0]
+        reference_transform = np.asarray(reference["transform"], dtype=np.float64)
+        for layer in granule_layers[1:]:
+            same_grid = (
+                layer["width"] == reference["width"]
+                and layer["height"] == reference["height"]
+                and layer["crs"] == reference["crs"]
+                and np.allclose(layer["transform"], reference_transform, rtol=0, atol=1e-9)
             )
+            if not same_grid:
+                raise ValueError(
+                    "Harmony layers for one granule do not share a grid; do not resample implicitly: "
+                    f"{granule}: {reference['variable']} vs {layer['variable']}"
+                )
 
     inventory = {
         "data_mode": "real",
         "source_manifest": str(manifest_path),
         "source_manifest_sha256": sha256_file(manifest_path),
         "collection": manifest.get("collection"),
-        "granule_name": manifest.get("granule_name"),
+        "granule_names": manifest.get("granule_names", [manifest.get("granule_name")]),
         "requested_bbox_wgs84": manifest.get("requested_bbox_wgs84"),
         "layers": layers,
         "grid_match": True,

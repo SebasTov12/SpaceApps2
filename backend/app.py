@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from datetime import date, datetime, timezone
@@ -28,6 +29,10 @@ DB_CONFIG = {
 }
 MODEL_URL = os.getenv("SAROS_MODEL_URL", "http://predictor:8001").rstrip("/")
 PREDICTION_TOKEN = os.getenv("SAROS_PREDICTION_TOKEN", "")
+ASSISTANT_TOKEN = os.getenv("SAROS_ASSISTANT_TOKEN", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b").strip()
+GROQ_API_URL = os.getenv("GROQ_API_URL", "https://api.groq.com/openai/v1/chat/completions").strip()
 
 
 def connect_db() -> psycopg.Connection:
@@ -60,6 +65,79 @@ def model_ready() -> bool:
 
 def has_prediction_auth() -> bool:
     return bool(PREDICTION_TOKEN) and request.headers.get("Authorization") == f"Bearer {PREDICTION_TOKEN}"
+
+
+def has_assistant_auth() -> bool:
+    return bool(ASSISTANT_TOKEN) and request.headers.get("Authorization") == f"Bearer {ASSISTANT_TOKEN}"
+
+
+def assistant_data_context() -> dict[str, object]:
+    """Build a compact, database-backed context; keep forecasts and observations distinct."""
+    context: dict[str, object] = {
+        "nisar_real_observations": {"count": 0, "latest_date": None},
+        "nisar_forecasts": [],
+        "historical_hazard_records": {"count": 0, "latest_event_date": None},
+        "latest_composite_assessment": None,
+        "limitations": [
+            "NISAR observations and model screening do not predict earthquakes.",
+            "No future movement forecast exists unless it is listed in nisar_forecasts.",
+            "Historical reported impacts are not causal sector-loss estimates.",
+            "DIAN national tax revenue is economic context, not a local disaster-loss label.",
+        ],
+    }
+    with connect_db() as connection:
+        row = connection.execute(
+            "SELECT count(*), max(observation_date) FROM nisar.observations WHERE data_mode = 'real'"
+        ).fetchone()
+        context["nisar_real_observations"] = {
+            "count": row[0], "latest_date": row[1].isoformat() if row[1] else None,
+        }
+        forecasts = connection.execute(
+            """
+            SELECT r.aoi_id, r.stack_id, r.model_name, r.model_version, r.origin_date,
+                   r.horizon_days, f.target_date, f.predicted_los_mm,
+                   f.lower_los_mm, f.upper_los_mm, f.interval_status, f.quality_status,
+                   r.metrics
+              FROM nisar.forecasts f
+              JOIN nisar.forecast_runs r USING (run_id)
+             ORDER BY f.created_at DESC LIMIT 5
+            """
+        ).fetchall()
+        context["nisar_forecasts"] = [
+            {
+                "aoi_id": item[0], "stack_id": item[1], "model": item[2], "model_version": item[3],
+                "origin_date": item[4].isoformat(), "horizon_days": item[5],
+                "target_date": item[6].isoformat(), "predicted_los_mm": item[7],
+                "lower_los_mm": item[8], "upper_los_mm": item[9],
+                "interval_status": item[10], "quality_status": item[11], "backtest": item[12],
+            }
+            for item in forecasts
+        ]
+        row = connection.execute(
+            "SELECT count(*), max(event_date) FROM hazards.records WHERE record_type = 'event_impact'"
+        ).fetchone()
+        context["historical_hazard_records"] = {
+            "count": row[0], "latest_event_date": row[1].isoformat() if row[1] else None,
+            "warning": "Record count can include overlapping source snapshots; it is not a unique event count.",
+        }
+        row = connection.execute(
+            """
+            SELECT model_version, track_id, municipality, department, anomaly_index,
+                   changed_fraction, impact_percentile, priority_score, priority,
+                   estimated_historical_impacts, recommendation, data_mode, created_at
+              FROM analysis.composite_assessments
+             ORDER BY created_at DESC LIMIT 1
+            """
+        ).fetchone()
+        if row:
+            context["latest_composite_assessment"] = {
+                "model_version": row[0], "track_id": row[1], "municipality": row[2],
+                "department": row[3], "anomaly_index": row[4], "changed_fraction": row[5],
+                "historical_impact_percentile": row[6], "relative_priority_score": row[7],
+                "priority": row[8], "historical_impact_estimates": row[9],
+                "recommendation": row[10], "data_mode": row[11], "created_at": row[12].isoformat(),
+            }
+    return context
 
 
 def validate_nisar_observation(row: object) -> dict[str, object]:
@@ -302,6 +380,163 @@ def create_prediction():
     prediction["id"] = prediction_id
     prediction["created_at"] = created_at.isoformat()
     return jsonify(prediction)
+
+
+@app.post("/api/v1/analysis")
+def create_composite_analysis():
+    """Run the bundled NISAR anomaly + historical social-impact estimator."""
+    if not PREDICTION_TOKEN:
+        return jsonify({"error": "analysis_endpoint_not_configured"}), 503
+    if not has_prediction_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    if request.mimetype != "application/octet-stream":
+        return jsonify({"error": "expected_application_octet_stream_npz"}), 415
+    context = {key: request.args.get(key, "").strip() for key in ("track_id", "municipality", "department")}
+    if any(not value for value in context.values()):
+        return jsonify({"error": "missing_analysis_context", "required": list(context)}), 400
+    if any(len(value) > 100 for value in context.values()):
+        return jsonify({"error": "analysis_context_too_long"}), 400
+    patch = request.get_data(cache=False)
+    if not patch:
+        return jsonify({"error": "empty_npz_body"}), 400
+    query = urllib.parse.urlencode(context)
+    upstream = urllib.request.Request(
+        f"{MODEL_URL}/analyze?{query}",
+        data=patch,
+        headers={"Content-Type": "application/octet-stream"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(upstream, timeout=120) as response:
+            analysis = json.loads(response.read())
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read())
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            detail = {"error": "model_service_error"}
+        return jsonify(detail), exc.code
+    except (urllib.error.URLError, TimeoutError):
+        return jsonify({"error": "model_service_unavailable"}), 503
+
+    assessment_id = str(uuid.uuid4())
+    created_at = datetime.now(timezone.utc)
+    try:
+        with connect_db() as connection:
+            connection.execute(
+                """
+                INSERT INTO analysis.composite_assessments
+                    (id, created_at, model_version, track_id, municipality, department,
+                     anomaly_index, changed_fraction, impact_percentile, priority_score,
+                     priority, estimated_historical_impacts, recommendation, data_mode)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    assessment_id,
+                    created_at,
+                    analysis["model_version"],
+                    analysis["track_id"],
+                    analysis["municipality"],
+                    analysis["department"],
+                    analysis["anomaly_index"],
+                    analysis["changed_fraction"],
+                    analysis["impact_percentile"],
+                    analysis["priority_score"],
+                    analysis["priority"],
+                    Jsonb(analysis["estimated_historical_impacts"]),
+                    analysis["recommendation"],
+                    analysis["data_mode"],
+                ),
+            )
+    except (psycopg.Error, KeyError, TypeError, ValueError):
+        return jsonify({"error": "analysis_persistence_failed", "hint": "Apply pipeline/sql/007_composite_model.sql first."}), 503
+
+    analysis["id"] = assessment_id
+    analysis["created_at"] = created_at.isoformat()
+    return jsonify(analysis)
+
+
+@app.post("/api/v1/assistant/chat")
+def assistant_chat():
+    """Answer from stored SAROS evidence; Groq explains results but never creates them."""
+    if not ASSISTANT_TOKEN or not GROQ_API_KEY:
+        return jsonify({"error": "assistant_not_configured"}), 503
+    if not has_assistant_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    body = request.get_json(silent=True)
+    messages = body.get("messages") if isinstance(body, dict) else None
+    if not isinstance(messages, list) or not messages or len(messages) > 8:
+        return jsonify({"error": "expected_1_to_8_messages"}), 400
+    clean_messages: list[dict[str, str]] = []
+    for item in messages:
+        if (not isinstance(item, dict) or item.get("role") not in {"user", "assistant"}
+                or not isinstance(item.get("content"), str) or not item["content"].strip()
+                or len(item["content"]) > 1500):
+            return jsonify({"error": "invalid_message", "limit_chars": 1500}), 400
+        clean_messages.append({"role": item["role"], "content": item["content"].strip()})
+    if clean_messages[-1]["role"] != "user":
+        return jsonify({"error": "last_message_must_be_user"}), 400
+
+    try:
+        context = assistant_data_context()
+    except psycopg.Error:
+        return jsonify({"error": "assistant_database_context_unavailable"}), 503
+    system_message = {
+        "role": "system",
+        "content": (
+            "Eres el asistente territorial SAROS. Responde en español claro y distingue observaciones, "
+            "anomalías, pronósticos y escenarios históricos. Basa cualquier afirmación sobre el estado "
+            "del proyecto únicamente en el contexto JSON adjunto. Si el contexto no contiene un pronóstico, "
+            "di que no hay uno disponible. No inventes fechas, probabilidades, daños, sectores afectados, "
+            "rutas seguras ni recomendaciones oficiales. El modelo compuesto actual da priorización relativa "
+            "exploratoria; sus impactos son estimaciones históricas municipales, no causalidad ni pérdidas "
+            "futuras. NISAR no predice terremotos. Para acciones urgentes remite a autoridades locales y "
+            "organismos oficiales. El usuario puede pedir acciones; presenta límites y fuente de cada dato.\n\n"
+            "Contexto actual de la base SAROS (JSON):\n" + json.dumps(context, ensure_ascii=False, default=str)
+        ),
+    }
+    payload = json.dumps({
+        "model": GROQ_MODEL,
+        "messages": [system_message, *clean_messages],
+        "temperature": 0.2,
+        "max_completion_tokens": 650,
+    }).encode("utf-8")
+    upstream = urllib.request.Request(
+        GROQ_API_URL,
+        data=payload,
+        headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(upstream, timeout=35) as response:
+            completion = json.loads(response.read())
+        answer = completion["choices"][0]["message"]["content"].strip()
+        if not answer:
+            raise ValueError("Groq returned an empty response")
+    except urllib.error.HTTPError as exc:
+        return jsonify({"error": "groq_upstream_error", "status": exc.code}), 502
+    except (urllib.error.URLError, TimeoutError):
+        return jsonify({"error": "groq_unavailable"}), 503
+    except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError):
+        return jsonify({"error": "invalid_groq_response"}), 502
+
+    interaction_id = str(uuid.uuid4())
+    try:
+        with connect_db() as connection:
+            connection.execute(
+                """
+                INSERT INTO analysis.assistant_interactions
+                    (id, created_at, model, user_message, answer, context_snapshot)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (interaction_id, datetime.now(timezone.utc), GROQ_MODEL,
+                 clean_messages[-1]["content"], answer, Jsonb(context)),
+            )
+    except psycopg.Error:
+        return jsonify({"error": "assistant_response_persistence_failed",
+                        "hint": "Apply pipeline/sql/008_assistant_interactions.sql first."}), 503
+    return jsonify({"answer": answer, "model": GROQ_MODEL, "interaction_id": interaction_id,
+                    "context_sources": ["nisar.observations", "nisar.forecasts", "hazards.records",
+                                        "analysis.composite_assessments"]})
 
 
 @app.post("/api/v1/nisar/observations")

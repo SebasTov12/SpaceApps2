@@ -10,6 +10,9 @@ services:
         NEXT_PUBLIC_SAROS_API: ${SAROS_API_PUBLIC_URL:-https://saros.tobaru.xyz}
     image: spaceapps2-saros:latest
     restart: unless-stopped
+    environment:
+      SAROS_INTERNAL_API_URL: http://spaceapps2-api:8000
+      SAROS_ASSISTANT_TOKEN: ${SAROS_ASSISTANT_TOKEN:-}
     expose:
       - "3000"
     healthcheck:
@@ -51,6 +54,10 @@ services:
       SAROS_DB_PASSWORD: ${SAROS_POSTGRES_PASSWORD:?Set SAROS_POSTGRES_PASSWORD in the server .env}
       SAROS_MODEL_URL: http://predictor:8001
       SAROS_PREDICTION_TOKEN: ${SAROS_PREDICTION_TOKEN:?Set SAROS_PREDICTION_TOKEN in the server .env}
+      SAROS_ASSISTANT_TOKEN: ${SAROS_ASSISTANT_TOKEN:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-20b}
+      GROQ_API_URL: https://api.groq.com/openai/v1/chat/completions
       SAROS_MAX_REQUEST_BYTES: ${ML_MAX_REQUEST_BYTES:-33554432}
     expose:
       - "8000"
@@ -108,7 +115,7 @@ services:
       PGPASSWORD: ${SAROS_POSTGRES_PASSWORD:?Set SAROS_POSTGRES_PASSWORD in the server .env}
     volumes:
       - ../../pipeline/sql:/migrations:ro
-    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/004_nisar_forecast.sql"]
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/004_nisar_forecast.sql", "-f", "/migrations/008_assistant_interactions.sql"]
     depends_on:
       postgres:
         condition: service_healthy
