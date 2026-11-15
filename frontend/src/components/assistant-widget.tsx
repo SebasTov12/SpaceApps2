@@ -29,7 +29,7 @@ export default function AssistantWidget() {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "No fue posible consultar el asistente.");
-      setMessages([...next, { role: "assistant", content: payload.answer }].slice(-8));
+      setMessages([...next, { role: "assistant" as const, content: payload.answer }].slice(-8));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No fue posible consultar el asistente.");
     } finally {
