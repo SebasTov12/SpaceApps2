@@ -38,8 +38,6 @@ export const globeState = {
   uiRevealed: false,
   /** Qué se ve en el planeta: todo, solo amenazas o solo vigilancia ambiental (tala y minería). */
   mode: "all" as "all" | "risk" | "watch",
-  /** Zona destacada al terminar el reconocimiento (último evento). */
-  featured: null as string | null,
   /** Zona a la que el usuario pidió llevar el planeta. */
   focus: null as string | null,
   /** Acercamiento de la cámara a una zona: 0 = vista general, 1 = zona abierta. */

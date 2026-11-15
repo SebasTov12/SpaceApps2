@@ -3,6 +3,25 @@
 import "./translate-guard";
 import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
+type GoogleTranslateOptions = { pageLanguage: string; includedLanguages: string; autoDisplay: boolean };
+type GoogleTranslateWindow = Window & {
+  googleTranslateElementInit?: () => void;
+  google?: { translate?: { TranslateElement?: new (options: GoogleTranslateOptions, elementId: string) => unknown } };
+};
+
+function applyGoogleLanguage(langCode: string, retries = 8) {
+  if (typeof document === "undefined") return;
+  const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+  if (!select) {
+    if (retries > 0) window.setTimeout(() => applyGoogleLanguage(langCode, retries - 1), 250);
+    return;
+  }
+  const googleCode = langCode === "he" ? "iw" : langCode;
+  const hasCode = Array.from(select.options).some((option) => option.value.toLowerCase() === googleCode.toLowerCase());
+  select.value = langCode === "es" && !hasCode ? "" : googleCode;
+  select.dispatchEvent(new Event("change"));
+}
+
 export type Lang = "es" | "en";
 
 const es = {
@@ -272,37 +291,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, []);
 
-  // Función auxiliar para aplicar el idioma al selector interno de Google Translate con reintentos
-  const applyToCombo = useCallback((langCode: string, retries = 8) => {
-    if (typeof document === "undefined") return;
-    const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
-    if (select) {
-      const gtCode = langCode === "he" ? "iw" : langCode;
-      const options = Array.from(select.options);
-      const hasGtCode = options.some((opt) => opt.value.toLowerCase() === gtCode.toLowerCase());
-
-      if (langCode === "es") {
-        if (hasGtCode) {
-          select.value = gtCode;
-        } else {
-          select.value = "";
-        }
-      } else {
-        select.value = gtCode;
-      }
-      select.dispatchEvent(new Event("change"));
-    } else if (retries > 0) {
-      setTimeout(() => applyToCombo(langCode, retries - 1), 250);
-    }
-  }, []);
+  const applyToCombo = useCallback((langCode: string, retries = 8) => applyGoogleLanguage(langCode, retries), []);
 
   // Inicializar script de Google Translate para traducción global
   useEffect(() => {
     if (typeof window === "undefined") return;
-    (window as any).googleTranslateElementInit = () => {
+    const translateWindow = window as GoogleTranslateWindow;
+    translateWindow.googleTranslateElementInit = () => {
       try {
-        if ((window as any).google?.translate?.TranslateElement) {
-          new (window as any).google.translate.TranslateElement(
+        const TranslateElement = translateWindow.google?.translate?.TranslateElement;
+        if (TranslateElement) {
+          new TranslateElement(
             {
               pageLanguage: "es",
               includedLanguages: AVAILABLE_LANGUAGES.map((l) => (l.code === "he" ? "iw" : l.code)).join(","),

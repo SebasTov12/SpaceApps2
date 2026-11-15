@@ -2,7 +2,7 @@
 
 import { Line } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, type RefObject } from "react";
+import { useCallback, useMemo, useRef, type RefObject } from "react";
 import { useReducedMotion } from "framer-motion";
 import { AdditiveBlending, DoubleSide, Vector3, type Group, type MeshBasicMaterial } from "three";
 import { globeState, SCAN_INTERVAL, SCAN_DURATION, SCAN_FADE } from "./globe-state";
@@ -58,7 +58,9 @@ function SmallSat({ color }: { color: string }) {
   );
 }
 
-function Companion({ orbit, playing, index, schedule }: { orbit: Orbit; playing: boolean; index: number; schedule: RefObject<DetectionSchedule> }) {
+function Companion({ orbit, playing, index, schedule, onVisibilityChange }: {
+  orbit: Orbit; playing: boolean; index: number; schedule: RefObject<DetectionSchedule>; onVisibilityChange: (index: number, visible: boolean) => void;
+}) {
   const moving = useRef<Group>(null);
   const detector = useRef<Group>(null);
   const beam = useRef<MeshBasicMaterial>(null);
@@ -78,7 +80,7 @@ function Companion({ orbit, playing, index, schedule }: { orbit: Orbit; playing:
       moving.current.getWorldPosition(centerPosition);
       moving.current.localToWorld(satellitePosition.set(orbit.radius, 0, 0));
       camera.getWorldPosition(viewDirection).sub(centerPosition);
-      schedule.current.inView[index] = satellitePosition.sub(centerPosition).dot(viewDirection) > 0.25;
+      onVisibilityChange(index, satellitePosition.sub(centerPosition).dot(viewDirection) > 0.25);
     }
     const active = playing && schedule.current.active === index;
     if (detector.current) detector.current.visible = active;
@@ -116,6 +118,7 @@ function Companion({ orbit, playing, index, schedule }: { orbit: Orbit; playing:
 export default function CompanionSats({ playing }: { playing: boolean }) {
   const reducedMotion = useReducedMotion();
   const schedule = useRef<DetectionSchedule>({ active: -1, startedAt: 0, nextAt: [], inView: [false, false] });
+  const onVisibilityChange = useCallback((index: number, visible: boolean) => { schedule.current.inView[index] = visible; }, []);
   // Se evalúa antes de dibujar los dos satélites: un único turno evita solapamientos.
   useFrame(() => {
     const state = schedule.current;
@@ -141,7 +144,7 @@ export default function CompanionSats({ playing }: { playing: boolean }) {
   }, -1);
   return (
     <group>
-      {ORBITS.map((orbit, i) => <Companion key={i} orbit={orbit} index={i} schedule={schedule} playing={playing} />)}
+      {ORBITS.map((orbit, i) => <Companion key={i} orbit={orbit} index={i} schedule={schedule} onVisibilityChange={onVisibilityChange} playing={playing} />)}
     </group>
   );
 }

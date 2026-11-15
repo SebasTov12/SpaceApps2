@@ -16,16 +16,12 @@
   "dependencies": {
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",
-    "clsx": "2.1.1",
     "framer-motion": "^14.12.0",
     "lucide-react": "1.72.0",
     "maplibre-gl": "6.16.0",
-    "motion-dom": "^14.12.0",
-    "motion-utils": "^14.7.0",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "tailwind-merge": "3.7.0",
     "three": "0.187.0"
   },
   "devDependencies": {
@@ -37,7 +33,7 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
-    "tsx": "4.21.0",
+    "tsx": "^4.21.0",
     "typescript": "5.9.3"
   }
 }
