@@ -238,8 +238,13 @@ livianos y documentación de procedencia.
   commits de interfaz en siete archivos; sin cambios del pipeline NISAR). La
   rama local conserva los cambios de trabajo de este avance.
 - La API ahora valida que colección y madurez GUNW concuerden, exige IDs de
-  granules GUNW de NISAR L2 y rechaza fracciones válidas nulas. También exige+  hash SHA-256, rutas de capas encontradas al inspeccionar el HDF5, conteos de
+  granules GUNW de NISAR L2 y rechaza fracciones válidas nulas. También exige
+  hash SHA-256, rutas de capas encontradas al inspeccionar el HDF5, conteos de
   píxeles enteros positivos y evidencia de referencia estable en `quality`.
   No presupone nombres internos de datasets.
-- `py_compile` y `git diff --check` pasaron localmente. Aún no se desplegó este
-  refuerzo ni se recibió un HDF5 real; la serie de observaciones sigue vacía y+  no es posible calcular o calibrar errores del pronóstico todavía.
+- `py_compile` y `git diff --check` pasaron localmente. El cambio se publicó en
+  `75a1add` y se desplegó en Orivia: `spaceapps2-api` quedó `healthy` y se
+  verificó que el contenedor contiene el validador. El checkout del servidor
+  quedó limpio en el mismo commit. No se recreó la base de datos; el conteo de
+  `nisar.observations` sigue en cero y no hay HDF5 real en el servidor. Por eso
+  aún no es posible calcular ni calibrar errores del pronóstico.
