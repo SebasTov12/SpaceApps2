@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAROS · Panel de capas (prototipo)</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+:root{--night:#070B18;--deep:#0B1226;--panel:#111B38;--line:#22305A;--ice:#E8F1FF;--muted:#94A3C4;--cyan:#00D4FF;--violet:#8B5CF6;--coral:#F43F5E;--amber:#F59E0B;--green:#10B981;--ease:cubic-bezier(.22,1,.36,1)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--night);color:var(--ice);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{font-size:10px}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* barra superior */
+.top{position:absolute;z-index:5;left:16px;top:14px;display:flex;align-items:center;gap:10px}
+.brand{font-family:Orbitron;font-weight:800;letter-spacing:.2em;font-size:15px;padding:10px 14px;border-radius:12px;background:rgba(7,11,24,.8);border:1px solid var(--line);backdrop-filter:blur(10px)}
+.proto{font-size:11px;padding:6px 10px;border-radius:999px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.5);color:#fcd34d}
+
+/* panel */
+.panel{position:absolute;z-index:6;top:14px;right:14px;bottom:14px;width:360px;display:flex;flex-direction:column;border-radius:20px;background:rgba(9,14,32,.9);border:1px solid var(--line);backdrop-filter:blur(16px);box-shadow:0 30px 80px rgba(0,0,0,.5);transition:transform .45s var(--ease),opacity .3s}
+.panel.closed{transform:translateX(calc(100% + 20px));opacity:0}
+.panel header{display:flex;align-items:center;gap:10px;padding:16px 18px 10px}
+.panel h1{margin:0;font-family:Orbitron;font-size:18px;letter-spacing:.06em}
+.panel header small{color:var(--muted);font-size:12px}
+.icon-btn{margin-left:auto;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:transparent;display:grid;place-items:center}
+.search{margin:0 18px 8px;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.search input{flex:1;background:transparent;border:0;outline:0;color:var(--ice);font-size:14px}
+.scroll{flex:1;overflow-y:auto;padding:4px 18px 16px;scrollbar-width:thin}
+.group{margin-top:14px}
+.group>p{margin:0 0 8px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-weight:600}
+.bases{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.base{padding:0;border:2px solid transparent;border-radius:12px;overflow:hidden;background:var(--panel);text-align:center;font-size:11.5px;transition:border-color .25s,transform .25s var(--ease)}
+.base:hover{transform:translateY(-2px)}
+.base.on{border-color:var(--cyan)}
+.base i{display:block;height:54px;background-size:cover;background-position:center}
+.base span{display:block;padding:6px 0}
+.layer{border:1px solid var(--line);border-radius:14px;background:rgba(17,27,56,.55);margin-bottom:8px;overflow:hidden;transition:border-color .3s,background .3s}
+.layer.on{border-color:rgba(0,212,255,.45);background:rgba(17,27,56,.95)}
+.layer .row{display:flex;align-items:center;gap:12px;padding:11px 12px}
+.layer .ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:rgba(255,255,255,.06);flex-shrink:0}
+.layer .txt{flex:1;min-width:0}
+.layer b{display:block;font-size:14px;font-weight:600}
+.layer small{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sw{position:relative;width:40px;height:23px;border-radius:12px;border:0;background:#26324f;flex-shrink:0;transition:background .3s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .35s var(--ease)}
+.layer.on .sw{background:var(--cyan)}
+.layer.on .sw::after{transform:translateX(17px)}
+.more{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s var(--ease)}
+.layer.on .more{grid-template-rows:1fr}
+.more>div{overflow:hidden}
+.more .inner{padding:0 12px 12px 58px;font-size:12px;color:#c3cbe3}
+.more label{display:flex;align-items:center;gap:10px;margin-top:4px}
+.more input[type=range]{flex:1;accent-color:var(--cyan)}
+.status{display:inline-flex;align-items:center;gap:6px;margin-top:6px;color:var(--muted)}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.status.ok i{background:var(--green)}.status.load i{background:var(--amber);animation:blink 1s infinite}.status.err i{background:var(--coral)}
+@keyframes blink{50%{opacity:.3}}
+.zones{display:grid;gap:6px}
+.zone{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;border:1px solid var(--line);background:rgba(17,27,56,.55);text-align:left;width:100%}
+.zone:hover{border-color:rgba(0,212,255,.45)}
+.zone .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.zone b{font-size:13px;font-weight:600}.zone small{display:block;font-size:11px;color:var(--muted)}
+.zone .rain{margin-left:auto;font-size:11.5px;color:#9fe9ff;white-space:nowrap}
+.zone .star{border:0;background:transparent;font-size:16px;color:#4b5a82;padding:0 2px}
+.zone .star.on{color:#fcd34d}
+.panel footer{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line)}
+.btn{flex:1;padding:11px;border-radius:12px;border:1px solid var(--line);background:transparent;font-weight:600;font-size:13px}
+.btn.main{border:0;background:linear-gradient(90deg,#00D4FF,#8B5CF6);color:#fff}
+
+/* leyenda y avisos */
+.legend{position:absolute;z-index:5;left:16px;bottom:30px;width:250px;display:grid;gap:8px}
+.leg{padding:10px 12px;border-radius:12px;background:rgba(7,11,24,.85);border:1px solid var(--line);backdrop-filter:blur(10px);font-size:11.5px;animation:legIn .4s var(--ease) both}
+@keyframes legIn{from{opacity:0;transform:translateY(10px)}}
+.leg b{display:block;font-size:11px;letter-spacing:.06em;margin-bottom:6px}
+.leg .bar{height:8px;border-radius:4px}
+.leg .ends{display:flex;justify-content:space-between;color:var(--muted);margin-top:4px}
+.toast{position:absolute;z-index:8;left:50%;top:16px;translate:-50% 0;padding:10px 16px;border-radius:12px;background:rgba(7,11,24,.92);border:1px solid var(--line);font-size:13px;opacity:0;transform:translateY(-10px);transition:opacity .3s,transform .3s var(--ease);pointer-events:none}
+.toast.show{opacity:1;transform:none}
+.open-panel{position:absolute;z-index:5;right:16px;top:14px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(7,11,24,.85);font-weight:600}
+.rain-badge{padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;color:#04121a;box-shadow:0 4px 14px rgba(0,0,0,.4);white-space:nowrap}
+.eonet{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(7,11,24,.85);border:2px solid #fcd34d;font-size:15px}
+.maplibregl-popup-content{background:#0B1226;color:#E8F1FF;border:1px solid #22305A;border-radius:12px;font-family:Inter;font-size:12.5px;padding:10px 12px}
+.maplibregl-popup-tip{border-top-color:#0B1226!important;border-bottom-color:#0B1226!important}
+.maplibregl-popup-close-button{color:#94A3C4}
+
+@media(max-width:760px){
+  .panel{top:auto;left:0;right:0;bottom:0;width:auto;height:44vh;border-radius:22px 22px 0 0}
+  .panel.closed{transform:translateY(100%)}
+  .legend{top:64px;bottom:auto;width:190px}.leg{padding:7px 10px}.legend .leg:nth-child(n+3){display:none}
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="top"><span class="brand">SAROS</span><span class="proto">Prototipo · panel de capas</span></div>
+<div class="toast" id="toast"></div>
+<button class="open-panel" id="open" hidden>☰ Capas</button>
+
+<aside class="panel" id="panel">
+  <header><div><h1>Capas</h1><small>Arma el mapa que necesitas</small></div><button class="icon-btn" id="close" aria-label="Cerrar panel">✕</button></header>
+  <label class="search"><span>🔎</span><input id="q" placeholder="Buscar capa (lluvia, sismos, vías…)"></label>
+  <div class="scroll">
+    <div class="group"><p>Fondo</p>
+      <div class="bases" id="bases"></div>
+      <div class="layer" id="ly-relief" style="margin-top:8px"><div class="row"><span class="ico">⛰️</span><div class="txt"><b>Relieve 3D</b><small>Elevación AWS Terrain · inclina el mapa</small></div><button class="sw" aria-label="Relieve 3D"></button></div></div>
+    </div>
+    <div class="group"><p>Datos</p><div id="layers"></div></div>
+    <div class="group"><p>Zonas de Colombia</p><div class="zones" id="zones"></div></div>
+  </div>
+  <footer><button class="btn" id="reset">Restablecer</button><button class="btn main" id="share">Compartir vista</button></footer>
+</aside>
+<div class="legend" id="legend"></div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="nisar-ruiz.js"></script>
+<script>
+// ---------- configuración ----------
+const CO_BBOX = [-82, -5, -66, 13.5];
+const BASES = [
+  { id: "esri", name: "Satélite", thumb: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/6/31/18", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"], max: 18, attr: "Imágenes © Esri, Maxar" },
+  { id: "s2", name: "Sentinel-2", thumb: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/g/6/31/18.jpg", tiles: ["https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/g/{z}/{y}/{x}.jpg"], max: 15, attr: "Sentinel-2 cloudless 2024 © EOX (CC BY-NC-SA 4.0)" },
+  { id: "light", name: "Claro", thumb: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/6/31/18", tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"], max: 16, attr: "Mapa base © Esri" },
+];
+const ZONES = [
+  { id: "colombia-ladera", name: "Ladera andina", place: "Norte de Santander", lat: 7.88, lon: -72.5, level: "alta" },
+  { id: "bogota", name: "Sabana que se hunde", place: "Bogotá", lat: 4.66, lon: -74.12, level: "alta" },
+  { id: "caqueta", name: "Arco de deforestación", place: "Caquetá", lat: 1.35, lon: -74.85, level: "alta" },
+  { id: "ruiz", name: "Nevado del Ruiz", place: "Caldas y Tolima", lat: 4.892, lon: -75.324, level: "moderada" },
+  { id: "mojana", name: "La Mojana inundada", place: "Sucre y Bolívar", lat: 8.55, lon: -74.75, level: "moderada" },
+  { id: "mocoa", name: "Avenida torrencial", place: "Mocoa, Putumayo", lat: 1.15, lon: -76.65, level: "moderada" },
+  { id: "gramalote", name: "Gramalote", place: "Norte de Santander", lat: 7.89, lon: -72.79, level: "moderada" },
+  { id: "choco", name: "Pacífico sísmico y minero", place: "Quibdó, Chocó", lat: 5.69, lon: -76.66, level: "baja" },
+  { id: "galeras", name: "Volcán Galeras", place: "Pasto, Nariño", lat: 1.22, lon: -77.36, level: "moderada" },
+];
+const LEVEL = { alta: "#F43F5E", moderada: "#F59E0B", baja: "#10B981" };
+const LAYERS = [
+  { id: "nisar", icon: "🛰️", name: "Deformación NISAR", src: "SAROS · Nevado del Ruiz (demo)", keys: "radar nisar deformacion suelo" },
+  { id: "rain", icon: "💧", name: "Lluvia de ayer", src: "NASA IMERG vía GIBS · tasa diaria", keys: "lluvia precipitacion imerg nasa" },
+  { id: "rain72", icon: "🌧️", name: "Lluvia 72 h en las zonas", src: "Open-Meteo · por zona SAROS", keys: "lluvia 72 acumulada zonas" },
+  { id: "quakes", icon: "📍", name: "Sismos del último mes", src: "USGS · magnitud 2.5 o más", keys: "sismos terremotos usgs" },
+  { id: "eonet", icon: "🌋", name: "Eventos naturales activos", src: "NASA EONET · volcanes, incendios, tormentas", keys: "eventos volcanes incendios eonet" },
+  { id: "roads", icon: "🛣️", name: "Vías y edificios", src: "OpenStreetMap · OpenFreeMap", keys: "vias carreteras edificios osm" },
+];
+
+// ---------- estado (también en la URL para compartir) ----------
+const state = { base: "esri", on: new Set(["nisar", "quakes", "eonet", "rain72"]), opacity: { nisar: .85, rain: .7, quakes: 1, roads: .9 }, relief: false, fav: new Set() };
+try { JSON.parse(localStorage.getItem("saros-fav") || "[]").forEach((z) => state.fav.add(z)); } catch {}
+(function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get("base")) state.base = h.get("base");
+  if (h.get("capas") !== null) state.on = new Set((h.get("capas") || "").split(",").filter(Boolean));
+  if (h.get("relieve") === "1") state.relief = true;
+})();
+
+// ---------- mapa ----------
+const sources = {}, layers = [];
+for (const b of BASES) { sources["base-" + b.id] = { type: "raster", tiles: b.tiles, tileSize: 256, maxzoom: b.max, attribution: b.attr }; layers.push({ id: "base-" + b.id, type: "raster", source: "base-" + b.id, layout: { visibility: b.id === state.base ? "visible" : "none" } }); }
+const map = new maplibregl.Map({
+  container: "map", maxPitch: 80, attributionControl: { compact: true },
+  center: [-74.3, 5.2], zoom: 5.3,
+  style: { version: 8, sources, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0b151e" } }, ...layers] },
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+// deja libre la zona que tapa el panel (a la derecha en escritorio, abajo en el teléfono)
+function fitPadding() {
+  const narrow = innerWidth <= 760;
+  map.setPadding(narrow ? { top: 40, bottom: innerHeight * 0.44, left: 0, right: 0 } : { top: 0, bottom: 0, left: 0, right: 380 });
+}
+fitPadding(); addEventListener("resize", fitPadding);
+map.fitBounds([[-79.5, -4.3], [-66.8, 12.6]], { duration: 0, padding: 20 });
+
+const toast = (msg) => { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2600); };
+const setStatus = (id, cls, text) => { const el = document.querySelector(`#ly-${id} .status`); if (el) { el.className = "status " + cls; el.lastChild.textContent = text; } };
+
+map.on("load", () => {
+  // relieve
+  map.addSource("dem", { type: "raster-dem", tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
+  map.addSource("dem-shade", { type: "raster-dem", tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
+  map.addLayer({ id: "hillshade", type: "hillshade", source: "dem-shade", layout: { visibility: "none" }, paint: { "hillshade-exaggeration": .45, "hillshade-shadow-color": "#0b1530", "hillshade-highlight-color": "#fff6e0" } });
+  // lluvia NASA IMERG (último día disponible)
+  map.addSource("rain", { type: "raster", tiles: ["https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/IMERG_Precipitation_Rate/default/default/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png"], tileSize: 256, maxzoom: 6, attribution: "NASA GIBS · IMERG" });
+  map.addLayer({ id: "rain", type: "raster", source: "rain", layout: { visibility: "none" }, paint: { "raster-opacity": state.opacity.rain, "raster-fade-duration": 400 } });
+  // deformación NISAR (demo del Ruiz)
+  const [w, s, e, n] = NISAR_RUIZ.bbox;
+  map.addSource("nisar", { type: "image", url: NISAR_RUIZ.url, coordinates: [[w, n], [e, n], [e, s], [w, s]] });
+  map.addLayer({ id: "nisar", type: "raster", source: "nisar", layout: { visibility: "none" }, paint: { "raster-opacity": state.opacity.nisar } });
+  // vías y edificios
+  map.addSource("omt", { type: "vector", url: "https://tiles.openfreemap.org/planet", attribution: "© OpenStreetMap · OpenFreeMap" });
+  map.addLayer({ id: "roads", type: "line", source: "omt", "source-layer": "transportation", layout: { visibility: "none", "line-cap": "round" },
+    filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk", "primary", "secondary", "tertiary"]]],
+    paint: { "line-color": ["match", ["get", "class"], ["motorway", "trunk"], "#FDE68A", "primary", "#fff", "#cbd5e1"], "line-width": ["interpolate", ["linear"], ["zoom"], 5, .6, 10, 1.6, 14, 4], "line-opacity": state.opacity.roads } });
+  map.addLayer({ id: "buildings", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 13, layout: { visibility: "none" },
+    paint: { "fill-extrusion-color": "#b9c8e0", "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6], "fill-extrusion-opacity": .85 } });
+  // sismos
+  map.addSource("quakes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  map.addLayer({ id: "quakes-glow", type: "circle", source: "quakes", layout: { visibility: "none" }, paint: { "circle-radius": ["interpolate", ["linear"], ["get", "mag"], 2.5, 8, 6, 30], "circle-color": "#F43F5E", "circle-opacity": .18, "circle-blur": .6 } });
+  map.addLayer({ id: "quakes", type: "circle", source: "quakes", layout: { visibility: "none" },
+    paint: { "circle-radius": ["interpolate", ["linear"], ["get", "mag"], 2.5, 3, 6, 13], "circle-color": ["interpolate", ["linear"], ["get", "depth"], 0, "#F43F5E", 70, "#F59E0B", 300, "#8B5CF6"], "circle-stroke-color": "#fff", "circle-stroke-width": 1, "circle-opacity": state.opacity.quakes } });
+  map.on("click", "quakes", (ev) => { const p = ev.features[0].properties; new maplibregl.Popup().setLngLat(ev.lngLat).setHTML(`<b>Sismo M${(+p.mag).toFixed(1)}</b><br>${p.place}<br><span style="color:#94A3C4">${new Date(+p.time).toLocaleString("es-CO")} · ${(+p.depth).toFixed(0)} km de profundidad</span><br><span style="color:#94A3C4">Fuente: USGS</span>`).addTo(map); });
+  map.on("mouseenter", "quakes", () => (map.getCanvas().style.cursor = "pointer"));
+  map.on("mouseleave", "quakes", () => (map.getCanvas().style.cursor = ""));
+  ready = true;
+  applyAll();
+});
+let ready = false;
+
+// ---------- datos que se piden al activar ----------
+const loaded = {};
+async function loadQuakes() {
+  if (loaded.quakes) return; loaded.quakes = true; setStatus("quakes", "load", "Cargando…");
+  try {
+    const r = await fetch("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month.geojson");
+    const g = await r.json();
+    const [x0, y0, x1, y1] = CO_BBOX;
+    g.features = g.features.filter((f) => { const [x, y, d] = f.geometry.coordinates; f.properties.depth = d; return x >= x0 && x <= x1 && y >= y0 && y <= y1; });
+    map.getSource("quakes").setData(g);
+    setStatus("quakes", "ok", `${g.features.length} sismos cerca de Colombia · actualizado ${new Date(g.metadata.generated).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}`);
+    toast(`USGS: ${g.features.length} sismos M2.5+ en el último mes cerca de Colombia`);
+  } catch { loaded.quakes = false; setStatus("quakes", "err", "No se pudo cargar USGS"); }
+}
+const eonetMarkers = [];
+async function loadEonet() {
+  if (loaded.eonet) return; loaded.eonet = true; setStatus("eonet", "load", "Cargando…");
+  try {
+    const r = await fetch("https://eonet.gsfc.nasa.gov/api/v3/events/geojson?status=open&bbox=-82,13.5,-66,-5");
+    const g = await r.json();
+    const icon = { volcanoes: "🌋", wildfires: "🔥", severeStorms: "🌀", floods: "🌊", landslides: "⛰️" };
+    for (const f of g.features) {
+      if (f.geometry.type !== "Point") continue;
+      const cat = f.properties.categories?.[0]?.id || "";
+      const el = document.createElement("div"); el.className = "eonet"; el.textContent = icon[cat] || "⚠️";
+      const m = new maplibregl.Marker({ element: el }).setLngLat(f.geometry.coordinates)
+        .setPopup(new maplibregl.Popup({ offset: 16 }).setHTML(`<b>${f.properties.title}</b><br><span style="color:#94A3C4">${f.properties.categories?.[0]?.title || ""} · NASA EONET</span>`));
+      eonetMarkers.push(m);
+    }
+    setStatus("eonet", "ok", `${eonetMarkers.length} eventos abiertos en la región`);
+    toast(`NASA EONET: ${eonetMarkers.length} eventos naturales activos en la región`);
+    applyAll();
+  } catch { loaded.eonet = false; setStatus("eonet", "err", "No se pudo cargar EONET"); }
+}
+const rainMarkers = [];
+async function loadRain72() {
+  if (loaded.rain72) return; loaded.rain72 = true; setStatus("rain72", "load", "Consultando zonas…");
+  try {
+    const lat = ZONES.map((z) => z.lat).join(","), lon = ZONES.map((z) => z.lon).join(",");
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&past_days=3&forecast_days=1&timezone=America%2FBogota`);
+    let data = await r.json(); if (!Array.isArray(data)) data = [data];
+    data.forEach((d, i) => {
+      const mm = d.daily.precipitation_sum.slice(0, 3).reduce((a, b) => a + (b || 0), 0);
+      ZONES[i].rain = mm;
+      const color = mm >= 60 ? "#F43F5E" : mm >= 25 ? "#F59E0B" : "#9fe9ff";
+      const el = document.createElement("div"); el.className = "rain-badge"; el.style.background = color; el.textContent = `${mm.toFixed(0)} mm`;
+      rainMarkers.push(new maplibregl.Marker({ element: el, offset: [0, -18] }).setLngLat([ZONES[i].lon, ZONES[i].lat]));
+    });
+    renderZones();
+    const wet = ZONES.filter((z) => z.rain >= 25 && z.level !== "baja");
+    setStatus("rain72", "ok", wet.length ? `${wet.length} zonas con lluvia alta y movimiento` : "Sin lluvias fuertes en las zonas");
+    toast(wet.length ? `Atención: ${wet.map((z) => z.place).join(", ")} suma lluvia fuerte y movimiento del suelo` : "Open-Meteo: lluvias de 72 h consultadas");
+    applyAll();
+  } catch { loaded.rain72 = false; setStatus("rain72", "err", "No se pudo consultar Open-Meteo"); }
+}
+
+// ---------- aplicar estado al mapa ----------
+function vis(id, on) { if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", on ? "visible" : "none"); }
+function applyAll() {
+  if (!ready) return;
+  for (const b of BASES) vis("base-" + b.id, b.id === state.base);
+  vis("nisar", state.on.has("nisar")); vis("rain", state.on.has("rain"));
+  vis("quakes", state.on.has("quakes")); vis("quakes-glow", state.on.has("quakes"));
+  vis("roads", state.on.has("roads")); vis("buildings", state.on.has("roads"));
+  eonetMarkers.forEach((m) => (state.on.has("eonet") ? m.addTo(map) : m.remove()));
+  rainMarkers.forEach((m) => (state.on.has("rain72") ? m.addTo(map) : m.remove()));
+  if (state.on.has("quakes")) loadQuakes();
+  if (state.on.has("eonet")) loadEonet();
+  if (state.on.has("rain72")) loadRain72();
+  vis("hillshade", state.relief);
+  map.setTerrain(state.relief ? { source: "dem", exaggeration: 1.4 } : null);
+  renderLegend(); writeHash();
+}
+function writeHash() {
+  const h = new URLSearchParams({ base: state.base, capas: [...state.on].join(","), relieve: state.relief ? "1" : "0" });
+  history.replaceState(null, "", "#" + h.toString());
+}
+
+// ---------- interfaz ----------
+const basesEl = document.getElementById("bases");
+for (const b of BASES) {
+  const el = document.createElement("button"); el.className = "base" + (b.id === state.base ? " on" : ""); el.dataset.id = b.id;
+  el.innerHTML = `<i style="background-image:url('${b.thumb}')"></i><span>${b.name}</span>`;
+  el.onclick = () => { state.base = b.id; basesEl.querySelectorAll(".base").forEach((x) => x.classList.toggle("on", x.dataset.id === b.id)); applyAll(); };
+  basesEl.appendChild(el);
+}
+const relief = document.getElementById("ly-relief");
+relief.classList.toggle("on", state.relief);
+relief.querySelector(".sw").onclick = () => {
+  state.relief = !state.relief; relief.classList.toggle("on", state.relief); applyAll();
+  if (state.relief) map.easeTo({ pitch: 62, bearing: map.getBearing() - 20, zoom: Math.max(map.getZoom(), 9), duration: 1800 }); else map.easeTo({ pitch: 0, bearing: 0, duration: 1200 });
+};
+const layersEl = document.getElementById("layers");
+for (const l of LAYERS) {
+  const el = document.createElement("div"); el.className = "layer" + (state.on.has(l.id) ? " on" : ""); el.id = "ly-" + l.id; el.dataset.keys = l.keys + " " + l.name.toLowerCase();
+  const op = state.opacity[l.id];
+  el.innerHTML = `<div class="row"><span class="ico">${l.icon}</span><div class="txt"><b>${l.name}</b><small>${l.src}</small></div><button class="sw" aria-label="${l.name}"></button></div>
+    <div class="more"><div><div class="inner">${op !== undefined ? `<label>Opacidad <input type="range" min="0.1" max="1" step="0.05" value="${op}"></label>` : ""}<span class="status"><i></i>Listo</span></div></div></div>`;
+  el.querySelector(".sw").onclick = () => {
+    state.on.has(l.id) ? state.on.delete(l.id) : state.on.add(l.id);
+    el.classList.toggle("on", state.on.has(l.id)); applyAll();
+    if (l.id === "nisar" && state.on.has("nisar")) map.flyTo({ center: [-75.32, 4.89], zoom: 11, duration: 2200 });
+  };
+  const range = el.querySelector("input[type=range]");
+  if (range) range.oninput = () => {
+    state.opacity[l.id] = +range.value;
+    const prop = { nisar: ["nisar", "raster-opacity"], rain: ["rain", "raster-opacity"], quakes: ["quakes", "circle-opacity"], roads: ["roads", "line-opacity"] }[l.id];
+    if (prop && map.getLayer(prop[0])) map.setPaintProperty(prop[0], prop[1], +range.value);
+  };
+  layersEl.appendChild(el);
+}
+document.getElementById("q").oninput = (e) => {
+  const q = e.target.value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  layersEl.querySelectorAll(".layer").forEach((el) => (el.style.display = !q || el.dataset.keys.normalize("NFD").replace(/[̀-ͯ]/g, "").includes(q) ? "" : "none"));
+};
+function renderZones() {
+  const el = document.getElementById("zones");
+  const list = [...ZONES].sort((a, b) => (state.fav.has(b.id) - state.fav.has(a.id)) || ({ alta: 0, moderada: 1, baja: 2 }[a.level] - { alta: 0, moderada: 1, baja: 2 }[b.level]));
+  el.innerHTML = "";
+  for (const z of list) {
+    const b = document.createElement("div"); b.className = "zone";
+    b.innerHTML = `<span class="dot" style="background:${LEVEL[z.level]}"></span><div><b>${z.name}</b><small>${z.place} · atención ${z.level}</small></div>${z.rain !== undefined ? `<span class="rain">💧 ${z.rain.toFixed(0)} mm</span>` : ""}<button class="star ${state.fav.has(z.id) ? "on" : ""}" title="Guardar en mis zonas">★</button>`;
+    b.onclick = (ev) => {
+      if (ev.target.classList.contains("star")) {
+        state.fav.has(z.id) ? state.fav.delete(z.id) : state.fav.add(z.id);
+        try { localStorage.setItem("saros-fav", JSON.stringify([...state.fav])); } catch {}
+        toast(state.fav.has(z.id) ? `${z.place} guardada en Mis zonas` : `${z.place} quitada de Mis zonas`); renderZones(); return;
+      }
+      map.flyTo({ center: [z.lon, z.lat], zoom: 11, pitch: state.relief ? 60 : 0, duration: 2400, curve: 1.4 });
+    };
+    el.appendChild(b);
+  }
+}
+renderZones();
+function renderLegend() {
+  const el = document.getElementById("legend"); const parts = [];
+  if (state.on.has("nisar")) parts.push(`<div class="leg"><b>Deformación NISAR (mm)</b><div class="bar" style="background:linear-gradient(90deg,${NISAR_RUIZ.legend.join(",")})"></div><div class="ends"><span>${NISAR_RUIZ.range[0]} se aleja</span><span>+${NISAR_RUIZ.range[1]} se acerca</span></div></div>`);
+  if (state.on.has("rain")) parts.push(`<div class="leg"><b>Lluvia de ayer · NASA IMERG</b><div class="bar" style="background:linear-gradient(90deg,#a6d8ff,#3b82f6,#22c55e,#facc15,#f97316,#dc2626)"></div><div class="ends"><span>débil</span><span>muy fuerte</span></div></div>`);
+  if (state.on.has("quakes")) parts.push(`<div class="leg"><b>Sismos · profundidad</b><div class="bar" style="background:linear-gradient(90deg,#F43F5E,#F59E0B,#8B5CF6)"></div><div class="ends"><span>superficial</span><span>profundo</span></div></div>`);
+  if (state.on.has("rain72")) parts.push(`<div class="leg"><b>Lluvia 72 h en zonas</b><div class="ends" style="margin:0"><span style="color:#9fe9ff">● &lt;25 mm</span><span style="color:#F59E0B">● 25–60</span><span style="color:#F43F5E">● &gt;60</span></div></div>`);
+  el.innerHTML = parts.join("");
+}
+const panel = document.getElementById("panel"), openBtn = document.getElementById("open");
+document.getElementById("close").onclick = () => { panel.classList.add("closed"); openBtn.hidden = false; };
+openBtn.onclick = () => { panel.classList.remove("closed"); openBtn.hidden = true; };
+document.getElementById("reset").onclick = () => { location.hash = ""; location.reload(); };
+document.getElementById("share").onclick = async () => {
+  writeHash();
+  try { await navigator.clipboard.writeText(location.href); toast("Enlace copiado: abre exactamente esta vista"); } catch { toast("Copia la dirección del navegador para compartir esta vista"); }
+};
+</script>
+</body>
+</html>

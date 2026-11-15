@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SAROS · Tres direcciones de diseño</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
+<style>
+@property --n{syntax:'<integer>';inherits:true;initial-value:0}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:720px;overflow:hidden;background:#05070d;font-family:Inter,sans-serif;color:#E8F1FF}
+.stage{position:relative;width:1280px;height:720px;overflow:hidden}
+:root{--ease:cubic-bezier(.22,1,.36,1);--io:cubic-bezier(.65,0,.35,1)}
+.scene{position:absolute;inset:0;opacity:0;animation:show var(--len) linear var(--d) both}
+@keyframes show{0%{opacity:0}4%{opacity:1}96%{opacity:1}100%{opacity:0}}
+.in{animation:rise 1s var(--ease) calc(var(--d) + var(--at,0s)) both}
+@keyframes rise{from{opacity:0;transform:translateY(22px);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+.pop{animation:pop .8s var(--ease) calc(var(--d) + var(--at,0s)) both}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.fade{animation:fade 1s ease calc(var(--d) + var(--at,0s)) both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.wipe{animation:wipe 1.4s var(--io) calc(var(--d) + var(--at,0s)) both}
+@keyframes wipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.mask{display:inline-block;animation:mask 1s var(--ease) calc(var(--d) + var(--at,0s)) both}
+@keyframes mask{from{clip-path:inset(100% 0 0 0);transform:translateY(40%)}to{clip-path:inset(0 0 -10% 0);transform:none}}
+.drop{animation:drop .9s cubic-bezier(.34,1.56,.64,1) calc(var(--d) + var(--at,0s)) both}
+@keyframes drop{from{opacity:0;transform:translateY(-40px)}to{opacity:1;transform:none}}
+.draw{stroke-dasharray:900;animation:draw 1.8s var(--ease) calc(var(--d) + var(--at,0s)) both}
+@keyframes draw{from{stroke-dashoffset:900}to{stroke-dashoffset:0}}
+.grow{transform-origin:left;animation:grow 1.2s var(--ease) calc(var(--d) + var(--at,0s)) both}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.growy{transform-origin:bottom;animation:growy 1s var(--ease) calc(var(--d) + var(--at,0s)) both}
+@keyframes growy{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.count::after{counter-reset:n var(--n);content:counter(n)}
+.count{animation:var(--k) 1.8s var(--ease) calc(var(--d) + var(--at,0s)) both}
+@keyframes c29{from{--n:0}to{--n:29}}@keyframes c11{from{--n:0}to{--n:11}}@keyframes c5{from{--n:0}to{--n:5}}@keyframes c155{from{--n:0}to{--n:155}}@keyframes c747{from{--n:0}to{--n:747}}@keyframes c12{from{--n:0}to{--n:12}}
+.spin{animation:spin 8s linear 0s infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.pulse{animation:pulse 1.8s ease-out 0s infinite}@keyframes pulse{0%{box-shadow:0 0 0 0 currentColor}100%{box-shadow:0 0 0 14px transparent}}
+.ring{animation:ring 2.2s ease-out 0s infinite}@keyframes ring{from{transform:scale(.3);opacity:.9}to{transform:scale(2.2);opacity:0}}
+.kb{animation:kb var(--len) linear var(--d) both}@keyframes kb{from{transform:scale(1.12)}to{transform:scale(1)}}
+.on{animation:on .35s var(--ease) calc(var(--d) + var(--at,0s)) both}
+.sw{position:relative;width:38px;height:22px;border-radius:11px;flex-shrink:0;transition:none}
+.sw i{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.sw.anim{animation:swbg .35s ease calc(var(--d) + var(--at,0s)) both}
+.sw.anim i{animation:swk .35s var(--ease) calc(var(--d) + var(--at,0s)) both}
+@keyframes swk{to{transform:translateX(16px)}}
+.cap{position:absolute;left:40px;right:40px;bottom:20px;display:flex;align-items:center;gap:14px;font-size:15px}
+.cap b{font-family:Orbitron;font-size:12px;letter-spacing:.14em;padding:6px 10px;border-radius:6px}
+.frame{position:absolute;left:40px;top:24px;width:1200px;height:620px;border-radius:16px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.55)}
+.cursor{position:absolute;width:24px;height:24px;z-index:60;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+
+/* ===== A · Atlas (claro, editorial) ===== */
+.A{--paper:#F4F1EA;--ink:#14161C;--soft:#5d6170;--acc:#E4572E;--blue:#2B59C3;--rule:#d9d3c5;background:var(--paper);color:var(--ink)}
+.A .serif{font-family:Fraunces,serif}
+.A .top{display:flex;align-items:center;gap:26px;padding:18px 34px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--soft)}
+.A .brand{font-family:Fraunces;font-weight:800;font-size:22px;color:var(--ink);letter-spacing:-.01em}
+.A .tag{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid var(--rule);border-radius:999px;font-size:12px;color:var(--ink);background:#fff}
+.A .sw{background:#d8d2c3}.A .sw.anim{--swon:var(--acc)}
+@keyframes swbg{to{background:var(--swon,#00D4FF)}}
+
+/* ===== B · Mando (HUD técnico) ===== */
+.B{--bg:#05080F;--grid:rgba(120,255,180,.06);--lime:#B8FF3C;--cy:#2EE6FF;--dim:#6f7f96;--line:#18263a;background:var(--bg);color:#d7e4f5;font-family:"JetBrains Mono",monospace;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px}
+.B .pane{border:1px solid var(--line);background:rgba(8,14,26,.85);border-radius:6px}
+.B .lab{font-size:10px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+.B .sw{background:#1d2a3e}.B .sw.anim{--swon:var(--lime)}
+.scanline{position:absolute;left:0;right:0;height:120px;background:linear-gradient(180deg,transparent,rgba(184,255,60,.08),transparent);animation:scan 3.5s linear 0s infinite;pointer-events:none}
+@keyframes scan{from{top:-120px}to{top:100%}}
+.type{display:block;overflow:hidden;white-space:nowrap;animation:type 1.2s steps(40) calc(var(--d) + var(--at,0s)) both}
+@keyframes type{from{max-width:0}to{max-width:100%}}
+
+/* ===== C · Inmersivo (cinemático, cristal) ===== */
+.C{background:#000;color:#fff}
+.C .glass{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(18px) saturate(1.3);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.C .disp{font-family:Inter;font-weight:700;letter-spacing:-.03em}
+.C .sw{background:rgba(255,255,255,.25)}.C .sw.anim{--swon:#fff}.C .sw.anim i{background:#0b1020}
+</style>
+</head>
+<body>
+<div class="stage">
+
+<!-- Apertura -->
+<section class="scene" style="--d:0s;--len:4.5s;display:grid;place-items:center;text-align:center;background:radial-gradient(ellipse at 50% 40%,#18204a,#05070d 70%)">
+  <div>
+    <p class="in" style="--at:.2s;font-size:12px;letter-spacing:.3em;color:#7fdcff">SAROS · MAQUETAS DE REDISEÑO</p>
+    <h1 class="in" style="--at:.5s;font-family:Orbitron;font-weight:800;font-size:58px;letter-spacing:.08em;margin:16px 0">Tres direcciones</h1>
+    <p class="in" style="--at:.9s;font-size:20px;color:#c9d4ee">Atlas · Mando · Inmersivo</p>
+  </div>
+</section>
+
+<!-- ================= A · ATLAS ================= -->
+<!-- A1 inicio -->
+<section class="scene" style="--d:4.5s;--len:9s">
+  <div class="frame A">
+    <div class="top fade" style="--at:.1s"><span class="brand">saros</span><span>Mapa</span><span>Alertas</span><span>Colombia</span><span>Método</span><span class="tag" style="margin-left:auto"><span style="width:7px;height:7px;border-radius:50%;background:#2f9e5c"></span>NISAR · pasa en 2 h 14 min</span></div>
+    <div style="display:grid;grid-template-columns:520px 1fr;gap:40px;padding:34px 34px 0">
+      <div>
+        <p class="fade" style="--at:.4s;font-size:12px;letter-spacing:.2em;color:var(--acc);font-weight:700">EDICIÓN · NOVIEMBRE 2026</p>
+        <h2 class="serif" style="font-size:58px;line-height:1.02;font-weight:800;margin:16px 0 18px;letter-spacing:-.02em">
+          <span style="display:block;overflow:hidden"><span class="mask" style="--at:.5s">La tierra</span></span>
+          <span style="display:block;overflow:hidden"><span class="mask" style="--at:.65s">también habla.</span></span>
+          <span style="display:block;overflow:hidden"><span class="mask" style="--at:.8s;color:var(--acc);font-style:italic;font-weight:600">Aprende a escucharla.</span></span></h2>
+        <p class="in" style="--at:1.2s;font-size:16px;line-height:1.6;color:var(--soft)">Mapas de radar de NISAR, explicados con calma: dónde se mueve el suelo en Colombia, qué significa y qué hacer.</p>
+        <svg viewBox="0 0 240 10" width="240" height="10" style="margin-top:10px"><path class="draw" style="--at:1.5s" d="M2 6 C60 2 120 9 238 4" fill="none" stroke="#E4572E" stroke-width="3" stroke-linecap="round"/></svg>
+        <div class="in" style="--at:1.7s;display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:22px;border-top:1px solid var(--rule)">
+          <div style="padding:14px 0"><b class="serif count" style="--d:4.5s;--at:1.8s;--k:c29;font-size:38px;display:block"></b><span style="font-size:12px;color:var(--soft)">zonas vigiladas</span></div>
+          <div style="padding:14px 0 14px 18px;border-left:1px solid var(--rule)"><b class="serif count" style="--d:4.5s;--at:1.9s;--k:c11;font-size:38px;display:block"></b><span style="font-size:12px;color:var(--soft)">en Colombia</span></div>
+          <div style="padding:14px 0 14px 18px;border-left:1px solid var(--rule)"><b class="serif count" style="--d:4.5s;--at:2s;--k:c5;font-size:38px;display:block;color:var(--acc)"></b><span style="font-size:12px;color:var(--soft)">en atención alta</span></div>
+        </div>
+      </div>
+      <div style="position:relative">
+        <div class="wipe" style="--at:.6s;position:relative;height:430px;border-radius:6px;overflow:hidden">
+          <img src="assets/map.jpg" style="width:100%;height:100%;object-fit:cover;filter:saturate(.8) contrast(1.05)">
+        </div>
+        <span class="drop" style="--at:1.9s;position:absolute;left:190px;top:130px;width:18px;height:18px;border-radius:50% 50% 50% 0;transform-origin:center;background:var(--acc);rotate:-45deg;border:3px solid #fff"></span>
+        <span class="drop" style="--at:2.1s;position:absolute;left:400px;top:220px;width:18px;height:18px;border-radius:50% 50% 50% 0;background:#E9A23B;rotate:-45deg;border:3px solid #fff"></span>
+        <span class="drop" style="--at:2.3s;position:absolute;left:290px;top:300px;width:18px;height:18px;border-radius:50% 50% 50% 0;background:var(--blue);rotate:-45deg;border:3px solid #fff"></span>
+        <p class="in" style="--at:2.4s;margin-top:10px;font-size:12px;color:var(--soft);font-style:italic" >Fig. 1 — Nevado del Ruiz visto por el radar. Azul: el suelo sube.</p>
+      </div>
+    </div>
+    <div class="in" style="--at:2.6s;position:absolute;left:34px;right:34px;bottom:18px;display:flex;gap:28px;font-size:13px;border-top:1px solid var(--rule);padding-top:12px">
+      <span><b style="color:var(--acc)">●</b> 14 nov · Ladera de Norte de Santander se acelera</span><span><b style="color:#E9A23B">●</b> 12 nov · Ruiz: levantamiento estable</span><span><b style="color:var(--blue)">●</b> 10 nov · La Mojana: agua baja</span>
+    </div>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#E4572E;color:#fff">A · ATLAS</b><span>Claro y editorial, como una revista científica: titulares que se revelan, imagen que se descubre, pines que caen.</span></div>
+</section>
+
+<!-- A2 zona -->
+<section class="scene" style="--d:13.5s;--len:9s">
+  <div class="frame A">
+    <div class="top"><span class="brand">saros</span><span>Colombia › Caldas y Tolima</span><span class="tag" style="margin-left:auto">Volcán · atención moderada</span></div>
+    <div style="display:grid;grid-template-columns:640px 1fr;gap:36px;padding:26px 34px">
+      <div>
+        <div class="wipe" style="--at:.3s;height:420px;border-radius:6px;overflow:hidden"><img class="kb" src="assets/terrain.jpg" style="width:100%;height:100%;object-fit:cover"></div>
+        <p class="in" style="--at:1s;margin-top:10px;font-size:12px;color:var(--soft);font-style:italic">Fig. 2 — Vista 3D del volcán con la capa de deformación.</p>
+      </div>
+      <div>
+        <h2 class="serif" style="font-size:44px;font-weight:800;line-height:1;letter-spacing:-.02em;overflow:hidden"><span class="mask" style="--at:.4s">Nevado del Ruiz</span></h2>
+        <p class="in" style="--at:.8s;margin:14px 0 6px;font-size:13px;color:var(--soft)">El terreno se eleva</p>
+        <p class="serif in" style="--at:.9s;font-size:64px;font-weight:800;line-height:1">14.9<span style="font-size:22px;font-weight:600"> mm/mes</span></p>
+        <svg viewBox="0 0 440 90" style="width:100%;height:90px;margin:8px 0 6px"><line x1="0" y1="88" x2="440" y2="88" stroke="#d9d3c5"/><path class="draw" style="--at:1.2s" d="M0 80 C60 78 110 74 160 68 S260 52 320 36 S400 16 440 10" fill="none" stroke="#14161C" stroke-width="2.5"/><circle class="pop" style="--at:2.8s" cx="440" cy="10" r="5" fill="#E4572E"/></svg>
+        <p class="in" style="--at:1.6s;font-size:12px;letter-spacing:.16em;color:var(--acc);font-weight:700;margin-top:10px">QUIÉN SE AFECTA</p>
+        <div class="in" style="--at:1.8s;display:grid;gap:10px;margin-top:10px;font-size:14px">
+          <div style="display:grid;grid-template-columns:110px 1fr 50px;align-items:center;gap:10px"><span>Agricultura</span><div style="height:10px;background:#e8e2d4"><div class="grow" style="--at:2s;width:88%;height:100%;background:#E4572E"></div></div><span style="color:var(--acc)">alta</span></div>
+          <div style="display:grid;grid-template-columns:110px 1fr 50px;align-items:center;gap:10px"><span>Ganadería</span><div style="height:10px;background:#e8e2d4"><div class="grow" style="--at:2.2s;width:58%;height:100%;background:#E9A23B"></div></div><span style="color:#b97a15">media</span></div>
+          <div style="display:grid;grid-template-columns:110px 1fr 50px;align-items:center;gap:10px"><span>Vivienda</span><div style="height:10px;background:#e8e2d4"><div class="grow" style="--at:2.4s;width:52%;height:100%;background:#E9A23B"></div></div><span style="color:#b97a15">media</span></div>
+        </div>
+        <ol class="in" style="--at:2.6s;margin:18px 0 0 18px;font-size:14px;line-height:1.8;color:#2a2d36"><li>Sigue los boletines del SGC.</li><li>Cubre cultivos, forraje y agua.</li><li>Conoce la ruta lejos de los ríos.</li></ol>
+      </div>
+    </div>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#E4572E;color:#fff">A · ATLAS</b><span>La zona como un artículo: cifra grande, gráfica que se dibuja a tinta, barras sobrias y pasos numerados.</span></div>
+</section>
+
+<!-- A3 capas -->
+<section class="scene" style="--d:22.5s;--len:9s">
+  <div class="frame A">
+    <div class="top"><span class="brand">saros</span><span>Mapa · personalizar</span></div>
+    <div style="position:relative;height:560px">
+      <img src="assets/map.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.75)">
+      <!-- capas que se activan -->
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse 22% 30% at 30% 40%,rgba(43,89,195,.55),transparent 70%),radial-gradient(ellipse 18% 22% at 55% 60%,rgba(43,89,195,.45),transparent 70%);animation:fade .8s ease calc(var(--d) + 2.2s) both"></div>
+      <span style="position:absolute;left:520px;top:200px;width:30px;height:30px;margin:-15px;border-radius:50%;border:3px solid #E4572E;animation:fade .3s ease calc(var(--d) + 3.6s) both"><span class="ring" style="position:absolute;inset:-3px;border-radius:50%;border:3px solid #E4572E"></span></span>
+      <span style="position:absolute;left:320px;top:380px;width:20px;height:20px;margin:-10px;border-radius:50%;border:3px solid #E4572E;animation:fade .3s ease calc(var(--d) + 3.8s) both"></span>
+      <svg viewBox="0 0 800 560" style="position:absolute;inset:0;width:780px;height:560px;animation:fade .2s ease calc(var(--d) + 5s) both"><path class="draw" style="--at:5s" d="M0 470 C160 430 260 360 380 330 S600 240 780 120" fill="none" stroke="#fff" stroke-width="4"/><path class="draw" style="--at:5.2s" d="M100 0 C140 160 220 260 260 560" fill="none" stroke="#fff" stroke-width="3"/></svg>
+      <!-- panel -->
+      <div class="in" style="--at:.4s;position:absolute;right:24px;top:24px;width:330px;background:#F4F1EA;border:1px solid var(--rule);border-radius:10px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.25)">
+        <p class="serif" style="font-size:24px;font-weight:800">Capas</p>
+        <p style="font-size:12px;color:var(--soft);margin:4px 0 14px">Elige qué ver sobre el mapa.</p>
+        <div style="display:grid;gap:12px;font-size:14px">
+          <div style="display:flex;align-items:center;gap:12px"><span class="sw anim" style="--at:2s"><i></i></span><div><b>Lluvia 72 h</b><p style="font-size:11px;color:var(--soft)">IDEAM · NASA IMERG</p></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span class="sw anim" style="--at:3.4s"><i></i></span><div><b>Sismos recientes</b><p style="font-size:11px;color:var(--soft)">SGC · USGS</p></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span class="sw anim" style="--at:4.8s"><i></i></span><div><b>Vías y puentes</b><p style="font-size:11px;color:var(--soft)">OpenStreetMap</p></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span class="sw"><i></i></span><div><b>Población</b><p style="font-size:11px;color:var(--soft)">DANE</p></div></div>
+        </div>
+        <p style="font-size:12px;letter-spacing:.14em;color:var(--acc);font-weight:700;margin:18px 0 8px">FONDO</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px;text-align:center">
+          <div><img src="assets/map.jpg" style="width:100%;height:50px;object-fit:cover;border-radius:6px;outline:2px solid var(--acc)"><span>Satélite</span></div>
+          <div><div style="height:50px;border-radius:6px;background:linear-gradient(135deg,#efe9dc,#d9d0bd)"></div><span>Claro</span></div>
+          <div><img src="assets/terrain.jpg" style="width:100%;height:50px;object-fit:cover;border-radius:6px"><span>Relieve</span></div>
+        </div>
+      </div>
+      <svg class="cursor" viewBox="0 0 24 24" style="animation:curA3 var(--len) var(--io) var(--d) both"><path d="M3 2 L20 12 L12 13.5 L8 21 Z" fill="#14161C" stroke="#fff" stroke-width="1.2"/></svg>
+    </div>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#E4572E;color:#fff">A · ATLAS</b><span>Capas personalizables con APIs abiertas: lluvia, sismos, vías y población se encienden sobre el mapa.</span></div>
+</section>
+<style>@keyframes curA3{0%{left:600px;top:460px}18%{left:880px;top:162px}34%{left:880px;top:162px}38%{left:880px;top:212px}52%{left:880px;top:212px}56%{left:880px;top:262px}100%{left:880px;top:262px}}</style>
+
+<!-- ================= B · MANDO ================= -->
+<!-- B1 inicio -->
+<section class="scene" style="--d:31.5s;--len:9s">
+  <div class="frame B">
+    <div class="scanline"></div>
+    <div class="fade" style="--at:.1s;display:flex;align-items:center;gap:22px;padding:12px 18px;border-bottom:1px solid var(--line);font-size:12px">
+      <b style="color:var(--lime);letter-spacing:.24em">SAROS//MANDO</b>
+      <span class="lab">ALT <b style="color:#fff" class="count" data-x style="--d:31.5s;--at:.4s;--k:c747"></b> KM</span>
+      <span class="lab">BANDA L 24 cm · S 9 cm</span><span class="lab">REVISITA 12 D</span>
+      <span style="margin-left:auto;color:var(--lime)">● ENLACE ACTIVO · PRÓX. PASADA CO 02:14:20</span>
+    </div>
+    <div style="display:grid;grid-template-columns:300px 1fr 330px;gap:14px;padding:14px;height:575px">
+      <div class="pane in" style="--at:.3s;padding:14px">
+        <p class="lab">Zonas · Colombia</p>
+        <div style="display:grid;gap:10px;margin-top:12px;font-size:12px">
+          <div><div style="display:flex;justify-content:space-between"><span>N. SANTANDER</span><span style="color:#ff5470">ALTA ▲</span></div><div style="height:4px;background:#14202f;margin-top:4px"><div class="grow" style="--at:.8s;width:92%;height:100%;background:#ff5470"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between"><span>BOGOTÁ</span><span style="color:#ff5470">ALTA</span></div><div style="height:4px;background:#14202f;margin-top:4px"><div class="grow" style="--at:.95s;width:84%;height:100%;background:#ff5470"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between"><span>CAQUETÁ</span><span style="color:#ff5470">ALTA</span></div><div style="height:4px;background:#14202f;margin-top:4px"><div class="grow" style="--at:1.1s;width:76%;height:100%;background:#ff5470"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between"><span>N. DEL RUIZ</span><span style="color:#ffc04d">MOD</span></div><div style="height:4px;background:#14202f;margin-top:4px"><div class="grow" style="--at:1.25s;width:55%;height:100%;background:#ffc04d"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between"><span>LA MOJANA</span><span style="color:#ffc04d">MOD</span></div><div style="height:4px;background:#14202f;margin-top:4px"><div class="grow" style="--at:1.4s;width:48%;height:100%;background:#ffc04d"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between"><span>MOCOA</span><span style="color:var(--lime)">BAJA</span></div><div style="height:4px;background:#14202f;margin-top:4px"><div class="grow" style="--at:1.55s;width:22%;height:100%;background:var(--lime)"></div></div></div>
+        </div>
+        <p class="lab" style="margin-top:22px">Resumen</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          <div class="pane" style="padding:10px"><b class="count" style="--d:31.5s;--at:1s;--k:c29;font-size:24px;color:#fff;display:block"></b><span class="lab">zonas</span></div>
+          <div class="pane" style="padding:10px"><b class="count" style="--d:31.5s;--at:1.1s;--k:c5;font-size:24px;color:#ff5470;display:block"></b><span class="lab">alerta alta</span></div>
+        </div>
+      </div>
+      <div class="pane pop" style="--at:.2s;position:relative;overflow:hidden;display:grid;place-items:center">
+        <div style="position:relative;width:400px;height:400px">
+          <img src="assets/planet.jpg" style="width:100%;height:100%;border-radius:50%;object-fit:cover;filter:saturate(.7) hue-rotate(-10deg)">
+          <div class="spin" style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(184,255,60,.35),transparent 18%,transparent)"></div>
+          <svg viewBox="-100 -100 200 200" style="position:absolute;inset:-12%;width:124%;height:124%"><circle r="96" fill="none" stroke="#2EE6FF" stroke-opacity=".35" stroke-width=".4"/>${''}</svg>
+          <span style="position:absolute;left:258px;top:96px;width:12px;height:12px;border-radius:50%;background:#ff5470;color:#ff5470" class="pulse"></span>
+          <span style="position:absolute;left:276px;top:84px;font-size:10px;color:#ff5470;background:rgba(5,8,15,.8);padding:2px 6px;border:1px solid #ff5470">7.88N 72.50W</span>
+        </div>
+        <span style="position:absolute;left:14px;top:12px" class="lab">VISTA ORBITAL · TIEMPO REAL</span>
+        <span style="position:absolute;right:14px;bottom:12px;font-size:11px;color:var(--dim)">LAT −90…90 · LON −180…180</span>
+      </div>
+      <div class="pane in" style="--at:.4s;padding:14px;font-size:11.5px;line-height:1.9">
+        <p class="lab">Registro en vivo</p>
+        <span class="type" style="--at:1s;color:var(--dim)">[19:02:11] CMR · 4 escenas GCOV nuevas</span>
+        <span class="type" style="--at:2s;color:var(--dim)">[19:02:40] GUNW · Norte de Santander</span>
+        <span class="type" style="--at:3s;color:#fff">[19:03:02] ANÁLISIS · ritmo +38% vs inicial</span>
+        <span class="type" style="--at:4s;color:#ff5470">[19:03:03] AVISO · aceleración detectada</span>
+        <span class="type" style="--at:5s;color:var(--dim)">[19:03:20] IDEAM · lluvia 72 h: 118 mm</span>
+        <span class="type" style="--at:6s;color:var(--lime)">[19:03:21] NOTIFICADO · 3 suscriptores</span>
+      </div>
+    </div>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#B8FF3C;color:#06110a">B · MANDO</b><span>Centro de control técnico: telemetría, barrido de radar, registro que se escribe en vivo. Para equipos de gestión del riesgo.</span></div>
+</section>
+
+<!-- B2 zona -->
+<section class="scene" style="--d:40.5s;--len:9s">
+  <div class="frame B">
+    <div style="display:flex;align-items:center;gap:22px;padding:12px 18px;border-bottom:1px solid var(--line);font-size:12px"><b style="color:var(--lime);letter-spacing:.24em">SAROS//MANDO</b><span class="lab">ZONA › NEVADO DEL RUIZ · 4.892N 75.324W</span><span style="margin-left:auto;color:#ffc04d">● ATENCIÓN MODERADA</span></div>
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:14px;padding:14px;height:575px">
+      <div class="pane" style="position:relative;overflow:hidden">
+        <img src="assets/map.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.6) contrast(1.1);animation:zoomB 2.2s var(--io) calc(var(--d) + .3s) both">
+        <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(184,255,60,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(184,255,60,.12) 1px,transparent 1px);background-size:48px 48px"></div>
+        <div class="pop" style="--at:1.6s;position:absolute;left:50%;top:48%;width:120px;height:120px;margin:-60px;border:1.5px solid var(--lime)"><span style="position:absolute;left:-10px;top:50%;width:140px;height:1px;background:var(--lime)"></span><span style="position:absolute;top:-10px;left:50%;height:140px;width:1px;background:var(--lime)"></span></div>
+        <span class="fade" style="--at:2s;position:absolute;left:calc(50% + 70px);top:calc(48% - 66px);font-size:11px;background:rgba(5,8,15,.85);border:1px solid var(--lime);padding:4px 8px;color:var(--lime)">+14.9 mm/mes · ACELERA: NO</span>
+        <div class="scanline"></div>
+      </div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <div class="pane in" style="--at:.5s;padding:14px"><p class="lab">Desplazamiento LOS</p><p style="font-size:30px;color:#fff;margin:6px 0">+14.9 <span style="font-size:13px;color:var(--dim)">mm/mes</span></p>
+          <svg viewBox="0 0 320 70" style="width:100%;height:64px"><path class="draw" style="--at:1s" d="M0 64 L40 60 L80 57 L120 50 L160 44 L200 33 L240 26 L280 16 L320 8" fill="none" stroke="#2EE6FF" stroke-width="2"/><path class="draw" style="--at:2.4s" d="M280 16 L320 8" stroke="#ffc04d" stroke-width="2" stroke-dasharray="3 3" fill="none"/></svg>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim)"><span>AGO</span><span>SEP</span><span>OCT</span><span>+90D</span></div></div>
+        <div class="pane in" style="--at:.8s;padding:14px"><p class="lab">Matriz de exposición</p>
+          <div style="display:grid;grid-template-columns:90px repeat(4,1fr);gap:4px;margin-top:10px;font-size:10px;align-items:center">
+            <span></span><span class="lab" style="font-size:8px">HOY</span><span class="lab" style="font-size:8px">30D</span><span class="lab" style="font-size:8px">60D</span><span class="lab" style="font-size:8px">90D</span>
+            <span>AGRICULTURA</span><i class="pop" style="--at:1.2s;height:16px;background:#ffc04d"></i><i class="pop" style="--at:1.3s;height:16px;background:#ff8a4d"></i><i class="pop" style="--at:1.4s;height:16px;background:#ff5470"></i><i class="pop" style="--at:1.5s;height:16px;background:#ff5470"></i>
+            <span>GANADERÍA</span><i class="pop" style="--at:1.3s;height:16px;background:#3b4a2a"></i><i class="pop" style="--at:1.4s;height:16px;background:#ffc04d"></i><i class="pop" style="--at:1.5s;height:16px;background:#ffc04d"></i><i class="pop" style="--at:1.6s;height:16px;background:#ff8a4d"></i>
+            <span>VIVIENDA</span><i class="pop" style="--at:1.4s;height:16px;background:#3b4a2a"></i><i class="pop" style="--at:1.5s;height:16px;background:#3b4a2a"></i><i class="pop" style="--at:1.6s;height:16px;background:#ffc04d"></i><i class="pop" style="--at:1.7s;height:16px;background:#ffc04d"></i>
+            <span>VÍAS</span><i class="pop" style="--at:1.5s;height:16px;background:#3b4a2a"></i><i class="pop" style="--at:1.6s;height:16px;background:#ffc04d"></i><i class="pop" style="--at:1.7s;height:16px;background:#ffc04d"></i><i class="pop" style="--at:1.8s;height:16px;background:#ff8a4d"></i>
+          </div></div>
+        <div class="pane in" style="--at:1.1s;padding:14px;font-size:11.5px;line-height:1.8"><p class="lab">Protocolo</p><span style="color:var(--lime)">01</span> Boletines SGC · <span style="color:var(--lime)">02</span> Cubrir cultivos y agua · <span style="color:var(--lime)">03</span> Rutas lejos de cauces</div>
+      </div>
+    </div>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#B8FF3C;color:#06110a">B · MANDO</b><span>Zona con retícula y mira que fija el punto; la exposición se proyecta en una matriz de 0 a 90 días.</span></div>
+</section>
+<style>@keyframes zoomB{from{transform:scale(1.6)}to{transform:scale(1)}}</style>
+
+<!-- B3 capas: paleta de comandos -->
+<section class="scene" style="--d:49.5s;--len:9s">
+  <div class="frame B">
+    <div style="position:relative;height:620px">
+      <img src="assets/map.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.5) brightness(.7)">
+      <div style="position:absolute;inset:0;background:radial-gradient(circle at 40% 45%,rgba(46,230,255,.35),transparent 30%);animation:fade .6s ease calc(var(--d) + 3.6s) both"></div>
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(184,255,60,.0) 0 18px,rgba(184,255,60,.13) 18px 20px);animation:fade .6s ease calc(var(--d) + 6s) both"></div>
+      <div class="pop" style="--at:.4s;position:absolute;left:330px;top:90px;width:540px" >
+        <div class="pane" style="padding:14px 16px;border-color:var(--lime);background:rgba(5,8,15,.95)">
+          <div style="display:flex;align-items:center;gap:10px;font-size:15px"><span style="color:var(--lime)">❯</span><span class="type" style="--at:1s;max-width:300px;color:#fff">capa lluvia 72h</span><span style="margin-left:auto;font-size:10px;color:var(--dim);border:1px solid var(--line);padding:2px 6px">CTRL K</span></div>
+        </div>
+        <div class="pane in" style="--at:2.2s;margin-top:6px;background:rgba(5,8,15,.95);font-size:12.5px">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(184,255,60,.1);border-left:2px solid var(--lime)"><span class="sw anim" style="--at:3.4s"><i></i></span>Lluvia acumulada 72 h<span style="margin-left:auto;color:var(--dim)">IDEAM · IMERG</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 16px"><span class="sw"><i></i></span>Lluvia pronosticada 24 h<span style="margin-left:auto;color:var(--dim)">Open-Meteo</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 16px"><span class="sw anim" style="--at:5.8s"><i></i></span>Amenaza por movimientos en masa<span style="margin-left:auto;color:var(--dim)">SGC</span></div>
+        </div>
+        <div class="pane in" style="--at:4.2s;margin-top:12px;padding:12px 16px;background:rgba(5,8,15,.95)">
+          <p class="lab">Pila de capas</p>
+          <div style="display:grid;gap:6px;margin-top:8px;font-size:12px">
+            <div style="display:flex;justify-content:space-between;padding:7px 10px;border:1px solid var(--line)"><span>≡ Deformación NISAR</span><span style="color:var(--dim)">80%</span></div>
+            <div class="drop" style="--at:4.4s;display:flex;justify-content:space-between;padding:7px 10px;border:1px solid var(--lime);color:var(--lime)"><span>≡ Lluvia 72 h</span><span>60%</span></div>
+            <div class="drop" style="--at:6.2s;display:flex;justify-content:space-between;padding:7px 10px;border:1px solid var(--line)"><span>≡ Amenaza SGC</span><span style="color:var(--dim)">40%</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 10px;border:1px solid var(--line)"><span>≡ Fondo satelital</span><span style="color:var(--dim)">100%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#B8FF3C;color:#06110a">B · MANDO</b><span>Capas por comandos (Ctrl K): escribes, activas y ordenas la pila; cada capa dice de qué API viene.</span></div>
+</section>
+
+<!-- ================= C · INMERSIVO ================= -->
+<!-- C1 inicio -->
+<section class="scene C" style="--d:58.5s;--len:9s">
+  <div class="frame" style="background:#000">
+    <img src="assets/terrain.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:kbC 9s linear calc(var(--d)) both">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.05) 40%,rgba(0,0,0,.75))"></div>
+    <div class="fade" style="--at:.2s;position:absolute;left:30px;right:30px;top:22px;display:flex;align-items:center;gap:22px;font-size:13px"><b style="font-family:Orbitron;letter-spacing:.24em">SAROS</b><span style="opacity:.8">Explorar</span><span style="opacity:.8">Alertas</span><span style="opacity:.8">Historias</span><span class="glass" style="margin-left:auto;padding:8px 14px;border-radius:999px">● NISAR en órbita</span></div>
+    <div style="position:absolute;left:0;right:0;top:150px;text-align:center">
+      <p class="in" style="--at:.6s;font-size:13px;letter-spacing:.3em;opacity:.85">NEVADO DEL RUIZ · COLOMBIA</p>
+      <h2 class="disp in" style="--at:.8s;font-size:82px;line-height:1;margin:14px 0">El volcán respira.</h2>
+      <p class="in" style="--at:1.2s;font-size:20px;opacity:.9">Y desde el espacio lo vemos subir 14.9 mm cada mes.</p>
+      <span class="glass in" style="--at:1.6s;display:inline-block;margin-top:24px;padding:14px 26px;border-radius:999px;font-weight:600">Entrar a la zona →</span>
+    </div>
+    <div style="position:absolute;left:30px;right:30px;bottom:24px;display:flex;gap:14px;animation:dock 9s linear calc(var(--d)) both">
+      <div class="glass in" style="--at:2s;width:260px;padding:14px;display:flex;gap:12px;align-items:center"><img src="assets/city.jpg" style="width:60px;height:60px;border-radius:12px;object-fit:cover"><div><b>Bogotá</b><p style="font-size:12px;opacity:.8">Se hunde 2.9 cm/mes</p></div></div>
+      <div class="glass in" style="--at:2.15s;width:260px;padding:14px;display:flex;gap:12px;align-items:center"><img src="assets/map.jpg" style="width:60px;height:60px;border-radius:12px;object-fit:cover"><div><b>Norte de Santander</b><p style="font-size:12px;opacity:.8">Ladera acelerando</p></div></div>
+      <div class="glass in" style="--at:2.3s;width:260px;padding:14px;display:flex;gap:12px;align-items:center"><img src="assets/planet.jpg" style="width:60px;height:60px;border-radius:12px;object-fit:cover"><div><b>La Mojana</b><p style="font-size:12px;opacity:.8">Agua estancada</p></div></div>
+      <div class="glass in" style="--at:2.45s;width:260px;padding:14px;display:flex;gap:12px;align-items:center"><img src="assets/terrain.jpg" style="width:60px;height:60px;border-radius:12px;object-fit:cover"><div><b>Caquetá</b><p style="font-size:12px;opacity:.8">Pérdida de bosque</p></div></div>
+      <div class="glass in" style="--at:2.6s;width:260px;padding:14px;display:flex;gap:12px;align-items:center"><img src="assets/city.jpg" style="width:60px;height:60px;border-radius:12px;object-fit:cover"><div><b>Mocoa</b><p style="font-size:12px;opacity:.8">Historia 2017</p></div></div>
+    </div>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#fff;color:#0b1020">C · INMERSIVO</b><span>Cinematográfico: el lugar ocupa toda la pantalla, el titular cuenta una historia y las zonas desfilan en tarjetas de cristal.</span></div>
+</section>
+<style>@keyframes kbC{from{transform:scale(1.18) translate(2%,1%)}to{transform:scale(1.02)}}@keyframes dock{from{transform:none}to{transform:translateX(-160px)}}</style>
+
+<!-- C2 zona -->
+<section class="scene C" style="--d:67.5s;--len:9s">
+  <div class="frame" style="background:#000">
+    <img src="assets/terrain.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:pushC 2.6s var(--io) calc(var(--d)) both">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.55),transparent 55%)"></div>
+    <div class="glass" style="position:absolute;left:28px;top:28px;bottom:96px;width:390px;padding:24px;animation:glassIn 1.2s var(--ease) calc(var(--d) + 1s) both">
+      <p style="font-size:12px;letter-spacing:.24em;opacity:.8">VOLCÁN · ATENCIÓN MODERADA</p>
+      <h3 class="disp" style="font-size:38px;margin:10px 0 18px">Nevado del Ruiz</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="glass in" style="--at:1.6s;padding:14px;border-radius:16px"><p style="font-size:11px;opacity:.75">Ritmo</p><p class="disp" style="font-size:28px">+14.9</p><p style="font-size:11px;opacity:.75">mm/mes</p></div>
+        <div class="glass in" style="--at:1.75s;padding:14px;border-radius:16px"><p style="font-size:11px;opacity:.75">En 90 días</p><p class="disp" style="font-size:28px">76</p><p style="font-size:11px;opacity:.75">mm</p></div>
+      </div>
+      <p class="in" style="--at:2s;font-size:12px;letter-spacing:.2em;opacity:.8;margin:20px 0 10px">A QUIÉN AFECTA</p>
+      <div class="in" style="--at:2.1s;display:flex;flex-wrap:wrap;gap:8px;font-size:13px">
+        <span class="glass" style="padding:8px 12px;border-radius:999px;border-color:rgba(255,120,140,.7)">🌾 Agricultura · alta</span>
+        <span class="glass" style="padding:8px 12px;border-radius:999px">🐄 Ganadería · media</span>
+        <span class="glass" style="padding:8px 12px;border-radius:999px">🏠 Vivienda · media</span>
+      </div>
+      <p class="in" style="--at:2.4s;margin-top:20px;font-size:14px;line-height:1.6;opacity:.92">Sigue los boletines del SGC, cubre cultivos y agua, y conoce tu ruta de evacuación lejos de los ríos.</p>
+    </div>
+    <!-- línea de tiempo -->
+    <div class="glass in" style="--at:1.4s;position:absolute;left:28px;right:28px;bottom:24px;height:56px;border-radius:999px;display:flex;align-items:center;gap:12px;padding:0 22px;font-size:12px">
+      <span>ago</span>
+      <div style="position:relative;flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.25)"><div style="position:absolute;inset:0;border-radius:2px;background:#fff;transform-origin:left;animation:scrub 6s linear calc(var(--d) + 2s) both"></div>
+        <span style="position:absolute;top:-6px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#fff;box-shadow:0 0 18px #fff;animation:scrubDot 6s linear calc(var(--d) + 2s) both"></span></div>
+      <span>oct</span><span style="opacity:.7">▶ reproducir</span>
+    </div>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#fff;color:#0b1020">C · INMERSIVO</b><span>La cámara empuja hacia el lugar y la información flota en cristal; la línea de tiempo se reproduce sola.</span></div>
+</section>
+<style>@keyframes pushC{from{transform:scale(1)}to{transform:scale(1.22) translate(-6%,-3%)}}@keyframes glassIn{from{opacity:0;transform:translateX(-40px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}@keyframes scrub{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes scrubDot{from{left:0}to{left:100%}}</style>
+
+<!-- C3 capas: selector radial -->
+<section class="scene C" style="--d:76.5s;--len:9s">
+  <div class="frame" style="background:#000">
+    <img src="assets/map.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+    <img src="assets/city.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:fade 1.2s ease calc(var(--d) + 5.6s) both">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse 30% 35% at 45% 45%,rgba(80,160,255,.45),transparent 70%);mix-blend-mode:screen;animation:fade .8s ease calc(var(--d) + 2.6s) both"></div>
+    <div style="position:absolute;left:560px;top:250px;width:0;height:0">
+      <div class="glass pop" style="--at:.6s;position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;display:grid;place-items:center;font-weight:700">Capas</div>
+      <div class="glass pop" style="--at:1s;position:absolute;left:-170px;top:-170px;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;text-align:center;font-size:12px;animation:pop .8s var(--ease) calc(var(--d) + 1s) both,act .3s ease calc(var(--d) + 2.4s) both">💧<br>Lluvia</div>
+      <div class="glass pop" style="--at:1.12s;position:absolute;left:-48px;top:-210px;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;text-align:center;font-size:12px">🌋<br>Sismos</div>
+      <div class="glass pop" style="--at:1.24s;position:absolute;left:74px;top:-170px;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;text-align:center;font-size:12px">🛣️<br>Vías</div>
+      <div class="glass pop" style="--at:1.36s;position:absolute;left:114px;top:-48px;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;text-align:center;font-size:12px">👥<br>Población</div>
+      <div class="glass pop" style="--at:1.48s;position:absolute;left:74px;top:74px;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;text-align:center;font-size:12px;animation:pop .8s var(--ease) calc(var(--d) + 1.48s) both,act .3s ease calc(var(--d) + 5.2s) both">🏙️<br>Ciudad 3D</div>
+      <div class="glass pop" style="--at:1.6s;position:absolute;left:-48px;top:114px;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;text-align:center;font-size:12px">🔥<br>Incendios</div>
+    </div>
+    <svg class="cursor" viewBox="0 0 24 24" style="animation:curC3 var(--len) var(--io) var(--d) both"><path d="M3 2 L20 12 L12 13.5 L8 21 Z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg>
+  </div>
+  <div class="cap in" style="--at:.4s;color:#d6def3"><b style="background:#fff;color:#0b1020">C · INMERSIVO</b><span>Selector radial de capas: se abre alrededor del dedo, enciende lluvia y cambia el fondo a ciudad 3D con un fundido.</span></div>
+</section>
+<style>@keyframes act{to{background:rgba(255,255,255,.85);color:#0b1020}}@keyframes curC3{0%{left:900px;top:520px}12%{left:600px;top:290px}22%{left:470px;top:150px}30%{left:470px;top:150px}50%{left:710px;top:390px}100%{left:710px;top:390px}}</style>
+
+<!-- Cierre: comparación -->
+<section class="scene" style="--d:85.5s;--len:6.5s;background:radial-gradient(ellipse at 50% 30%,#141c40,#05070d 70%)">
+  <p class="in" style="--at:.2s;position:absolute;left:0;right:0;top:70px;text-align:center;font-size:12px;letter-spacing:.3em;color:#7fdcff">ELIGE UNA DIRECCIÓN · O MEZCLA LO MEJOR DE CADA UNA</p>
+  <div style="position:absolute;left:60px;right:60px;top:130px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+    <div class="pop" style="--at:.4s;border-radius:16px;overflow:hidden;background:#F4F1EA;color:#14161C">
+      <img src="assets/map.jpg" style="width:100%;height:170px;object-fit:cover"><div style="padding:16px"><b style="font-family:Fraunces;font-size:26px">Atlas</b><p style="font-size:13px;margin-top:6px;line-height:1.5;color:#5d6170">Claro, editorial y calmado. Ideal para el público general y la presentación del reto.</p></div></div>
+    <div class="pop" style="--at:.55s;border-radius:16px;overflow:hidden;background:#05080F;border:1px solid #18263a;font-family:'JetBrains Mono'">
+      <img src="assets/map.jpg" style="width:100%;height:170px;object-fit:cover;filter:saturate(.5) brightness(.7)"><div style="padding:16px"><b style="font-size:22px;color:#B8FF3C">Mando</b><p style="font-size:12px;margin-top:6px;line-height:1.5;color:#9fb0c8">Denso y técnico. Ideal para UNGRD, alcaldías y equipos que vigilan a diario.</p></div></div>
+    <div class="pop" style="--at:.7s;border-radius:16px;overflow:hidden;position:relative;height:300px">
+      <img src="assets/terrain.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="C" style="position:absolute;left:12px;right:12px;bottom:12px;background:transparent"><div class="glass" style="padding:16px"><b class="disp" style="font-size:24px">Inmersivo</b><p style="font-size:13px;margin-top:6px;line-height:1.5;opacity:.9">Emocional y visual. Ideal para el video del reto y para contar historias.</p></div></div></div>
+  </div>
+  <p class="in" style="--at:1.2s;position:absolute;left:0;right:0;bottom:60px;text-align:center;font-size:12px;color:#6b7aa3">Maquetas de concepto · imágenes reales del prototipo SAROS · cifras de demostración</p>
+</section>
+
+</div>
+<script>
+// limpiar restos de plantilla
+document.querySelectorAll("svg").forEach((s) => { s.innerHTML = s.innerHTML.replace("${''}", ""); });
+// la altitud usa su propio retraso
+document.querySelectorAll("[data-x]").forEach((el) => { el.style.setProperty("--d", "31.5s"); el.style.setProperty("--at", ".4s"); el.style.setProperty("--k", "c747"); el.classList.add("count"); });
+window.__seek = (t) => { for (const a of document.getAnimations()) { a.pause(); a.currentTime = t * 1000; } };
+window.__duration = 92;
+</script>
+</body>
+</html>

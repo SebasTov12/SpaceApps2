@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { History, MessageCircle, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { recommendations } from "@/lib/insights";
-import { useI18n } from "@/lib/i18n";
+import { isAutoLang, useI18n } from "@/lib/i18n";
 import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import { loadManifest, type AttentionLevel, type SiteManifest } from "@/lib/sites";
@@ -237,8 +237,10 @@ export async function collectSaroLines(lang: "es" | "en" = "es") {
 
 /** Saru: guía animado. Narra solo cada zona, señala en el mapa, responde preguntas y habla con voz neuronal. */
 export default function SaroGuide() {
-  const { lang } = useI18n();
+  const { lang, globalLang } = useI18n();
   const reduce = useReducedMotion();
+  // con traducción automática el texto sale completo: escribir letra a letra obligaría a retraducir sin parar
+  const instant = reduce || isAutoLang(globalLang);
   const es = lang === "es";
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [manifest, setManifest] = useState<SiteManifest | null>(null);
@@ -342,9 +344,9 @@ export default function SaroGuide() {
   }, [current, reply, aside]);
 
   // escritura progresiva (solo cambia el texto)
-  const typed = reduce ? text : text.slice(0, prog.text === text ? prog.n : 0);
+  const typed = instant ? text : text.slice(0, prog.text === text ? prog.n : 0);
   useEffect(() => {
-    if (reduce) return;
+    if (instant) return;
     const id = window.setInterval(() => {
       setProg((p) => {
         const next = (p.text === text ? p.n : 0) + 3;
@@ -353,7 +355,7 @@ export default function SaroGuide() {
       });
     }, 28);
     return () => window.clearInterval(id);
-  }, [text, reduce]);
+  }, [text, instant]);
 
   // ---------- voz: neuronal pregrabada (frase completa o frase por frase) y, si falta, la del navegador ----------
   const [recorded, setRecorded] = useState<Set<string> | null>(null);

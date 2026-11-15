@@ -1,5 +1,6 @@
 "use client";
 
+import "./translate-guard";
 import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
 export type Lang = "es" | "en";
@@ -165,6 +166,9 @@ export const AVAILABLE_LANGUAGES: LanguageOption[] = [
   { code: "tl", name: "Tagalo / Filipino", native: "Filipino", flag: "🇵🇭" },
 ];
 
+/** Idiomas que traduce el traductor automático (todo lo que no es español ni inglés nativo). */
+export const isAutoLang = (code: string) => code !== "es" && code !== "en";
+
 type I18n = {
   lang: Lang;
   globalLang: string;
@@ -324,6 +328,53 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       document.body.appendChild(script);
     }
   }, [applyToCombo]);
+
+  // El traductor solo traduce lo que había al cargar. Cuando la página muestra texto nuevo
+  // (abrir una zona, paneles, Saru), se le pide que vuelva a traducir, agrupando los cambios.
+  useEffect(() => {
+    if (typeof window === "undefined" || isAutoLang(globalLang) === false) return;
+    let timer = 0;
+    let first = 0;
+    let resume = 0;
+    const watch = () => observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    const retranslate = () => {
+      timer = 0;
+      first = 0;
+      const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
+      if (!select) return;
+      // lo que cambie el propio traductor mientras trabaja no cuenta como texto nuevo
+      observer.disconnect();
+      window.clearTimeout(resume);
+      resume = window.setTimeout(() => { observer.takeRecords(); watch(); }, 1600);
+      // repetir el mismo idioma no hace nada: se vuelve un instante al original y otra vez al elegido
+      const source = Array.from(select.options).some((o) => o.value === "es") ? "es" : "";
+      for (const value of [source, globalLang === "he" ? "iw" : globalLang]) {
+        select.value = value;
+        select.dispatchEvent(new Event("change"));
+      }
+    };
+    const insideFont = (node: Node | null) => !!node && !!(node.nodeType === 1 ? (node as Element) : node.parentElement)?.closest("font, .notranslate, [translate='no'], .skiptranslate");
+    const hasText = (node: Node) => node.nodeType === 3 ? !!node.nodeValue?.trim() : node.nodeType === 1 && (node as Element).tagName !== "FONT" && !!node.textContent?.trim();
+    const observer = new MutationObserver((records) => {
+      // solo cuenta texto nuevo de la app; lo que inserta el propio traductor (<font>) no
+      const fresh = records.some((r) =>
+        r.type === "characterData"
+          ? !insideFont(r.target) && !!r.target.nodeValue?.trim()
+          : Array.from(r.addedNodes).some((n) => hasText(n) && !insideFont(n.nodeType === 3 ? n.parentNode : n)));
+      if (!fresh) return;
+      const now = Date.now();
+      if (!first) first = now;
+      window.clearTimeout(timer);
+      // espera a que el texto se asiente (Saru escribiendo), pero nunca más de 2,5 s
+      timer = window.setTimeout(retranslate, now - first > 2500 ? 0 : 700);
+    });
+    watch();
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+      window.clearTimeout(resume);
+    };
+  }, [globalLang]);
 
   const setGlobalLang = useCallback((code: string) => {
     if (!AVAILABLE_LANGUAGES.some((option) => option.code === code)) return;
