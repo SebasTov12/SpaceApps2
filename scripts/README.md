@@ -125,3 +125,33 @@ docker compose -f infra/saros/docker-compose.yml --profile processing run --rm p
 El inventario reporta rutas, dimensiones, tipos y atributos. Los candidatos
 por nombre son solo pistas; confirma semántica, unidades, georreferenciación y
 calidad con la documentación oficial antes de procesar las matrices.
+
+### Actualización incremental desde el checkpoint SAROS
+
+`update_nisar_catalog.py` consulta el último día de observación LOS real
+persistido en SAROS API, consulta ASF desde esa fecha (incluyente) y conserva
+solo productos cuyo día secundario sea posterior. Requiere que la serie inicial
+ya exista; no inventa checkpoint, observaciones ni pronósticos. Actualiza un
+GeoJSON pequeño de metadatos y no descarga HDF5:
+
+```sh
+docker compose --env-file .env -f infra/saros/docker-compose.yml --profile processing run --rm processor \
+  scripts/update_nisar_catalog.py \
+  --aoi-id neiva-core \
+  --stack-id D-083-087-2000-SH \
+  --processing-version nisar-los-v1 \
+  --maturity PROVISIONAL
+```
+
+`SAROS_API_URL` y `SAROS_PREDICTION_TOKEN` se inyectan al contenedor desde el
+`.env` privado. `--processing-version` debe coincidir exactamente con la
+versión de las observaciones que generó el procesador. Cambia AOI, stack,
+madurez y versión para consultar otra serie compatible. El endpoint de
+checkpoint está protegido por el mismo Bearer token que la ingesta. Instala
+`asf_search>=10,<11` (la imagen del servidor comprobada tenía 10.3.0) y revisa
+los parámetros soportados en el
+[ASF Cookbook](https://docs.asf.alaska.edu/api/cookbook/) y las
+[buenas prácticas](https://docs.asf.alaska.edu/asf_search/BestPractices/).
+Una vez actualizado el catálogo todavía hay que descargar y validar las capas
+reales, procesarlas con el mismo `processing_version` e insertar observaciones
+antes de poder ejecutar el backtest.

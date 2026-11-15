@@ -283,6 +283,54 @@ def ingest_nisar_observations():
         return jsonify({"error": "nisar_observation_persistence_failed", "hint": "Apply pipeline/sql/004_nisar_forecast.sql first."}), 503
 
 
+@app.get("/api/v1/nisar/observations/checkpoint")
+def nisar_observation_checkpoint():
+    """Return the latest real observation for an incremental catalog update."""
+    if not PREDICTION_TOKEN:
+        return jsonify({"error": "nisar_ingest_not_configured"}), 503
+    if not has_prediction_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    aoi_id = request.args.get("aoi_id", "").strip()
+    stack_id = request.args.get("stack_id", "").strip()
+    processing_version = request.args.get("processing_version", "").strip()
+    if not all((aoi_id, stack_id, processing_version)):
+        return jsonify({"error": "aoi_id_stack_id_and_processing_version_required"}), 400
+    try:
+        with connect_db() as connection:
+            row = connection.execute(
+                """
+                SELECT count(*), max(observation_date)
+                  FROM nisar.observations
+                 WHERE aoi_id = %s AND stack_id = %s AND processing_version = %s
+                   AND data_mode = 'real'
+                """,
+                (aoi_id, stack_id, processing_version),
+            ).fetchone()
+            latest_granules = []
+            if row[1] is not None:
+                latest_granules = connection.execute(
+                    """
+                    SELECT source_granules
+                      FROM nisar.observations
+                     WHERE aoi_id = %s AND stack_id = %s AND processing_version = %s
+                       AND data_mode = 'real' AND observation_date = %s
+                     ORDER BY observation_id DESC LIMIT 1
+                    """,
+                    (aoi_id, stack_id, processing_version, row[1]),
+                ).fetchone()[0]
+        return jsonify({
+            "aoi_id": aoi_id,
+            "stack_id": stack_id,
+            "processing_version": processing_version,
+            "observation_count": row[0],
+            "last_processed_date": row[1].isoformat() if row[1] else None,
+            "source_granules": latest_granules,
+            "data_mode": "real",
+        })
+    except psycopg.Error:
+        return jsonify({"error": "nisar_checkpoint_unavailable", "hint": "Apply pipeline/sql/004_nisar_forecast.sql first."}), 503
+
+
 @app.post("/api/v1/nisar/forecasts/run")
 def run_nisar_forecast():
     """Run a real-data temporal backtest and persist one forecast target."""

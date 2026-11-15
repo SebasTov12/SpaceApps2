@@ -98,6 +98,13 @@ su creación idempotente en otro entorno:
 docker compose -f infra/saros/docker-compose.yml --profile migration run --rm nisar-migrate
 ```
 
+`GET /api/v1/nisar/observations/checkpoint` devuelve la fecha y procedencia
+del último dato real para AOI/stack/versión. `scripts/update_nisar_catalog.py`
+usa ese checkpoint para añadir al manifiesto los GUNW posteriores del mismo
+stack y madurez; la fecha de consulta ASF es inclusiva y cada par se filtra por
+su fecha secundaria. La actualización solo incorpora metadatos. Una serie sin
+checkpoint real se rechaza y requiere completar primero la ingesta inicial.
+
 El servidor marca las salidas como exploratorias incluso cuando hay más de un
 corte de validación. Seis orígenes temporales son solo una regla mínima de
 cribado; no equivalen a una demostración de fiabilidad. El error principal se

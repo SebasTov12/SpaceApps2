@@ -129,3 +129,19 @@ livianos y documentación de procedencia.
   explícita y separar por CRID; por defecto conserva PROVISIONAL. El nuevo
   selector pasó el dry-run sobre el manifiesto real: dos pares D/083/087,
   PROVISIONAL/P05023, 4.555 GB, sin descarga.
+- Se añadió `GET /api/v1/nisar/observations/checkpoint`, autenticado con el
+  token SAROS, para consultar fecha más reciente, cantidad de observaciones y
+  granules fuente para una combinación exacta de AOI, stack y versión.
+- Se añadió `scripts/update_nisar_catalog.py`: toma ese checkpoint, consulta
+  ASF desde la fecha inclusiva, mantiene la madurez seleccionada, filtra por
+  stack y fecha secundaria, verifica la intersección geométrica con el AOI y
+  fusiona metadatos nuevos en un GeoJSON mediante reemplazo atómico. No baja
+  HDF5 ni fabrica observaciones. Si el checkpoint no existe, se detiene y pide
+  la ingesta inicial real. La consulta real al servidor todavía no puede
+  encontrar una serie porque la tabla tiene cero observaciones; credenciales
+  Earthdata también siguen vacías y no hay HDF5 descargados.
+- Las verificaciones ejecutadas para este cambio fueron compilación de Python
+  (`py_compile`) y `git diff --check`; aún falta desplegar/reiniciar API y
+  comprobar el endpoint autenticado y la consulta incremental ASF en el
+  servidor. No se pueden reportar RMSE/MAE de predicción hasta producir una
+  serie LOS científica con mediciones reales.
