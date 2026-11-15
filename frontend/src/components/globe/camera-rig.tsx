@@ -65,6 +65,17 @@ export default function CameraRig() {
     offset.current.y += (goal.y - offset.current.y) * k;
     const moving = Math.abs(offset.current.x) > 0.5 || Math.abs(offset.current.y) > 0.5;
     gl.domElement.style.transform = moving ? `translate3d(${offset.current.x.toFixed(1)}px, ${offset.current.y.toFixed(1)}px, 0)` : "";
+    // Vista de un país: el planeta crece más que el lienzo; una máscara circular que se cierra con el
+    // acercamiento conserva la forma redonda (sin el recorte rectangular del lienzo)
+    const c = smooth(Math.min(1, country.current));
+    const style = gl.domElement.style;
+    if (c > 0.01) {
+      const r = 150 - 52 * c; // % del lado más corto
+      const mask = `radial-gradient(circle closest-side at 50% 50%, #000 ${(r - 14).toFixed(1)}%, rgba(0,0,0,.55) ${(r - 6).toFixed(1)}%, transparent ${r.toFixed(1)}%)`;
+      if (style.maskImage !== mask) { style.maskImage = mask; style.setProperty("-webkit-mask-image", mask); }
+    } else if (style.maskImage) {
+      style.maskImage = ""; style.setProperty("-webkit-mask-image", "");
+    }
   });
   return null;
 }

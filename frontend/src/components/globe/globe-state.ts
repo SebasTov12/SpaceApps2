@@ -42,6 +42,10 @@ export const globeState = {
   country: null as string | null,
   /** Acercamiento de la cámara a un país (0 = planeta completo, 1 = país en primer plano). */
   countryZoom: 0,
+  /** Tipos ocultos con el filtro del panel derecho (amenazas y zonas comparten las claves de tipo). */
+  hiddenKinds: new Set<string>(),
+  /** Cambia cada vez que cambia el filtro (la malla de puntos se recalcula). */
+  filterVersion: 0,
   /** Zona a la que el usuario pidió llevar el planeta. */
   focus: null as string | null,
   /** Acercamiento de la cámara a una zona: 0 = vista general, 1 = zona abierta. */
@@ -76,9 +80,23 @@ export function openCountry(code: string) {
   window.dispatchEvent(new CustomEvent(COUNTRY_EVENT, { detail: code }));
 }
 
+/** Aviso de que cambió el filtro de tipos (detail: tipos ocultos). */
+export const KIND_FILTER_EVENT = "saros:kind-filter";
+
+/** Muestra u oculta un tipo de punto en la vista del país. */
+export function toggleKind(kind: string | null) {
+  if (kind === null) globeState.hiddenKinds.clear();
+  else if (globeState.hiddenKinds.has(kind)) globeState.hiddenKinds.delete(kind);
+  else globeState.hiddenKinds.add(kind);
+  globeState.filterVersion += 1;
+  window.dispatchEvent(new CustomEvent(KIND_FILTER_EVENT, { detail: new Set(globeState.hiddenKinds) }));
+}
+
 /** Vuelve a la vista de países. */
 export function closeCountry() {
   globeState.country = null;
+  globeState.hiddenKinds.clear();
+  globeState.filterVersion += 1;
   globeState.countryZoom = 0;
   window.dispatchEvent(new CustomEvent(COUNTRY_EVENT, { detail: null }));
 }

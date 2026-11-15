@@ -3282,3 +3282,16 @@ html body .cy-kinds li i{width:9px;height:9px;border-radius:50%;background:var(-
 html body .cy-kinds li b{margin-left:auto;color:#fff;font-variant-numeric:tabular-nums}
 html body .cy-hint{display:flex;gap:6px;align-items:flex-start;font-size:11px;color:#8f9bc0;line-height:1.35}
 @media(max-width:720px){html body .cy-panel{top:auto;bottom:150px;left:10px;width:calc(100vw - 20px)}html body .cy-kinds{grid-template-columns:1fr 1fr}}
+
+/* ---------- Filtro por tipo dentro del país (panel derecho) ---------- */
+html body .kind-filter{position:absolute;right:22px;top:calc(50% + 92px);z-index:7;width:min(236px,calc(100vw - 44px));max-height:calc(50vh - 120px);overflow:auto;display:grid;gap:3px;padding:10px;border-radius:18px;
+  background:rgba(9,13,30,.78);border:1px solid rgba(104,25,147,.55);backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);scrollbar-width:thin}
+html body .kind-filter-head{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 6px;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8f9bc0}
+html body .kind-filter-head button{border:0;background:rgba(94,240,255,.12);color:#bdf6ff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;cursor:pointer;letter-spacing:.04em;text-transform:none}
+html body .kind-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px;padding:7px 9px;border:0;border-radius:11px;background:transparent;color:#dfe6ff;font-size:12.5px;text-align:left;cursor:pointer;transition:background .2s,opacity .2s}
+html body .kind-row:hover{background:rgba(255,255,255,.06)}
+html body .kind-row i{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);transition:background .2s,box-shadow .2s}
+html body .kind-row .kind-count{font-size:11px;color:#9aa5cc;font-variant-numeric:tabular-nums;white-space:nowrap}
+html body .kind-row.is-off{opacity:.42}
+html body .kind-row.is-off i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
+@media(max-width:720px){html body .kind-filter{top:auto;bottom:150px;right:10px;width:min(220px,calc(100vw - 20px));max-height:30vh}}

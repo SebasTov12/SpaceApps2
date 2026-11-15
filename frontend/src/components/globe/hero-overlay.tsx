@@ -6,11 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MotionValue } from "framer-motion";
 import { levelInfo } from "@/lib/insights";
 import { useI18n } from "@/lib/i18n";
-import { riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
+import { riskKindLabel, riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { loadSites, type SiteSummary } from "@/lib/sites";
 import LanguageModal from "@/components/language-modal";
 import { HAZARDS_EVENT, type HazardPoints } from "@/lib/hazard-points";
-import { COUNTRY_EVENT, closeCountry, focusZone, globeState, UI_REVEAL } from "./globe-state";
+import { COUNTRY_EVENT, KIND_FILTER_EVENT, closeCountry, focusZone, globeState, toggleKind, UI_REVEAL } from "./globe-state";
 import { countryName, countryOf } from "@/lib/emergency";
 import { hazardKind, pointCountry } from "@/lib/hazard-points";
 
@@ -74,6 +74,34 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
     };
   }, []);
   const [mode, setMode] = useState<"all" | "risk" | "watch">("all");
+  // filtro por tipo dentro del país (panel derecho): registros de la base + zonas vigiladas
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const onFilter = (event: Event) => setHidden(new Set((event as CustomEvent<Set<string>>).detail));
+    window.addEventListener(KIND_FILTER_EVENT, onFilter);
+    return () => window.removeEventListener(KIND_FILTER_EVENT, onFilter);
+  }, []);
+  const kindRows = useMemo(() => {
+    if (!country || !countryStats) return [];
+    const rows = new Map<string, { records: number; zones: number }>();
+    for (const [kind, n] of countryStats.kinds) rows.set(kind, { records: n, zones: 0 });
+    for (const z of riskZones) {
+      if (countryOf(z) !== country) continue;
+      const row = rows.get(z.kind) ?? { records: 0, zones: 0 };
+      row.zones += 1;
+      rows.set(z.kind, row);
+    }
+    // el modo decide qué tipos entran: amenazas (registros + zonas de riesgo) o vigilancia ambiental (tala y minería)
+    return Array.from(rows.entries())
+      .filter(([kind, row]) => mode === "all" || (mode === "watch" ? watchKinds.has(kind as RiskZone["kind"]) && row.zones > 0 : !watchKinds.has(kind as RiskZone["kind"])))
+      .map(([kind, row]) => ({ kind, ...row, records: mode === "watch" ? 0 : row.records }))
+      .sort((a, b) => b.records + b.zones * 1000 - (a.records + a.zones * 1000));
+  }, [country, countryStats, mode]);
+  const kindInfo = (kind: string) => {
+    const zone = riskKinds[kind as RiskZone["kind"]];
+    const hz = hazardKind(kind);
+    return { color: zone?.color ?? hz.color, label: zone ? zone[lang === "es" ? "es" : "en"] : hz[lang === "es" ? "es" : "en"] };
+  };
   const changeMode = (next: "all" | "risk" | "watch") => setMode(next);
   useEffect(() => {
     globeState.mode = mode;
@@ -129,6 +157,31 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
           </button>
         ))}
       </div>
+      <AnimatePresence>
+        {country && kindRows.length > 0 && (
+          <motion.div className="kind-filter" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+            <div className="kind-filter-head">
+              <span>{lang === "es" ? "Qué ver en el mapa" : "Show on the map"}</span>
+              {hidden.size > 0 && <button type="button" onClick={() => toggleKind(null)}>{lang === "es" ? "Todo" : "All"}</button>}
+            </div>
+            {kindRows.map((row) => {
+              const info = kindInfo(row.kind);
+              const off = hidden.has(row.kind);
+              return (
+                <button key={row.kind} type="button" className={`kind-row${off ? " is-off" : ""}`} aria-pressed={!off} onClick={() => toggleKind(row.kind)} style={{ "--c": info.color } as React.CSSProperties}>
+                  <i />
+                  <span className="kind-name">{info.label}</span>
+                  <span className="kind-count">
+                    {row.records > 0 && row.records.toLocaleString(lang === "es" ? "es-CO" : "en-US")}
+                    {row.records > 0 && row.zones > 0 && " · "}
+                    {row.zones > 0 && `${row.zones} ${lang === "es" ? (row.zones === 1 ? "zona" : "zonas") : (row.zones === 1 ? "zone" : "zones")}`}
+                  </span>
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
       {hazards && hazards.located > 0 && !country && (
         <div className="hz-legend" title={hazards.note}>
           <span><b>{hazards.located.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</b> {lang === "es" ? "Registros totales" : "Total records"}</span>
@@ -147,15 +200,6 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
               {countryStats.records > 0 && countryStats.zones > 0 && " · "}
               {countryStats.zones > 0 && <><b>{countryStats.zones}</b> {lang === "es" ? (countryStats.zones === 1 ? "zona vigilada" : "zonas vigiladas") : (countryStats.zones === 1 ? "watched zone" : "watched zones")}</>}
             </span>
-            {countryStats.kinds.length > 0 && (
-              <ul className="cy-kinds">
-                {countryStats.kinds.slice(0, 7).map(([kind, n]) => (
-                  <li key={kind} style={{ "--c": hazardKind(kind).color } as React.CSSProperties}>
-                    <i />{hazardKind(kind)[lang === "es" ? "es" : "en"]}<b>{n.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</b>
-                  </li>
-                ))}
-              </ul>
-            )}
             <small className="cy-hint"><MousePointerClick size={13} /> {lang === "es" ? "Pasa o toca un punto para ver su detalle; toca una zona para abrirla." : "Hover or tap a point for details; tap a zone to open it."}</small>
           </motion.div>
         )}

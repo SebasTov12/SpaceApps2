@@ -47,7 +47,7 @@ export default function HazardPoints() {
     const pos = new Vector3(...spherePosition(p.lat, p.lon, RADIUS));
     const quat = new Quaternion().setFromUnitVectors(up, pos.clone().normalize());
     const size = 0.0019 + 0.0016 * Math.log10(p.n + 1);
-    return { country: pointCountry(p), pos, quat, size, color: new Color(hazardKind(p.kind).color) };
+    return { country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color(hazardKind(p.kind).color) };
   }), [points]);
 
   const geometry = useMemo(() => new CircleGeometry(1, 14), []);
@@ -77,13 +77,13 @@ export default function HazardPoints() {
     const active = pinned ?? hover;
     // terminada la entrada, la malla queda quieta: solo se recalcula si cambia el punto señalado
     const done = since > 0.5 + 60 * 0.012;
-    const key = `${active}|${globeState.country}`;
+    const key = `${active}|${globeState.country}|${globeState.filterVersion}`;
     if (done && settled.current === key) return;
     if (done) settled.current = key;
     for (let i = 0; i < layout.length; i++) {
       const item = layout[i];
       const k = Math.min(1, Math.max(0, (since - (i % 60) * 0.012) / 0.5));
-      const here = item.country === globeState.country ? 1 : 0;
+      const here = item.country === globeState.country && !globeState.hiddenKinds.has(item.kind) ? 1 : 0;
       const scale = here * item.size * (k < 1 ? k * (1.4 - 0.4 * k) : 1) * (i === active ? 3 : 1);
       dummy.position.copy(item.pos);
       dummy.quaternion.copy(item.quat);
@@ -103,7 +103,7 @@ export default function HazardPoints() {
     center.setFromMatrixPosition(m);
     let best = -1, bestD = 12 * 12;
     for (let i = 0; i < layout.length; i++) {
-      if (layout[i].country !== globeState.country) continue;
+      if (layout[i].country !== globeState.country || globeState.hiddenKinds.has(layout[i].kind)) continue;
       tmp.copy(layout[i].pos).applyMatrix4(m);
       // solo la cara visible del planeta
       if (tmp3.copy(tmp).sub(center).dot(tmp2.copy(camPos).sub(tmp)) <= 0) continue;

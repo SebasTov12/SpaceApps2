@@ -116,7 +116,8 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     }
     // en la vista de países las zonas se agrupan en el punto de su país; se ven al abrirlo (o si están abiertas)
     const inCountry = globeState.selected === zone.id || (globeState.country !== null && countryOf(zone) === globeState.country);
-    if (!globeState.revealed.has(zone.id) || !facingCamera.current || !inMode || !inCountry) {
+    const filtered = globeState.hiddenKinds.has(zone.kind) && globeState.selected !== zone.id;
+    if (!globeState.revealed.has(zone.id) || !facingCamera.current || !inMode || !inCountry || filtered) {
       node.visible = false;
       return;
     }
@@ -134,8 +135,10 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     const flashBoost = flashing ? Math.sin(f * Math.PI) : 0;
     const detectorGlow = Math.min(1.2, prox * 0.75 + flashBoost * 0.7);
 
-    // Escala general sutil y sin parpadeo
-    node.scale.setScalar(Math.max(0.001, easeOutBack(appear)));
+    // Escala general sutil y sin parpadeo; en la vista de un país la baliza es más pequeña y discreta
+    const close = Math.min(1, globeState.countryZoom);
+    const fine = 1 - 0.58 * close;
+    node.scale.setScalar(Math.max(0.001, easeOutBack(appear) * fine));
 
     // Iluminación reactiva del orbe 3D y su anillo holográfico
     const baseEmissive = selected ? 0.85 : hover ? 0.7 : 0.35;
@@ -144,12 +147,12 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
 
     // Halo atmosférico alrededor de la esfera
     if (haloMesh.current) {
-      (haloMesh.current.material as MeshBasicMaterial).opacity = 0.05 + detectorGlow * 0.08 + (hover || selected ? 0.08 : 0);
+      (haloMesh.current.material as MeshBasicMaterial).opacity = (0.05 + detectorGlow * 0.08 + (hover || selected ? 0.08 : 0)) * (1 - 0.8 * close);
     }
 
     // Columna de luz: se estira y resplandece suavemente al recibir el detector del satélite
     if (pillar.current) {
-      pillar.current.scale.set(1, 1, Math.max(0.001, appear));
+      pillar.current.scale.set(1, 1, Math.max(0.001, appear * (1 - 0.7 * close)));
     }
     if (pillarMaterial.current) {
       pillarMaterial.current.uniforms.uOpacity.value = 0.45 + detectorGlow * 0.28 + (selected ? 0.2 : 0);
