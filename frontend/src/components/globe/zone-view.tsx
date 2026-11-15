@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Beef, Box, ExternalLink, Layers, Database, Droplets, Fish, History, House, Info, ListChecks, MapPin, MousePointerClick, Pickaxe, Radar, Route, Store, Trees, TrendingUp, Wheat, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Beef, Box, Database, Droplets, Fish, History, House, Info, ListChecks, MapPin, MapPinned, MousePointerClick, Pickaxe, Radar, Route, Store, Trees, TrendingUp, Wheat, type LucideIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
@@ -30,9 +30,8 @@ const copy = {
     asf: "Escenas NISAR reales en ASF", demo: "DEMO", real: "NISAR", accel: "Aceleración detectada",
     trend: "Tendencia", early: "Ritmo inicial", recent: "Ritmo reciente", p30: "Proyección 30 días", p90: "Proyección 90 días",
     compare: "Antes · después", opacity: "Opacidad de la capa", loading: "Acercando a la zona…",
-    explore: "Explorar el lugar", view3d: "Vista 3D a ras de suelo", view2d: "Vista desde arriba", s2: "Sentinel-2 2024", esri: "Alta resolución",
-    s2Hint: "Mosaico Sentinel-2 sin nubes más reciente (2024, 10 m)", esriHint: "Imagen de alta resolución de Esri (fecha variable)",
-    street: "Street View", streetHint: "Abre Google Street View en este punto (si hay cobertura)",
+    explore: "Explorar el lugar", view3d: "Activar vista 3D a ras de suelo", view2d: "Volver a vista desde arriba",
+    street: "Abrir esta ubicación en Google Maps", streetHint: "Abre esta ubicación en Google Maps y Street View, si hay cobertura",
     impact: "Cómo afectaría a la región", impactIntro: "Si el cambio del terreno continúa, estos sectores son los más expuestos:", reinforce: "Cómo reforzar",
     impactNote: "Escenario ilustrativo (DEMO): muestra exposición posible, no daños confirmados ni probabilidades. SAROS no predice terremotos.",
   },
@@ -46,9 +45,8 @@ const copy = {
     asf: "Real NISAR scenes at ASF", demo: "DEMO", real: "NISAR", accel: "Acceleration detected",
     trend: "Trend", early: "Early rate", recent: "Recent rate", p30: "30-day projection", p90: "90-day projection",
     compare: "Before · after", opacity: "Layer opacity", loading: "Zooming into the zone…",
-    explore: "Explore the place", view3d: "3D ground-level view", view2d: "Top-down view", s2: "Sentinel-2 2024", esri: "High resolution",
-    s2Hint: "Latest cloud-free Sentinel-2 mosaic (2024, 10 m)", esriHint: "Esri high-resolution imagery (variable date)",
-    street: "Street View", streetHint: "Opens Google Street View at this point (where covered)",
+    explore: "Explore the place", view3d: "Enable 3D ground-level view", view2d: "Return to top-down view",
+    street: "Open this location in Google Maps", streetHint: "Opens this location in Google Maps and Street View, where covered",
     impact: "How it could affect the region", impactIntro: "If the ground change continues, these sectors are the most exposed:", reinforce: "How to reinforce",
     impactNote: "Illustrative scenario (DEMO): shows possible exposure, not confirmed damage or probabilities. SAROS does not predict earthquakes.",
   },
@@ -92,7 +90,6 @@ export default function ZoneView() {
   const readyHandled = useRef(false);
   const revealTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [terrain, setTerrain] = useState(false);
-  const [basemap, setBasemap] = useState<"esri" | "s2">("esri");
   const [tab, setTab] = useState<"simple" | "analysis">("simple");
   const [manifest, setManifest] = useState<SiteManifest | null>(null);
   const [series, setSeries] = useState<TimeSeries | null>(null);
@@ -275,7 +272,6 @@ export default function ZoneView() {
               reveal={mapReady}
               terrain={terrain}
               scene={sceneFor(zone.kind)}
-              basemap={basemap}
               hotspots={assessment?.hotspots}
               splitValue={split}
               padding={padding}
@@ -288,28 +284,17 @@ export default function ZoneView() {
               </div>
             )}
             <div className="zone-explore" role="toolbar" aria-label={c.explore}>
-              <button type="button" aria-pressed={terrain} className={terrain ? "is-active" : undefined} onClick={() => setTerrain((v) => !v)}>
-                <Box size={15} /> {terrain ? c.view2d : c.view3d}
+              <button type="button" aria-label={terrain ? c.view2d : c.view3d} title={terrain ? c.view2d : c.view3d}
+                aria-pressed={terrain} className={terrain ? "is-active" : undefined} onClick={() => setTerrain((v) => !v)}>
+                <Box size={18} />
               </button>
-              <button type="button" aria-pressed={basemap === "s2"} className={basemap === "s2" ? "is-active" : undefined} onClick={() => setBasemap((b) => (b === "s2" ? "esri" : "s2"))}
-                title={basemap === "s2" ? c.esriHint : c.s2Hint}>
-                <Layers size={15} /> {basemap === "s2" ? c.esri : c.s2}
-              </button>
-              <a href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${(pick ?? zone).lat.toFixed(5)},${(pick ?? zone).lon.toFixed(5)}`} target="_blank" rel="noopener noreferrer" title={c.streetHint}>
-                <ExternalLink size={15} /> {c.street}
+              <a href={`https://www.google.com/maps/search/?api=1&query=${(pick ?? zone).lat.toFixed(5)},${(pick ?? zone).lon.toFixed(5)}`}
+                target="_blank" rel="noopener noreferrer" aria-label={c.street} title={c.streetHint}>
+                <MapPinned size={18} />
               </a>
             </div>
             {active && mode === "swipe" && <div className="swipe-dates"><span>{sd(active.dates[0])} · {t.before}</span><span>{sd(active.dates[dateIndex])} · {t.after}</span></div>}
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {zone && (
-          <motion.button key="back" type="button" className="zone-back" onClick={closeZone}
-            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.4 } }} exit={{ opacity: 0 }}>
-            <ArrowLeft size={16} /> {c.back}
-          </motion.button>
         )}
       </AnimatePresence>
 
@@ -328,7 +313,7 @@ export default function ZoneView() {
             <header className="zone-head">
               <span className="zone-kind" style={{ color: riskKinds[zone.kind].color }}>{riskKinds[zone.kind][lang]}</span>
               <div className="zone-head-actions">
-                <button type="button" className="zone-close" onClick={closeZone} aria-label={c.close}><X size={17} /></button>
+                <button type="button" className="zone-close" onClick={closeZone} aria-label={c.back} title={c.back}><ArrowLeft size={18} /></button>
               </div>
             </header>
             <h2 className="zone-title">{zone.name[lang]}</h2>

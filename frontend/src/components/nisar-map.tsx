@@ -10,6 +10,7 @@ export type MapMode = "single" | "swipe" | "change";
 /** Ajustes de la vista 3D: exageración del relieve, edificios, inclinación y acercamiento. */
 export type Scene3D = { exaggeration: number; buildings: boolean; pitch: number; zoom: number };
 const DEFAULT_SCENE: Scene3D = { exaggeration: 1.35, buildings: false, pitch: 68, zoom: 13.4 };
+const EARTH_CIRCUMFERENCE_KM = 40075.0167;
 
 type NisarMapProps = {
   bbox: Bbox;
@@ -33,8 +34,6 @@ type NisarMapProps = {
   terrain?: boolean;
   /** Cómo se ve la vista 3D según el tipo de lugar (montaña, ciudad, llanura). */
   scene?: Scene3D;
-  /** Imagen de fondo: Esri (alta resolución) o Sentinel-2 sin nubes 2024 (EOX). */
-  basemap?: "esri" | "s2";
   /** Puntos a vigilar (tendencia más rápida). */
   hotspots?: { lat: number; lon: number; value: number }[];
   /** Posición del deslizador antes/después controlada desde fuera (0–100). */
@@ -53,13 +52,6 @@ const baseStyle: StyleSpecification = {
       maxzoom: 18,
       attribution: "Imágenes © Esri, Maxar, Earthstar Geographics",
     },
-    s2: {
-      type: "raster",
-      tiles: ["https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/g/{z}/{y}/{x}.jpg"],
-      tileSize: 256,
-      maxzoom: 15,
-      attribution: "Sentinel-2 cloudless 2024 © EOX IT Services GmbH (datos Copernicus Sentinel modificados, CC BY-NC-SA 4.0)",
-    },
     dem: {
       type: "raster-dem",
       tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
@@ -72,7 +64,6 @@ const baseStyle: StyleSpecification = {
   layers: [
     { id: "background", type: "background", paint: { "background-color": "#0b151e" } },
     { id: "imagery", type: "raster", source: "imagery", paint: { "raster-saturation": -0.45, "raster-brightness-max": 0.78, "raster-contrast": 0.05, "raster-saturation-transition": { duration: 900 }, "raster-brightness-max-transition": { duration: 900 } } as never },
-    { id: "s2", type: "raster", source: "s2", layout: { visibility: "none" }, paint: { "raster-saturation": -0.2, "raster-brightness-max": 0.9 } },
   ],
 };
 
@@ -136,7 +127,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
   aoi?.setData?.(outline(bbox));
 }
 
-export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, basemap = "esri", scene = DEFAULT_SCENE }: NisarMapProps) {
+export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE }: NisarMapProps) {
   const { t } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
@@ -145,6 +136,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   const markerRef = useRef<Marker | null>(null);
   const onPickRef = useRef(onPick);
   const [ready, setReady] = useState(false);
+  const [distanceScale, setDistanceScale] = useState({ width: 84, label: "—" });
   // Deslizador antes/después con movimiento gradual: la línea persigue al objetivo con inercia
   const [split, setSplit] = useState(96);
   const splitShown = useRef(96);
@@ -193,7 +185,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   useEffect(() => {
     let cancelled = false;
     let cleanup = () => {};
-    import("maplibre-gl").then(({ Map, Marker, ScaleControl, AttributionControl, setWorkerUrl }) => {
+    import("maplibre-gl").then(({ Map, Marker, setWorkerUrl }) => {
       if (cancelled || !mainRef.current || !afterRef.current) return;
       // copiado por scripts/copy-maplibre-worker.mjs (predev / prebuild)
       setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -210,8 +202,26 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
         return;
       }
       const after = new Map({ container: afterRef.current, ...common, interactive: false });
-      main.addControl(new ScaleControl({ unit: "metric" }), "bottom-right");
-      main.addControl(new AttributionControl({ compact: true }), "bottom-right");
+      const updateDistanceScale = () => {
+        const width = main.getContainer().clientWidth;
+        if (!width) return;
+        const zoomRange = Math.max(1, main.getMaxZoom() - main.getMinZoom());
+        const altitude = 1 - Math.min(1, Math.max(0, (main.getZoom() - main.getMinZoom()) / zoomRange));
+        // Cerca: regla compacta. Lejos: ocupa casi todo el ancho visible del mapa.
+        const pixels = Math.round(72 + Math.max(0, width - 104) * Math.pow(altitude, 1.35));
+        const latitudeFactor = Math.max(0.08, Math.cos(main.getCenter().lat * Math.PI / 180));
+        const kmPerPixel = EARTH_CIRCUMFERENCE_KM * latitudeFactor / (512 * 2 ** main.getZoom());
+        const distanceKm = Math.min(EARTH_CIRCUMFERENCE_KM, kmPerPixel * pixels);
+        const locale = document.documentElement.lang === "en" ? "en-US" : "es-CO";
+        const label = distanceKm < 1
+          ? `${Math.max(1, Math.round(distanceKm * 1000)).toLocaleString(locale)} m`
+          : `${distanceKm.toLocaleString(locale, { maximumFractionDigits: distanceKm < 10 ? 1 : 0 })} km`;
+        setDistanceScale({ width: pixels, label });
+      };
+      main.on("zoom", updateDistanceScale);
+      main.on("moveend", updateDistanceScale);
+      main.on("resize", updateDistanceScale);
+      main.once("load", updateDistanceScale);
 
       const marker = new Marker({ color: "#e8b36b" });
       markerRef.current = marker;
@@ -241,6 +251,9 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
       mapRef.current = main;
       afterMapRef.current = after;
       cleanup = () => {
+        main.off("zoom", updateDistanceScale);
+        main.off("moveend", updateDistanceScale);
+        main.off("resize", updateDistanceScale);
         marker.remove();
         main.remove();
         after.remove();
@@ -345,15 +358,6 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, terrain]);
 
-  // Imagen de fondo
-  useEffect(() => {
-    if (!ready) return;
-    for (const m of [mapRef.current, afterMapRef.current]) {
-      if (!m?.getLayer("s2")) continue;
-      m.setLayoutProperty("s2", "visibility", basemap === "s2" ? "visible" : "none");
-    }
-  }, [ready, basemap]);
-
   // Puntos a vigilar
   useEffect(() => {
     if (!ready) return;
@@ -418,6 +422,9 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
         </div>
       )}
       {failed && <div className="map-fallback">{t.mapFailed}</div>}
+      <div className="map-distance-scale" style={{ width: distanceScale.width }} aria-label={`Escala terrestre: ${distanceScale.label}`}>
+        <span>{distanceScale.label}</span>
+      </div>
     </div>
   );
 }

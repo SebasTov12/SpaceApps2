@@ -70,8 +70,6 @@
 .maplibregl-ctrl-group button+button{border-top:1px solid var(--line)!important}
 .maplibregl-ctrl-group button .maplibregl-ctrl-icon{filter:invert(.88)}
 .maplibregl-ctrl-scale{background:rgba(7,16,25,.7)!important;color:#cfe0e1!important;border-color:#cfe0e1!important}
-.maplibregl-ctrl-attrib{background:rgba(7,16,25,.7)!important;color:#9aa9ad}
-.maplibregl-ctrl-attrib a{color:#b9cacb}
 
 .timeline input:disabled,.timeline-labels button:disabled{opacity:.45;cursor:not-allowed}
 
