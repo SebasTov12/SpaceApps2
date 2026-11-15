@@ -108,3 +108,15 @@ livianos y documentación de procedencia.
   observaciones trazables y validarlas contra persistencia en cortes
   temporales. Las salidas de demostración y semillas sintéticas siguen fuera
   del entrenamiento/almacenamiento científico.
+- La prueba de consulta con `NISAR_DATA_MATURITY=VALIDATED` encontró que ASF
+  `asf_search` no admite `dataMaturity` como argumento. Se corrigió el filtro
+  para traducir la madurez al `shortName` documentado de la colección y se
+  acotó el requisito a `asf_search>=10,<11`, igual que el procesador. La
+  colección `NISAR_L2_GUNW_V1` devolvió 140 granules globales, 64 de América y
+  ninguno en la caja núcleo de Neiva.
+- También se corrigió el modo `build_layers.py --real`: ya no cae a demo si
+  faltan datos; ahora lee la ventana espacial del ráster, rechaza capas
+  ambiguas o sin EPSG, separa configuraciones/CRID, valida cadenas GUNW y
+  conserva píxeles faltantes. Aún no es un procesador científico para el
+  pronosticador: faltan enmascaramiento por coherencia/componentes y una
+  referencia estable, que deben verificarse sobre el HDF5 Neiva real.

@@ -55,6 +55,13 @@ Configura el Earthdata Login en `.env` del servidor y quita `--dry-run` para des
 
 El script lee `.env` si existe. `NISAR_PRODUCT_SHORT_NAME`, `NISAR_DATA_MATURITY`, `NISAR_START_DATE` y `NISAR_END_DATE` son filtros opcionales; vacíos significa consultar todos los productos NISAR devueltos por ASF. `NISAR_COLOMBIA_BBOX` permite cambiar la caja. Los nombres de producto válidos incluyen colecciones como `NISAR_L2_GCOV_V1` o `NISAR_L2_GUNW_V1`; elegir un solo producto/madurez hace comparaciones más coherentes.
 
+Se usa la interfaz `asf_search` dentro del rango asumido `>=10,<11`
+(`scripts/requirements.txt` y `pipeline/requirements.txt`). Revisa los
+parámetros actuales en el [ASF Cookbook](https://docs.asf.alaska.edu/api/cookbook/)
+y la guía de [buenas prácticas de `asf_search`](https://docs.asf.alaska.edu/asf_search/BestPractices/).
+El buscador no acepta `dataMaturity` como parámetro; el script traduce
+`VALIDATED`, `PROVISIONAL` o `BETA` al `shortName` documentado de la colección.
+
 Para inspeccionar el flujo con un límite pequeño:
 
 ```sh
@@ -83,6 +90,12 @@ El dry-run no descarga. Para descargar, habilita Earthdata en el entorno
 privado del proceso y retira `--dry-run`. El entorno local no debe guardar
 credenciales en Git. Los dos pares candidatos del stack descendente
 083/frame 087 requieren aproximadamente 4.555 GB.
+
+El 14 de noviembre de 2026 se consultó en el servidor la colección VALIDATED
+`NISAR_L2_GUNW_V1`: ASF devolvió 140 granules a nivel global, 64 en América y
+ninguno que interseque la caja núcleo de Neiva. Es una consulta de metadatos,
+sin descarga. Los pares disponibles para el estudio local siguen siendo
+PROVISIONAL; no mezclar ambas madureces sin armonizar el CRID y el procesamiento.
 
 ## Ajuste de tendencia por zona
 

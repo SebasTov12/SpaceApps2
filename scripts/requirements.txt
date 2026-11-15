@@ -1,4 +1,4 @@
-asf_search
+asf_search>=10,<11
 earthaccess
 python-dotenv>=1.0.0
 shapely>=2.0.0

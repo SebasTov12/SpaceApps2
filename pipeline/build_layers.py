@@ -12,7 +12,7 @@ y un índice sites.json con todos los sitios.
 Modos:
   python build_layers.py --demo   datos sintéticos con forma de producto NISAR (marcados como demo)
   python build_layers.py --real   lee los HDF5 descargados en pipeline/data/<id>/ (ver search_nisar.py);
-                                  si un sitio no tiene archivos, se genera en modo demo y se indica.
+                                  falla si no hay datos reales, sin sustituirlos por demos.
 """
 
 from __future__ import annotations
@@ -223,14 +223,19 @@ GEOMETRY_IN_NAME = re.compile(r"_(\d{3})_([AD])_(\d{3})_")
 
 
 def same_geometry(files):
-    """Se queda con la geometría (track, dirección, frame) más frecuente: no se deben mezclar."""
+    """Keep one orbit/frame and processing configuration; never mix CRIDs or product paths."""
     groups = {}
     for path in files:
         match = GEOMETRY_IN_NAME.search(path.name)
-        groups.setdefault(match.groups() if match else None, []).append(path)
+        fields = path.stem.split("_")
+        if match and len(fields) > 15:
+            key = (match.groups(), fields[2], fields[9], fields[10], fields[15])
+        else:
+            key = (match.groups() if match else None, path.name)
+        groups.setdefault(key, []).append(path)
     key = max(groups, key=lambda k: len(groups[k]))
     if len(groups) > 1:
-        print(f"    {len(groups)} geometrías distintas; se usa {key} ({len(groups[key])} archivos)")
+        print(f"    {len(groups)} geometrías/configuraciones distintas; se usa {key} ({len(groups[key])} archivos)")
     return groups[key]
 
 
@@ -238,6 +243,16 @@ def _find(h5, name):
     found = []
     h5.visititems(lambda path, obj: found.append(path) if path.split("/")[-1] == name and hasattr(obj, "shape") else None)
     return found
+
+
+def _find_one(h5, name):
+    found = _find(h5, name)
+    if len(found) != 1:
+        raise ValueError(
+            f"Esperaba un dataset llamado {name!r}, encontré {len(found)}: {found}. "
+            "Inspecciona el HDF5 y selecciona la ruta de la capa explícitamente."
+        )
+    return found[0]
 
 
 def _coords_for(h5, dataset_path):
@@ -249,6 +264,8 @@ def _coords_for(h5, dataset_path):
             epsg = None
             if "projection" in group:
                 epsg = int(group["projection"].attrs.get("epsg_code", 0)) or None
+            if epsg is None:
+                raise ValueError(f"No pude determinar el EPSG desde {group.name}/projection")
             return group["xCoordinates"][()], group["yCoordinates"][()], epsg
         parts = parts[:-1]
     raise ValueError(f"No encontré coordenadas para {dataset_path}")
@@ -258,14 +275,26 @@ def _sample(h5, dataset_path, grid):
     from pyproj import Transformer
 
     xs, ys, epsg = _coords_for(h5, dataset_path)
-    transformer = Transformer.from_crs("EPSG:4326", f"EPSG:{epsg or 4326}", always_xy=True)
+    transformer = Transformer.from_crs("EPSG:4326", f"EPSG:{epsg}", always_xy=True)
     gx, gy = transformer.transform(grid["lon"], grid["lat"])
+    if xs.size < 2 or ys.size < 2 or np.isclose(xs[1], xs[0]) or np.isclose(ys[1], ys[0]):
+        raise ValueError(f"Ejes de coordenadas insuficientes o degenerados en {dataset_path}")
+    dataset = h5[dataset_path]
+    if dataset.ndim != 2 or dataset.shape != (ys.size, xs.size):
+        raise ValueError(
+            f"La rejilla {dataset_path} tiene shape {dataset.shape}, "
+            f"pero las coordenadas indican {(ys.size, xs.size)}"
+        )
     ix = np.rint((gx - xs[0]) / (xs[1] - xs[0])).astype(int)
     iy = np.rint((gy - ys[0]) / (ys[1] - ys[0])).astype(int)
     valid = (ix >= 0) & (ix < xs.size) & (iy >= 0) & (iy < ys.size)
-    data = h5[dataset_path]
     out = np.full(grid["lon"].shape, np.nan)
-    out[valid] = data[()][iy[valid], ix[valid]]
+    if np.any(valid):
+        x0, x1 = int(ix[valid].min()), int(ix[valid].max()) + 1
+        y0, y1 = int(iy[valid].min()), int(iy[valid].max()) + 1
+        # Read only the AOI window; NISAR HDF5 rasters can occupy several GB.
+        window = dataset[y0:y1, x0:x1]
+        out[valid] = window[iy[valid] - y0, ix[valid] - x0]
     return out
 
 
@@ -281,36 +310,49 @@ def read_real(site, grid, files):
             continue
         with h5py.File(path, "r") as h5:
             if product == "GUNW":
-                ds = _find(h5, "unwrappedPhase")[0]
+                ds = _find_one(h5, "unwrappedPhase")
                 phase = _sample(h5, ds, grid)
                 field = -phase * L_BAND_WAVELENGTH_M / (4 * math.pi) * (1000 if site["unit"] == "mm" else 100)
             elif product == "GCOV":
                 name = "HVHV" if "HV" in site["metric"] else "HHHH"
-                ds = _find(h5, name)[0]
+                ds = _find_one(h5, name)
                 power = _sample(h5, ds, grid)
                 field = 10 * np.log10(np.clip(power, 1e-6, None))
             elif product == "GOFF":
-                along = _sample(h5, _find(h5, "alongTrackOffset")[0], grid)
-                rng = _sample(h5, _find(h5, "slantRangeOffset")[0], grid)
+                along = _sample(h5, _find_one(h5, "alongTrackOffset"), grid)
+                rng = _sample(h5, _find_one(h5, "slantRangeOffset"), grid)
                 span = max(1, days_between(_iso(stamps[0]), _iso(stamps[-1])))
                 field = np.hypot(along, rng) / span
             else:
                 raise ValueError(product)
-        records.append((_iso(stamps[-1]), field, path.name))
-    records.sort(key=lambda r: r[0])
+        if product == "GUNW" and len(stamps) < 4:
+            raise ValueError(f"El nombre GUNW no tiene cuatro tiempos de adquisición: {path.name}")
+        reference_stamp = stamps[0] if product == "GUNW" else ""
+        secondary_stamp = stamps[2] if product == "GUNW" else ""
+        records.append((reference_stamp, secondary_stamp, _iso(stamps[-1]), field, path.name))
+    if not records:
+        raise ValueError(f"No se encontraron observaciones válidas para el sitio {site['id']} en {len(files)} archivos HDF5")
+    records.sort(key=lambda r: (r[0], r[1], r[4]))
     if product == "GUNW":
-        # pares consecutivos -> desplazamiento acumulado
-        acc = np.zeros_like(records[0][1])
+        # Accumulation is valid only along a connected reference->secondary chain.
+        for previous, current in zip(records, records[1:]):
+            if previous[1] != current[0]:
+                raise ValueError(
+                    "GUNW pairs are not one consecutive acquisition chain: "
+                    f"{previous[4]} ends at {previous[1]}, but {current[4]} starts at {current[0]}."
+                )
+        acc = np.zeros_like(records[0][3])
         frames = [np.zeros_like(acc)]
-        for _, field, _ in records:
-            acc = acc + np.nan_to_num(field)
+        for _, _, _, field, _ in records:
+            valid = np.isfinite(acc) & np.isfinite(field)
+            acc = np.where(valid, acc + field, np.nan)
             frames.append(acc.copy())
-        first = _iso(DATE_IN_NAME.findall(records[0][2])[0])
-        dates = [first] + [r[0] for r in records]
+        first = _iso(records[0][0])
+        dates = [first] + [r[2] for r in records]
     else:
-        frames = [r[1] for r in records]
-        dates = [r[0] for r in records]
-    return dates, frames, [r[2] for r in records]
+        frames = [r[3] for r in records]
+        dates = [r[2] for r in records]
+    return dates, frames, [r[4] for r in records]
 
 
 def _iso(stamp):
@@ -498,7 +540,12 @@ def build_site(site, mode, global_dates):
     granules = []
     source_mode = "demo"
     files = list((DATA_IN / site["id"]).glob("*.h5")) if mode == "real" else []
-    if files:
+    if mode == "real":
+        if not files:
+            raise FileNotFoundError(
+                f"No hay HDF5 reales para {site['id']} en {DATA_IN / site['id']}; "
+                "el modo --real no puede sustituirlos con datos demo."
+            )
         dates, frames, granules = read_real(site, grid, files)
         source_mode = "real"
     else:

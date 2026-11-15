@@ -17,6 +17,16 @@ Resultados ASF/CMR observados durante el inventario:
 
 El núcleo contiene dos stacks provisionales de 9 pares. Ascendente 047/frame 003 y descendente 083/frame 087, ambos modo 2000 SH. Cada uno conecta 10 fechas entre junio y octubre de 2026. Aún no hay rásteres procesados ni pronósticos calculados.
 
+Actualización del 14 de noviembre de 2026: desde el servidor se consultó por
+`shortName=NISAR_L2_GUNW_V1`, la colección VALIDATED. CMR devolvió 140 granules
+globales, 64 para América y cero que intersequen la caja núcleo de Neiva. El
+catálogo oficial indica que VALIDATED se publicó el 6 de noviembre y cubre
+adquisiciones desde el 21 de octubre; por ahora no prolonga la serie local de
+Neiva. Los productos PROVISIONAL y VALIDATED usan diferentes CRID/procesamiento
+y deben permanecer separados en la evaluación hasta que haya una estrategia
+explícita de armonización ([disponibilidad y madurez NISAR](https://nisar-docs.asf.alaska.edu/availability-overview/),
+[cambios de productos VALIDATED](https://hyp3-docs.asf.alaska.edu/nisar-docs/release-notes/)).
+
 ## Decisión del modelo
 
 La primera comparación es persistencia frente a tendencia lineal robusta por zona. Se define `y(t)` como desplazamiento LOS relativo en mm desde una fecha ancla y una referencia estable:

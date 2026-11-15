@@ -72,7 +72,23 @@ def search_query(args: argparse.Namespace) -> dict[str, Any]:
     if processing_level:
         query["processingLevel"] = processing_level
     short_name = os.getenv("NISAR_PRODUCT_SHORT_NAME", "").strip()
-    maturity = os.getenv("NISAR_DATA_MATURITY", "").strip()
+    maturity = os.getenv("NISAR_DATA_MATURITY", "").strip().upper()
+    if maturity:
+        suffixes = {"VALIDATED": "", "PROVISIONAL": "_PROVISIONAL", "BETA": "_BETA"}
+        if maturity not in suffixes:
+            raise ValueError(
+                "NISAR_DATA_MATURITY must be VALIDATED, PROVISIONAL, or BETA; "
+                "query Urgent Response collections separately."
+            )
+        if not processing_level:
+            raise ValueError("NISAR_PROCESSING_LEVEL is required when filtering by maturity")
+        expected_short_name = f"NISAR_L2_{processing_level}{suffixes[maturity]}_V1"
+        if short_name and short_name != expected_short_name:
+            raise ValueError(
+                f"NISAR_PRODUCT_SHORT_NAME conflicts with NISAR_DATA_MATURITY={maturity}; "
+                f"expected {expected_short_name}"
+            )
+        short_name = expected_short_name
     start = os.getenv("NISAR_START_DATE", "").strip()
     end = os.getenv("NISAR_END_DATE", "").strip()
     if short_name:
@@ -122,7 +138,10 @@ def main() -> int:
         output_dir = ROOT / output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
     colombia = box(*args.colombia_bbox)
-    base_query = search_query(args)
+    try:
+        base_query = search_query(args)
+    except ValueError as error:
+        parser.error(str(error))
     america_query = {**base_query, "intersectsWith": box(*AMERICAS_BBOX).wkt}
     colombia_query = {**base_query, "intersectsWith": colombia.wkt}
     counts = {
@@ -165,8 +184,8 @@ def main() -> int:
             "processing_level": os.getenv("NISAR_PROCESSING_LEVEL", "GUNW").strip() or None,
             "americas_bbox_wsen": AMERICAS_BBOX,
             "colombia_bbox_wsen": args.colombia_bbox,
-            "product_short_name": os.getenv("NISAR_PRODUCT_SHORT_NAME") or None,
-            "data_maturity": os.getenv("NISAR_DATA_MATURITY") or None,
+            "product_short_name": base_query.get("shortName"),
+            "data_maturity": os.getenv("NISAR_DATA_MATURITY", "").strip().upper() or None,
             "start": os.getenv("NISAR_START_DATE") or None,
             "end": os.getenv("NISAR_END_DATE") or None,
         },
