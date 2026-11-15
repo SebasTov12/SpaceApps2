@@ -9,7 +9,7 @@ import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import { loadManifest, type AttentionLevel, type SiteManifest } from "@/lib/sites";
 import { OPEN_SECTOR_EVENT, QUICK_QUESTIONS, TOUR_EVENT, allReplySentences, answer, sentences, type SaroAction, type TourKey } from "@/lib/saro-brain";
-import { GLOBE_SELECT, focusZone } from "./globe-state";
+import { GLOBE_SELECT, UI_REVEAL, focusZone } from "./globe-state";
 
 /** Evento que lanza el panel cuando se abre la ficha de un sector (Saro reacciona). */
 export const SECTOR_EVENT = "saros:sector";
@@ -247,6 +247,21 @@ export default function SaroGuide() {
   const [reply, setReply] = useState<string | null>(null);
   const [prog, setProg] = useState({ text: "", n: 0 });
   const [minimized, setMinimized] = useState(false);
+  // Saru llega cuando se baja con el scroll (o al abrir una zona); arriba del todo no está
+  const [arrived, setArrived] = useState(false);
+  const [arrivals, setArrivals] = useState(0);
+  const arrivedRef = useRef(false);
+  useEffect(() => {
+    const onReveal = (event: Event) => {
+      const on = Boolean((event as CustomEvent<boolean>).detail);
+      if (on && !arrivedRef.current) setArrivals((n) => n + 1);
+      arrivedRef.current = on;
+      setArrived(on);
+    };
+    window.addEventListener(UI_REVEAL, onReveal);
+    return () => window.removeEventListener(UI_REVEAL, onReveal);
+  }, []);
+  const away = !arrived && !zoneId;
   const [voice, setVoice] = useState(true);
   const [unlocked, setUnlocked] = useState(false);
   const [playing, setPlaying] = useState(true);
@@ -405,7 +420,7 @@ export default function SaroGuide() {
   }, [aside, lines.length]);
   const autoNext = playing && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
   useEffect(() => {
-    if (minimized || thinking || (!playing && !reply && !aside)) { stopAll(); return; }   // en pausa o pensando: calla
+    if (away || minimized || thinking || (!playing && !reply && !aside)) { stopAll(); return; }   // fuera, en pausa o pensando: calla
     const canSpeak = voice && unlocked;
     if (canSpeak) {
       speak(text, () => { if (autoNext) window.setTimeout(advance, 650); });
@@ -418,7 +433,7 @@ export default function SaroGuide() {
     const wait = Math.max(2600, text.length * 55);
     const id = window.setTimeout(advance, wait);
     return () => window.clearTimeout(id);
-  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking]);
+  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away]);
 
   const talking = typed.length < text.length || (voice && unlocked && speaking);
   // mientras señala algo en el mapa, Saru se inclina hacia él
@@ -483,7 +498,7 @@ export default function SaroGuide() {
 
   return (
     <>
-      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}`}>
+      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}`} aria-hidden={away || undefined}>
         <div className="saru-row">
         <AnimatePresence initial={false}>
           {!minimized && (
@@ -507,7 +522,7 @@ export default function SaroGuide() {
             </motion.div>
           )}
         </AnimatePresence>
-        <button type="button" className="saro-avatar saru-enter" key={zoneId ?? "home"} onClick={() => (minimized ? setMinimized(false) : setPlaying((p) => !p))}
+        <button type="button" className="saro-avatar saru-enter" key={`${zoneId ?? "home"}-${arrivals}`} onClick={() => (minimized ? setMinimized(false) : setPlaying((p) => !p))}
           aria-label={minimized ? (es ? "Mostrar a Saru" : "Show Saru") : (es ? "Pausar o seguir" : "Pause or continue")}>
           <span className="saru-trail" aria-hidden="true" />
           <SaroFigure mood={mood} talking={talking} />

@@ -108,12 +108,18 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     cameraLocal.sub(anchor.position);
     facingCamera.current = cameraLocal.dot(normal) > 0.03;
     const inMode = globeState.mode === "all" || (globeState.mode === "watch") === watchKinds.has(zone.kind);
+    if (!globeState.uiRevealed) {
+      node.visible = false;
+      revealAt.current = null; // al volver a mostrarse, entra otra vez con su animación
+      return;
+    }
     if (!globeState.revealed.has(zone.id) || !facingCamera.current || !inMode) {
       node.visible = false;
       return;
     }
     node.visible = true;
-    if (revealAt.current === null) revealAt.current = t;
+    if (revealAt.current === null) revealAt.current = t + (index % 14) * 0.06;
+    if (t < revealAt.current) { node.scale.setScalar(0.001); return; }
     const appear = clamp01((t - revealAt.current) / 0.8);
 
     // 1. Detección en tiempo real por el satélite NISAR (proximidad y pasada suave)

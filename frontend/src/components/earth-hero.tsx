@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useInView, useScroll, useSpring, useTransform } from "framer-motion";
+import { motion, useInView, useMotionValueEvent, useScroll, useSpring, useTransform } from "framer-motion";
+import { UI_REVEAL, globeState } from "@/components/globe/globe-state";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
@@ -35,6 +36,15 @@ export default function EarthHero() {
     offset: ["start start", "end end"],
   });
   const progress = useSpring(scrollYProgress, { stiffness: 85, damping: 28, mass: 0.5 });
+  // arriba del todo solo el planeta, el título y el cintillo; al bajar aparecen puntos, barra de modos y Saru
+  const setReveal = useCallback((value: number) => {
+    const next = globeState.uiRevealed ? value > 0.12 : value > 0.3;
+    if (next === globeState.uiRevealed) return;
+    globeState.uiRevealed = next;
+    window.dispatchEvent(new CustomEvent(UI_REVEAL, { detail: next }));
+  }, []);
+  useMotionValueEvent(scrollYProgress, "change", setReveal);
+  useEffect(() => { setReveal(scrollYProgress.get()); }, [scrollYProgress, setReveal]);
   const { scrollYProgress: departure } = useScroll({
     target: section, offset: ["end end", "end start"],
   });

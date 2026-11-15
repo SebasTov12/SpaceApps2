@@ -34,6 +34,8 @@ export const globeState = {
   radarProximity: new Map<string, number>(),
   /** Visibilidad extra del haz de radar (0–1), además de la del scroll. */
   beam: 0,
+  /** La interfaz del planeta (puntos, barra de modos, Saru) aparece al bajar con el scroll. */
+  uiRevealed: false,
   /** Qué se ve en el planeta: todo, solo amenazas o solo vigilancia ambiental (tala y minería). */
   mode: "all" as "all" | "risk" | "watch",
   /** Zona destacada al terminar el reconocimiento (último evento). */
@@ -61,6 +63,9 @@ export const GLOBE_RECON = "saros:recon";
 export const GLOBE_SELECT = "saros:zone-select";
 /** Pedir que se abra un sitio con datos (lo usan el cintillo y otros componentes). */
 export const SITE_EVENT = "saros:site";
+
+/** Aviso de que la interfaz del planeta se mostró u ocultó (detail: boolean). */
+export const UI_REVEAL = "saros:ui-reveal";
 
 export const emit = <T,>(name: string, detail: T) => window.dispatchEvent(new CustomEvent<T>(name, { detail }));
 

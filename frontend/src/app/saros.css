@@ -3088,3 +3088,29 @@ html body .saro .saru-ask,html body .saro .saru-ask.in-zone{position:relative;le
 .saro.is-thinking .saro-tip{animation-duration:.5s}
 .saro.is-thinking .saru-caption{border-color:rgba(94,240,255,.5)}
 @media(prefers-reduced-motion:reduce){.saru-dots-think i{animation:none;opacity:.7}}
+
+/* ---------- Inicio limpio: la interfaz del planeta aparece al bajar con el scroll ---------- */
+html body .hero-overlay .mode-switch{opacity:0;transform:translateY(-16px) scale(.96);pointer-events:none;transition:opacity .45s ease,transform .55s cubic-bezier(.22,1,.36,1)}
+html body .hero-overlay.ui-shown .mode-switch{opacity:1;transform:none;pointer-events:auto;transition-delay:.12s}
+html body .hero-overlay .mode-switch button{opacity:0;transform:translateY(-6px);transition:opacity .35s ease,transform .45s cubic-bezier(.22,1,.36,1),background .3s,color .3s}
+html body .hero-overlay.ui-shown .mode-switch button{opacity:1;transform:none}
+html body .hero-overlay.ui-shown .mode-switch button:nth-child(1){transition-delay:.25s,.25s,0s,0s}
+html body .hero-overlay.ui-shown .mode-switch button:nth-child(2){transition-delay:.35s,.35s,0s,0s}
+html body .hero-overlay.ui-shown .mode-switch button:nth-child(3){transition-delay:.45s,.45s,0s,0s}
+html body .hero-overlay .hero-search-btn{opacity:0;transform:scale(.8);pointer-events:none;transition:opacity .4s ease,transform .5s cubic-bezier(.34,1.56,.64,1)}
+html body .hero-overlay.ui-shown .hero-search-btn{opacity:1;transform:none;pointer-events:auto;transition-delay:.3s}
+
+/* Saru: fuera de escena arriba del todo; al bajar llega volando desde lejos */
+html body .saro{transition:opacity .4s ease,visibility 0s}
+html body .saro.is-away{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .35s ease,visibility 0s .35s}
+html body .saru-enter{animation:saru-fly 1.6s cubic-bezier(.22,1.2,.36,1) both}
+@keyframes saru-fly{
+  0%{opacity:0;transform:translate(-260px,220px) rotate(-38deg) scale(.35)}
+  45%{opacity:1;transform:translate(30px,-40px) rotate(14deg) scale(1.1)}
+  70%{transform:translate(-6px,6px) rotate(-6deg) scale(.97)}
+  85%{transform:translate(2px,-3px) rotate(3deg)}
+  100%{transform:none}
+}
+html body .saru-trail{animation:saru-trail-fly 1.5s ease-out both}
+@keyframes saru-trail-fly{0%{opacity:.95;transform:translate(-200px,170px) scale(2.2,.5) rotate(-38deg)}70%{opacity:.4}100%{opacity:0;transform:scale(.5)}}
+@media(prefers-reduced-motion:reduce){html body .hero-overlay .mode-switch,html body .hero-overlay .mode-switch button,html body .hero-overlay .hero-search-btn{transition:opacity .2s}html body .saru-enter,html body .saru-trail{animation:none}}

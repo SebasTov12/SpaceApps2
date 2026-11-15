@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { loadSites, type SiteSummary } from "@/lib/sites";
 import LanguageModal from "@/components/language-modal";
-import { focusZone, globeState } from "./globe-state";
+import { focusZone, globeState, UI_REVEAL } from "./globe-state";
 
 const copy = {
   es: {
@@ -33,6 +33,12 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
   const c = copy[lang];
   const [sites, setSites] = useState<SiteSummary[]>([]);
   const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const onReveal = (event: Event) => setShown(Boolean((event as CustomEvent<boolean>).detail));
+    window.addEventListener(UI_REVEAL, onReveal);
+    return () => window.removeEventListener(UI_REVEAL, onReveal);
+  }, []);
   const [mode, setMode] = useState<"all" | "risk" | "watch">("all");
   const changeMode = (next: "all" | "risk" | "watch") => setMode(next);
   useEffect(() => {
@@ -88,7 +94,7 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
   };
 
   return (
-    <div className="hero-overlay">
+    <div className={`hero-overlay${shown ? " ui-shown" : ""}`}>
       <LanguageModal />
       <div className="mode-switch" role="radiogroup" aria-label={lang === "es" ? "Qué ver en el planeta" : "What to show"}>
         {([["all", lang === "es" ? "Todo" : "All"], ["risk", lang === "es" ? "Amenazas" : "Hazards"], ["watch", lang === "es" ? "Vigilancia ambiental" : "Environmental watch"]] as const).map(([value, label]) => (
