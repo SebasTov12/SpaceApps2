@@ -682,7 +682,7 @@ def assistant_chat():
     upstream = urllib.request.Request(
         GROQ_API_URL,
         data=payload,
-        headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+        headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json", "User-Agent": "SAROS/1.0"},
         method="POST",
     )
     try:
