@@ -269,9 +269,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const applyToCombo = useCallback((langCode: string, retries = 8) => {
     if (typeof document === "undefined") return;
     const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
-    const target = langCode === "es" ? "" : langCode === "he" ? "iw" : langCode;
     if (select) {
-      select.value = target;
+      const gtCode = langCode === "he" ? "iw" : langCode;
+      const options = Array.from(select.options);
+      const hasGtCode = options.some((opt) => opt.value.toLowerCase() === gtCode.toLowerCase());
+
+      if (langCode === "es") {
+        if (hasGtCode) {
+          select.value = gtCode;
+        } else {
+          select.value = "";
+        }
+      } else {
+        select.value = gtCode;
+      }
       select.dispatchEvent(new Event("change"));
     } else if (retries > 0) {
       setTimeout(() => applyToCombo(langCode, retries - 1), 250);
@@ -337,6 +348,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
           document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${window.location.hostname}; path=/;`;
           document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=.${window.location.hostname}; path=/;`;
+          document.cookie = "googtrans=/auto/es; path=/;";
+          document.cookie = `googtrans=/auto/es; domain=${window.location.hostname}; path=/;`;
+          document.cookie = `googtrans=/auto/es; domain=.${window.location.hostname}; path=/;`;
         } else {
           const cookieVal = `/auto/${gtCode}`;
           document.cookie = `googtrans=${cookieVal}; path=/;`;

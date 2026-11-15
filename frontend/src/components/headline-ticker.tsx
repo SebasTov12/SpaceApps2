@@ -15,8 +15,10 @@ const label = {
 
 /** Cintillo de titulares tipo noticiero con las últimas actualizaciones de afectaciones. */
 export default function HeadlineTicker({ className }: { className?: string }) {
-  const { lang } = useI18n();
-  const l = label[lang];
+  const { lang, globalLang } = useI18n();
+  const isEs = globalLang === "es" || (!globalLang && lang === "es");
+  const activeLang = isEs ? "es" : "en";
+  const l = label[activeLang];
   const [items, setItems] = useState<Headline[]>([]);
 
   useEffect(() => {
@@ -34,11 +36,11 @@ export default function HeadlineTicker({ className }: { className?: string }) {
   };
 
   const renderItem = (item: Headline, copy: boolean) => (
-    <button key={`${item.id}-${copy ? "b" : "a"}`} type="button" className="ticker-item" onClick={() => open(item.siteId)}
+    <button key={`${item.id}-${copy ? "b" : "a"}-${globalLang || lang}`} type="button" className="ticker-item" onClick={() => open(item.siteId)}
       tabIndex={copy ? -1 : undefined} aria-hidden={copy || undefined}>
       <b className={`ticker-sev sev-${item.severity}`}>{l.severity[item.severity]}</b>
-      <span className="ticker-title">{item.title[lang]}</span>
-      {item.place && <em>· {item.place[lang]}</em>}
+      <span className="ticker-title">{item.title[activeLang]}</span>
+      {item.place && <em>· {item.place[activeLang]}</em>}
       <small className="notranslate" translate="no">{item.source}</small>
       <i className={item.demo ? "ticker-flag is-demo notranslate" : "ticker-flag notranslate"} translate="no">{item.demo ? l.demo : l.real}</i>
       <SarosStar size={10} className="ticker-sep" />
@@ -50,10 +52,15 @@ export default function HeadlineTicker({ className }: { className?: string }) {
 
   return (
     <div className={`ticker ${className ?? ""}`} role="region" aria-label={l.region}>
-      <span className="ticker-label"><i aria-hidden="true" />{l.live}</span>
+      <span className="ticker-label">
+        <i aria-hidden="true" />
+        <span key={globalLang || lang} className="ticker-label-text">
+          {l.live}
+        </span>
+      </span>
       <div className="ticker-viewport">
         {items.length === 0 ? <span className="ticker-loading">{l.loading}</span> : (
-          <div className="ticker-track" style={{ animationDuration: `${duration}s` }}>
+          <div key={globalLang || lang} className="ticker-track" style={{ animationDuration: `${duration}s` }}>
             {items.map((item) => renderItem(item, false))}
             {items.map((item) => renderItem(item, true))}
           </div>
