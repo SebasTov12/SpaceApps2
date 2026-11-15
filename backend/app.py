@@ -485,9 +485,18 @@ def build_hazard_points() -> dict[str, object]:
              WHERE data_mode = 'real'
             """
         ).fetchall()
+        model_rows = connection.execute(
+            """
+            SELECT municipality, department, anomaly_index, priority, created_at
+              FROM analysis.composite_assessments
+             WHERE data_mode = 'real_exploratory'
+             ORDER BY created_at DESC LIMIT 100
+            """
+        ).fetchall()
 
     centroid_by_code: dict[str, tuple[float, float, str, str]] = {}
     centroid_by_name: dict[tuple[str, str], tuple[float, float, str, str]] = {}
+    centroid_by_municipality: dict[str, list[tuple[float, float, str, str]]] = {}
     for code, dept, muni, geometry in municipalities:
         point = geometry_point(geometry)
         if not point:
@@ -495,6 +504,7 @@ def build_hazard_points() -> dict[str, object]:
         entry = (point[0], point[1], str(muni or ""), str(dept or ""))
         centroid_by_code[str(code).zfill(5)] = entry
         centroid_by_name[(_fold(dept), _fold(muni))] = entry
+        centroid_by_municipality.setdefault(_fold(muni), []).append(entry)
 
     centroids = list(centroid_by_code.values())
     groups: dict[tuple[str, str], dict[str, object]] = {}
@@ -564,10 +574,32 @@ def build_hazard_points() -> dict[str, object]:
             "type": types[0][0].capitalize() if types else "",
             "sources": sorted(group["sources"]),
         })
+    model_point_count = 0
+    for municipality, department, anomaly_index, priority, created_at in model_rows:
+        matches = centroid_by_municipality.get(_fold(municipality), [])
+        unique_coordinates = {(entry[0], entry[1]): entry for entry in matches}
+        # Avoid placing an assessment when municipality name alone is ambiguous.
+        if len(unique_coordinates) != 1:
+            continue
+        lon, lat, resolved_municipality, resolved_department = next(iter(unique_coordinates.values()))
+        day = created_at.date().isoformat()
+        points.append({
+            "lat": round(lat, 4), "lon": round(lon, 4),
+            "kind": "model_assessment", "n": 1, "first": day, "last": day,
+            "place": f"{resolved_municipality}, {department or resolved_department}",
+            "deaths": 0, "affected": 0, "homes": 0,
+            "type": f"Evaluación exploratoria {priority}", "sources": ["saros_model"],
+            "mode": "real_exploratory", "priority": priority,
+            "model_anomaly_index": float(anomaly_index) if anomaly_index is not None else None,
+            "record_label": {"es": "evaluación exploratoria", "en": "exploratory assessment"},
+        })
+        model_point_count += 1
+
     points.sort(key=lambda p: -int(p["n"]))
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "records": len(rows), "located": located, "unlocated": unlocated,
+        "model_assessments": model_point_count,
         "points": points,
         "note": "Registros históricos reales (UNGRD, SGC y otras fuentes públicas) agrupados por lugar y tipo. No son alertas activas.",
     }

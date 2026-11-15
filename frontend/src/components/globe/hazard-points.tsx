@@ -143,9 +143,12 @@ export default function HazardPoints() {
             <span className="hz-kind"><i />{hazardKind(p.kind)[es ? "es" : "en"]}</span>
             <strong>{p.place || (es ? "Registro con coordenadas" : "Georeferenced record")}</strong>
             <span className="hz-line">
-              <b>{fmt(p.n)}</b> {p.n === 1 ? (es ? "registro" : "record") : (es ? "registros" : "records")}
+              <b>{fmt(p.n)}</b> {p.record_label?.[es ? "es" : "en"] ?? (p.n === 1 ? (es ? "registro" : "record") : (es ? "registros" : "records"))}
               {p.last && <> · {p.first && p.first !== p.last ? `${p.first.slice(0, 4)}–${p.last.slice(0, 4)}` : p.last.slice(0, 10)}</>}
             </span>
+            {p.model_anomaly_index != null && (
+              <span className="hz-impact">{es ? "Índice de anomalía exploratorio" : "Exploratory anomaly index"}: {p.model_anomaly_index.toFixed(1)}</span>
+            )}
             {(p.deaths > 0 || p.affected > 0 || p.homes > 0) && (
               <span className="hz-impact">
                 {p.affected > 0 && <span>{fmt(p.affected)} {es ? "personas afectadas" : "people affected"}</span>}
