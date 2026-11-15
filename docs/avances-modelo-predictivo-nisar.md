@@ -210,3 +210,10 @@ livianos y documentación de procedencia.
 - El contenedor separado `spaceapps2-model` del detector ONNX sigue
   `unhealthy`; no es el servicio de pronóstico temporal LOS, que corre dentro
   de la API saludable.
+- En `7f8fb24` el pronosticador pasó a versión 1.2: las métricas principales
+  ahora puntúan una vez cada adquisición objetivo distinta y el resultado
+  conserva como diagnóstico separado los errores ponderados por origen. Se
+  publicó y desplegó la nueva imagen de API; confirmé en el contenedor los
+  campos de evaluación, versión 1.2 y salud `healthy`. El checkpoint sigue en
+  cero porque no hay credenciales/datos reales; por tanto este despliegue
+  corrige la evaluación, pero aún no aporta MAE/RMSE científicos.
