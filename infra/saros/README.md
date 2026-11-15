@@ -32,7 +32,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now spaceapps2-auto-update.timer
 ```
 
-Cada 10 minutos el host revisa `origin/main`. Si hay un fast-forward y el checkout está limpio, hace pull y reconstruye/actualiza los servicios SAROS. Si detecta cambios locales o una divergencia, se detiene sin sobrescribirlos. Consulta el resultado con `journalctl -u spaceapps2-auto-update.service`.
+Cada 10 minutos el host revisa `origin/main`. Si hay un fast-forward y el checkout está limpio, hace pull y reconstruye/actualiza `saros`, `api` y `predictor`. Omite dependencias: en Orivia PostgreSQL ya corre en un contenedor existente que no pertenece a este Compose. Si detecta cambios locales o una divergencia, se detiene sin sobrescribirlos. Consulta el resultado con `journalctl -u spaceapps2-auto-update.service`.
 
 El trabajador de filtros y capas se ejecuta bajo el perfil `processing`:
 

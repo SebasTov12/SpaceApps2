@@ -30,4 +30,4 @@ git -C "$repo_dir" pull --ff-only origin main
 docker compose \
   --env-file "$repo_dir/.env" \
   -f "$compose_file" \
-  up -d --build
+  up -d --build --no-deps saros api predictor
