@@ -140,8 +140,11 @@ livianos y documentación de procedencia.
   la ingesta inicial real. La consulta real al servidor todavía no puede
   encontrar una serie porque la tabla tiene cero observaciones; credenciales
   Earthdata también siguen vacías y no hay HDF5 descargados.
-- Las verificaciones ejecutadas para este cambio fueron compilación de Python
-  (`py_compile`) y `git diff --check`; aún falta desplegar/reiniciar API y
-  comprobar el endpoint autenticado y la consulta incremental ASF en el
-  servidor. No se pueden reportar RMSE/MAE de predicción hasta producir una
-  serie LOS científica con mediciones reales.
+- El cambio pasó `py_compile` y `git diff --check`, se publicó como `f82d64b`
+  y se desplegó en `orivia`. La API responde saludable; una solicitud Bearer
+  autenticada al checkpoint respondió `observation_count=0` y
+  `last_processed_date=null`. El contenedor del procesador reconoce la CLI y
+  su ejecución real se detuvo en ese checkpoint vacío, sin escribir archivos
+  ni continuar a ASF. Así se comprobó la protección de la actualización, pero
+  todavía no una consulta de productos posteriores. No se pueden reportar
+  RMSE/MAE de predicción hasta producir una serie LOS científica real.
