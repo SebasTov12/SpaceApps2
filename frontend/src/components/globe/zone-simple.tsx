@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { emergencyFor, telHref } from "@/lib/emergency";
 import { adviceNote, levelInfo, recommendations } from "@/lib/insights";
 import { riskKindInfo, type RiskZone } from "@/lib/risk-zones";
 import { exposureNames, sectorNames, type SectorImpact, type SectorKey } from "@/lib/sector-impacts";
@@ -25,7 +26,7 @@ const copy = {
     impact: "A quién afecta", impactSub: "Toca un sector para ver qué le pasa y cómo reforzarlo",
     what: "Qué le pasa", how: "Cómo reforzar",
     history: "Qué pasó aquí", todo: "Qué hacer", todoSub: "Pasos concretos para la gente de la zona",
-    call: "Emergencias · 123", about: "Sobre estos datos",
+    call: "Emergencias · 123", official: "Información oficial", about: "Sobre estos datos",
     impactNote: "Escenario ilustrativo (DEMO): muestra exposición posible, no daños confirmados ni probabilidades. SAROS no predice terremotos.",
     watch: "Señales de extracción", suspicious: "Cambio sospechoso", conf: "confianza",
     watchNote: "SAROS detecta el cambio; no identifica responsables ni dice si es legal. Requiere verificación en campo.",
@@ -42,7 +43,7 @@ const copy = {
     impact: "Who is affected", impactSub: "Tap a sector to see what happens and how to reinforce it",
     what: "What happens", how: "How to reinforce",
     history: "What happened here", todo: "What to do", todoSub: "Concrete steps for people in the area",
-    call: "Emergencies · 123", about: "About this data",
+    call: "Emergencies · 123", official: "Official information", about: "About this data",
     impactNote: "Illustrative scenario (DEMO): shows possible exposure, not confirmed damage or probabilities. SAROS does not predict earthquakes.",
     watch: "Extraction signals", suspicious: "Suspicious change", conf: "confidence",
     watchNote: "SAROS detects the change; it does not identify who is responsible or whether it is legal. Field verification required.",
@@ -129,6 +130,8 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
   const advice = recommendations(zone.kind, level, colombia, lang);
   const emergency = advice.find((t) => /123/.test(t));
   const steps = advice.filter((t) => t !== emergency);
+  // a quién llamar en este país y para esta amenaza
+  const sos = emergencyFor(zone, lang);
   const open = impacts.find((i) => i.sector === openSector) ?? null;
   const lvl = levelInfo[level];
 
@@ -276,7 +279,27 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
             );
           })}
         </motion.ol>
-        {emergency && colombia && <a className="zs-call" data-tour="call" href="tel:123"><Phone size={15} /> {c.call}<span>UNGRD · SGC · IDEAM</span></a>}
+        {sos && (
+          <div className="zs-sos" data-tour="call">
+            {sos.callable ? (
+              <a className="zs-call" href={telHref(sos.first.n)}>
+                <Phone size={15} /> <span className="zs-call-what">{sos.first.label[lang]}</span>
+                <b className={`zs-call-n${sos.first.n.length > 6 ? " is-long" : ""}`}>{sos.first.n}</b>
+                <span className="zs-call-where">{sos.countryName}</span>
+              </a>
+            ) : (
+              <div className="zs-call is-off"><Phone size={15} /> <span className="zs-call-what">{sos.note}</span></div>
+            )}
+            {sos.others.length > 0 && (
+              <div className="zs-sos-more">
+                {sos.others.map((l) => (
+                  <a key={l.n} href={telHref(l.n)}><b>{l.n}</b><span>{l.label[lang]}</span></a>
+                ))}
+              </div>
+            )}
+            {sos.agencies && <p className="zs-sos-src">{c.official}: <span translate="no" className="notranslate">{sos.agencies}</span></p>}
+          </div>
+        )}
       </motion.section>
 
       {noData}

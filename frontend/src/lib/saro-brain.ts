@@ -3,6 +3,7 @@
  * Entiende de qué zona se habla, quién pregunta (agricultor, pescador…) y qué quiere saber.
  * Cada respuesta puede llevar una acción para el mapa (señalar puntos, explicar colores, abrir otra zona).
  */
+import { emergencyFor } from "./emergency";
 import { recommendations } from "./insights";
 import { riskKinds, riskZones, type RiskZone } from "./risk-zones";
 import { sectorEffects, sectorImpacts, type SectorKey } from "./sector-impacts";
@@ -162,7 +163,7 @@ export function answer(question: string, ctx: BrainContext): SaroReply {
     const lvl = a?.level ?? "baja";
     const base = lvl === "alta" ? `Sí, ${place} está en atención alta` : lvl === "moderada" ? `${place} está en atención moderada` : `${place} está en atención baja`;
     const accel = a?.accelerating ? ", y el cambio se está acelerando" : "";
-    return { text: `${base}${accel}. Eso no es una alerta oficial, pero sí una razón para estar pendiente y conocer tu ruta de evacuación. Las alertas oficiales son de la UNGRD, el SGC y el IDEAM.`, action: a?.hotspots.length ? { type: "hotspots", ...hotspotLabel(zone, m) } : undefined };
+    return { text: `${base}${accel}. Eso no es una alerta oficial, pero sí una razón para estar pendiente y conocer tu ruta de evacuación. ${zone.country === "CO" ? "Las alertas oficiales son de la UNGRD, el SGC y el IDEAM." : `Las alertas oficiales son de ${emergencyFor(zone, "es")?.agencies.replace(/ · /g, ", ") || "la protección civil local"}.`}`, action: a?.hotspots.length ? { type: "hotspots", ...hotspotLabel(zone, m) } : undefined };
   }
   if (/que hago|que debo|recomend|ayuda|evacu|como me protejo|que puedo hacer/.test(q)) {
     const advice = recommendations(zone.kind, a?.level ?? "baja", zone.country === "CO", "es").filter((t) => !/123/.test(t)).slice(0, 2);
@@ -171,7 +172,9 @@ export function answer(question: string, ctx: BrainContext): SaroReply {
       const imp = sectorImpacts(zone.id, zone.kind).find((s) => s.sector === ctx.role);
       if (imp) extra = ` Y para tu caso: ${lower(firstSentence(imp.reinforce.es))}`;
     }
-    return { text: `Esto es lo más importante: ${advice.map(lower).join(" Además, ")}${extra} Si ves una emergencia, llama al 123.` };
+    const sos = emergencyFor(zone, "es");
+    const call = sos?.callable ? ` Si ves una emergencia, llama al ${sos.first.n}${zone.country === "CO" ? "" : ` en ${sos.countryName} (${sos.first.label.es})`}.` : "";
+    return { text: `Esto es lo más importante: ${advice.map(lower).join(" Además, ")}${extra}${call}` };
   }
   if (/va a pasar|futuro|predic|proyecc|pronost|cuanto falta|que pasara/.test(q)) {
     if (!a) return { text: `En ${place} aún no tengo una serie de datos para proyectar.` };

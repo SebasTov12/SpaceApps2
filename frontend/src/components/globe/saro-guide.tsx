@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { History, MessageCircle, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { emergencyFor } from "@/lib/emergency";
 import { recommendations } from "@/lib/insights";
 import { isAutoLang, useI18n } from "@/lib/i18n";
 import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
@@ -204,6 +205,17 @@ function scriptFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "
   const advice = recommendations(zone.kind, level ?? "baja", zone.country === "CO", lang);
   if (advice[0]) lines.push(es ? `Si vives cerca: ${advice[0].charAt(0).toLowerCase()}${advice[0].slice(1)}` : `If you live nearby: ${advice[0].charAt(0).toLowerCase()}${advice[0].slice(1)}`);
   if (zone.country === "CO") lines.push(es ? "Y si ves una emergencia, llama al 123. Yo te ayudo a entender; las alertas oficiales son de UNGRD, SGC e IDEAM." : "And in an emergency, dial 123. I help you understand; official alerts come from UNGRD, SGC and IDEAM.");
+  else {
+    // fuera de Colombia: el número de ese país y de esa amenaza
+    const sos = emergencyFor(zone, lang);
+    if (sos?.callable) {
+      const what = sos.first.label[lang];
+      const who = sos.agencies.replace(/ · /g, ", ");
+      lines.push(es
+        ? `Y si ves una emergencia en ${sos.countryName}, llama al ${sos.first.n}: ${what}. Las alertas oficiales son de ${who}.`
+        : `And in an emergency in ${sos.countryName}, dial ${sos.first.n}: ${what}. Official alerts come from ${who}.`);
+    }
+  }
   return lines;
 }
 
@@ -240,7 +252,8 @@ export default function SaroGuide() {
   const { lang, globalLang } = useI18n();
   const reduce = useReducedMotion();
   // con traducción automática el texto sale completo: escribir letra a letra obligaría a retraducir sin parar
-  const instant = reduce || isAutoLang(globalLang);
+  const auto = isAutoLang(globalLang);
+  const instant = reduce || auto;
   const es = lang === "es";
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [manifest, setManifest] = useState<SiteManifest | null>(null);
@@ -294,6 +307,27 @@ export default function SaroGuide() {
   const current = steps[Math.min(step, steps.length - 1)];
   const lineText = current?.text ?? "";
   const text = reply ?? aside ?? lineText;
+
+  // Idiomas del traductor automático: todas las frases de Saru para esta zona se dejan en un bloque
+  // oculto que el traductor traduce de una vez; la burbuja y la voz usan esa versión ya traducida.
+  const poolRef = useRef<HTMLDivElement | null>(null);
+  const pool = useMemo(() => (auto ? Array.from(new Set([...lines, aside, reply].filter((t): t is string => !!t))) : []), [auto, lines, aside, reply]);
+  const translatedOf = useCallback((t: string) => {
+    const el = poolRef.current?.querySelector(`[data-k="${voiceKey(t)}"]`) as HTMLElement | null;
+    return el?.querySelector("font") ? el.innerText.trim() : null;
+  }, []);
+  const [translated, setTranslated] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!auto || !text || translated[text]) return;
+    const started = Date.now();
+    const id = window.setInterval(() => {
+      const value = translatedOf(text);
+      if (value) setTranslated((map) => ({ ...map, [text]: value }));
+      if (value || Date.now() - started > 9000) window.clearInterval(id);
+    }, 300);
+    return () => window.clearInterval(id);
+  }, [auto, text, translated, translatedOf]);
+  const shownText = auto ? translated[text] ?? text : text;
   const mood: Mood = zone ? moodFor(manifest?.assessment?.level ?? (zone.siteId ? undefined : "baja")) : "happy";
   const watch = zone ? watchKinds.has(zone.kind) : false;
 
@@ -391,7 +425,7 @@ export default function SaroGuide() {
     const my = ++token.current;
     const done = () => { if (my === token.current) { setSpeaking(false); onDone(); } };
     const key = voiceKey(t);
-    if (es && recorded) {
+    if (es && !auto && recorded) {
       const keys = recorded.has(key) ? [key] : sentences(t).map(voiceKey);
       if (keys.every((k) => recorded.has(k))) {
         const playAt = (i: number) => {
@@ -409,18 +443,43 @@ export default function SaroGuide() {
       }
     }
     if (!("speechSynthesis" in window)) { done(); return; }
-    const parts = sentences(t.replace(/•/g, " "));
-    const best = voices[0];
-    parts.forEach((part, i) => {
-      const u = new SpeechSynthesisUtterance(part);
-      u.lang = best?.lang ?? (es ? "es-CO" : "en-US");
-      if (best) u.voice = best;
-      u.rate = prosody[mood].rate;
-      if (i === 0) u.onstart = () => setSpeaking(true);
-      if (i === parts.length - 1) { u.onend = done; u.onerror = done; }
-      window.speechSynthesis.speak(u);
-    });
-  }, [es, recorded, voices, mood, stopAll]);
+    const say = (said: string, voiceFor: SpeechSynthesisVoice | undefined, langCode: string) => {
+      const parts = sentences(said.replace(/•/g, " "));
+      if (!parts.length) { done(); return; }
+      parts.forEach((part, i) => {
+        const u = new SpeechSynthesisUtterance(part);
+        u.lang = voiceFor?.lang ?? langCode;
+        if (voiceFor) u.voice = voiceFor;
+        u.rate = prosody[mood].rate;
+        if (i === 0) u.onstart = () => setSpeaking(true);
+        if (i === parts.length - 1) { u.onend = done; u.onerror = done; }
+        window.speechSynthesis.speak(u);
+      });
+    };
+    if (auto) {
+      // idioma traducido por el navegador: Saru lee lo que se ve en pantalla, ya traducido
+      const code = globalLang.toLowerCase().split("-")[0];
+      const all = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().split(/[-_]/)[0] === (code === "he" ? "he" : code));
+      const voiceFor = all.find((v) => /natural|online|neural/i.test(v.name)) ?? all[0];
+      const started = Date.now();
+      const read = () => {
+        if (my !== token.current) return;
+        const ready = translatedOf(t);
+        if (!ready && Date.now() - started < 4000) { window.setTimeout(read, 250); return; }
+        const said = ready ?? t;
+        if (!voiceFor) {
+          // sin voz para ese idioma: no se lee en otro idioma; se da tiempo de lectura y sigue
+          setSpeaking(true);
+          window.setTimeout(done, 2200 + said.length * 45);
+          return;
+        }
+        say(said, voiceFor, globalLang);
+      };
+      read();
+      return;
+    }
+    say(t, voices[0], es ? "es-CO" : "en-US");
+  }, [es, auto, globalLang, recorded, voices, mood, stopAll, translatedOf]);
 
   // narración continua: al terminar cada frase pasa sola a la siguiente
   const advance = useCallback(() => {
@@ -507,6 +566,11 @@ export default function SaroGuide() {
 
   return (
     <>
+      {auto && (
+        <div className="saru-pool" ref={poolRef} aria-hidden="true">
+          {pool.map((t) => <p key={voiceKey(t)} data-k={voiceKey(t)}>{t}</p>)}
+        </div>
+      )}
       <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}`} aria-hidden={away || undefined}>
         <div className="saru-row">
         <AnimatePresence initial={false}>
@@ -514,7 +578,7 @@ export default function SaroGuide() {
             <motion.div key="caption" className="saru-caption" role="status" aria-live="polite"
               initial={{ opacity: 0, x: -12, scale: 0.95 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -10, scale: 0.95 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}>
-              <p className="saru-text">{typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
+              <p className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{auto ? shownText : typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
               <div className="saru-bar">
                 <span className="saru-name">Saru</span>
                 {!reply && lines.length > 1 && (
@@ -534,6 +598,12 @@ export default function SaroGuide() {
         <button type="button" className="saro-avatar saru-enter" key={`${zoneId ?? "home"}-${arrivals}`} onClick={() => (minimized ? setMinimized(false) : setPlaying((p) => !p))}
           aria-label={minimized ? (es ? "Mostrar a Saru" : "Show Saru") : (es ? "Pausar o seguir" : "Pause or continue")}>
           <span className="saru-trail" aria-hidden="true" />
+          {/* aterrizaje: anillo de impacto y nubes de humo que se abren a los lados */}
+          <span className="saru-land" aria-hidden="true">
+            <b className="saru-shock" />
+            {[-1, -0.7, -0.4, -0.15, 0.15, 0.4, 0.7, 1].map((d, i) => <i key={i} style={{ "--d": d, "--k": i } as React.CSSProperties} />)}
+            {[-1, -0.55, -0.2, 0.2, 0.55, 1].map((d, i) => <s key={i} style={{ "--d": d, "--k": i } as React.CSSProperties} />)}
+          </span>
           <SaroFigure mood={mood} talking={talking} />
         </button>
         </div>

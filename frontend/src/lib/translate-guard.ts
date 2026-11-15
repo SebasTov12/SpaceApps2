@@ -11,7 +11,15 @@
  * cuando un texto cambia, se devuelve el original a su sitio para que el traductor lo traduzca de nuevo.
  */
 type GuardWindow = Window & { __sarosDomGuard?: boolean };
-type Tracked = Text & { __sarosFont?: Element };
+type Tracked = Text & { __sarosFont?: Element; __sarosChanged?: boolean };
+
+/** ¿React cambió este texto después de traducirse? (y se olvida la marca) */
+export function takeChanged(node: Node) {
+  const t = node as Tracked;
+  if (!t.__sarosChanged) return false;
+  t.__sarosChanged = false;
+  return true;
+}
 
 const isFont = (node: Node | null): node is Element => !!node && node.nodeType === 1 && (node as Element).tagName === "FONT";
 
@@ -60,6 +68,7 @@ export function installTranslateGuard() {
     if (!font?.parentNode) return;
     font.parentNode.replaceChild(node, font);
     (node as Tracked).__sarosFont = undefined;
+    (node as Tracked).__sarosChanged = true;
   };
   const wrapSetter = (proto: object, key: "nodeValue" | "data" | "textContent") => {
     const desc = Object.getOwnPropertyDescriptor(proto, key);
