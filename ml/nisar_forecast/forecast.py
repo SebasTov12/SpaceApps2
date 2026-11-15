@@ -145,6 +145,7 @@ def rolling_backtest(
     persistence_errors: list[float] = []
     trend_errors: list[float] = []
     origins: list[dict[str, Any]] = []
+    best_forecast_by_target: dict[str, dict[str, Any]] = {}
 
     for origin_index in range(min_train_observations - 1, len(observations) - 1):
         origin = observations[origin_index]
@@ -165,21 +166,35 @@ def rolling_backtest(
         trend_error = trend_prediction - target.los_mm
         persistence_errors.append(persistence_error)
         trend_errors.append(trend_error)
-        origins.append(
-            {
-                "origin_date": origin.day.isoformat(),
-                "target_date": target.day.isoformat(),
+        origin_result = {
+            "origin_date": origin.day.isoformat(),
+            "target_date": target.day.isoformat(),
+            "horizon_days": actual_horizon,
+            "actual_los_mm": target.los_mm,
+            "persistence_prediction_mm": origin.los_mm,
+            "trend_prediction_mm": trend_prediction,
+            "trend_slope_mm_per_day": slope,
+        }
+        origins.append(origin_result)
+
+        target_day = target.day.isoformat()
+        selection_key = (abs(actual_horizon - horizon_days), origin_index)
+        previous = best_forecast_by_target.get(target_day)
+        if previous is None or selection_key < previous["selection_key"]:
+            best_forecast_by_target[target_day] = {
+                "selection_key": selection_key,
+                "origin_date": origin_result["origin_date"],
                 "horizon_days": actual_horizon,
-                "actual_los_mm": target.los_mm,
-                "persistence_prediction_mm": origin.los_mm,
-                "trend_prediction_mm": trend_prediction,
-                "trend_slope_mm_per_day": slope,
+                "persistence_error_mm": persistence_error,
+                "trend_error_mm": trend_error,
             }
-        )
 
     target_use: dict[str, int] = {}
     for origin in origins:
         target_use[origin["target_date"]] = target_use.get(origin["target_date"], 0) + 1
+    unique_target_records = [best_forecast_by_target[day] for day in sorted(best_forecast_by_target)]
+    unique_persistence_errors = [item["persistence_error_mm"] for item in unique_target_records]
+    unique_trend_errors = [item["trend_error_mm"] for item in unique_target_records]
 
     return {
         "requested_horizon_days": horizon_days,
@@ -190,8 +205,17 @@ def rolling_backtest(
         # for independent validation evidence.
         "unique_target_count": len(target_use),
         "target_reuse_counts": target_use,
-        "persistence": score_errors(persistence_errors),
-        "robust_linear_trend": score_errors(trend_errors),
+        "target_metric_selection": "closest_to_requested_horizon_then_earliest_origin",
+        "target_metric_origins": {
+            day: {"origin_date": item["origin_date"], "horizon_days": item["horizon_days"]}
+            for day, item in sorted(best_forecast_by_target.items())
+        },
+        "persistence": score_errors(unique_persistence_errors),
+        "robust_linear_trend": score_errors(unique_trend_errors),
+        "origin_weighted_diagnostic": {
+            "persistence": score_errors(persistence_errors),
+            "robust_linear_trend": score_errors(trend_errors),
+        },
         "status": "evaluated" if len(target_use) >= 2 else "insufficient_independent_targets",
     }
 
@@ -221,12 +245,12 @@ def build_forecast(
         reliability = "provisional_candidate_requires_external_validation"
 
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         # A few rolling origins cannot establish operational reliability.
         "status": "forecast_exploratory",
         "model": {
             "name": "robust_linear_trend_by_aoi",
-            "version": "1.1",
+            "version": "1.2",
             "equation": "LOS_mm(t) = beta0 + beta1 * days_since_first_observation",
             "slope_mm_per_day": slope,
             "intercept_mm": intercept,
@@ -245,7 +269,7 @@ def build_forecast(
             "last_observation_date": latest.day.isoformat(),
             "confidence_interval_status": "not_calibrated",
             "reliability_status": reliability,
-            "reliability_note": "Report MAE/RMSE in millimetres; percentage error is unstable when LOS is near zero. Six distinct future target acquisitions is only a minimum screening rule, not proof of reliability. Rolling origins that reuse a target are dependent.",
+            "reliability_note": "Backtest MAE/RMSE use each future target acquisition once, selecting the forecast closest to the requested horizon and then the earliest origin. Origin-weighted scores are diagnostic only because repeated targets are dependent. Six distinct future targets is a minimum screening rule, not proof of reliability. Percentage error is unstable when LOS is near zero.",
         },
         "backtest": backtest,
         "provenance": provenance,
