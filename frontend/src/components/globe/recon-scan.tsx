@@ -5,7 +5,7 @@ import { useMemo, useRef } from "react";
 import { AdditiveBlending, Vector3, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
 import { riskZones } from "@/lib/risk-zones";
-import { FOOTPRINT_LOCAL, OVER_RELIEF, GLOBE_DETECT, GLOBE_RECON, SCAN_INTERVAL, SCAN_DURATION, SCAN_FADE, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
+import { FOOTPRINT_LOCAL, OVER_RELIEF, GLOBE_DETECT, GLOBE_RECON, SCAN_GRID_DEGREES, SCAN_INTERVAL, SCAN_DURATION, SCAN_FADE, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
 
 const SCAN_DELAY = 3.6;      // esperar a que termine la entrada cinematográfica
 const PASS_DISTANCE = 0.35;  // distancia huella–zona para contar una pasada del haz
@@ -41,8 +41,8 @@ const fragment = `
     float scanned = 1.0 - smoothstep(-0.02, 0.02, d);
     float latD = degrees(asin(clamp(n.y, -1.0, 1.0)));
     float lonD = degrees(atan(n.x, n.z));
-    float gLat = abs(fract(latD / 5.0 + 0.5) - 0.5) * 5.0;
-    float gLon = abs(fract(lonD / 5.0 + 0.5) - 0.5) * 5.0 * cos(radians(latD));
+    float gLat = abs(fract(latD / ${SCAN_GRID_DEGREES.toFixed(1)} + 0.5) - 0.5) * ${SCAN_GRID_DEGREES.toFixed(1)};
+    float gLon = abs(fract(lonD / ${SCAN_GRID_DEGREES.toFixed(1)} + 0.5) - 0.5) * ${SCAN_GRID_DEGREES.toFixed(1)} * cos(radians(latD));
     float grid = max(1.0 - smoothstep(0.03, 0.11, gLat), 1.0 - smoothstep(0.03, 0.11, gLon));
     // la retícula solo se ve cerca del frente y se apaga detrás de él
     float near = exp(-pow(d / 0.5, 2.0));

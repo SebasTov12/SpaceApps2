@@ -4,6 +4,8 @@ import { Vector3, type Object3D } from "three";
 export const RELIEF = 0.04;
 /** Radio de las capas que van sobre el relieve (franja del radar, barrido). */
 export const OVER_RELIEF = 1 + RELIEF + 0.006;
+/** Separación angular ilustrativa compartida por la cuadrícula y la huella del radar. */
+export const SCAN_GRID_DEGREES = 5;
 /** Tiempos compartidos para coordinar los haces ilustrativos. */
 export const SCAN_INTERVAL = 30;
 export const SCAN_DURATION = 5.2;

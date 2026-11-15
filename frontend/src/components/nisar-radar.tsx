@@ -4,18 +4,22 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { AdditiveBlending, DoubleSide, type MeshBasicMaterial, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
-import { OVER_RELIEF, globeState } from "./globe/globe-state";
+import { FOOTPRINT_LOCAL, OVER_RELIEF, SCAN_GRID_DEGREES, globeState } from "./globe/globe-state";
 
 // Artistic side-looking footprint; not an acquisition polygon or live telemetry.
 // The surface is sampled on a sphere so the swath never becomes a flat decal.
 const SHELL = OVER_RELIEF;
+const HALF_CELL = SCAN_GRID_DEGREES * Math.PI / 360;
+const CENTER_LAT = Math.asin(FOOTPRINT_LOCAL.z / SHELL);
+const ACROSS_MIN = SHELL * Math.sin(CENTER_LAT - HALF_CELL);
+const ACROSS_MAX = SHELL * Math.sin(CENTER_LAT + HALF_CELL);
 function surface(along: number, across: number): [number, number, number] {
   const radius = Math.sqrt(SHELL * SHELL - across * across);
   return [radius * Math.cos(along), radius * Math.sin(along), across];
 }
 
 function makeGeometry(apex: [number, number, number]) {
-  const corners = [surface(-0.022, 0.10), surface(0.022, 0.10), surface(0.022, 0.23), surface(-0.022, 0.23)];
+  const corners = [surface(-HALF_CELL, ACROSS_MIN), surface(HALF_CELL, ACROSS_MIN), surface(HALF_CELL, ACROSS_MAX), surface(-HALF_CELL, ACROSS_MAX)];
   const beam: number[] = [];
   const beamUv: number[] = [];
   for (let index = 0; index < 4; index++) {
@@ -26,10 +30,10 @@ function makeGeometry(apex: [number, number, number]) {
   const swath: number[] = [];
   const swathUv: number[] = [];
   for (let index = 0; index < 36; index++) {
-    const a = -0.42 + index * 0.442 / 36;
-    const b = -0.42 + (index + 1) * 0.442 / 36;
-    swath.push(...surface(a, 0.10), ...surface(b, 0.10), ...surface(b, 0.23),
-      ...surface(a, 0.10), ...surface(b, 0.23), ...surface(a, 0.23));
+    const a = -0.42 + index * (0.42 + HALF_CELL) / 36;
+    const b = -0.42 + (index + 1) * (0.42 + HALF_CELL) / 36;
+    swath.push(...surface(a, ACROSS_MIN), ...surface(b, ACROSS_MIN), ...surface(b, ACROSS_MAX),
+      ...surface(a, ACROSS_MIN), ...surface(b, ACROSS_MAX), ...surface(a, ACROSS_MAX));
     const u = index / 36;
     const v = (index + 1) / 36;
     swathUv.push(0, u, 0, v, 1, v, 0, u, 1, v, 1, u);
