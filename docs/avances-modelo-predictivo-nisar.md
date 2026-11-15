@@ -306,3 +306,46 @@ livianos y documentación de procedencia.
   bloques, sin leer las capas completas. Rechaza COGs sin píxeles válidos o con
   rejillas distintas y no convierte fase a LOS. Aún no se ha ejecutado porque
   no hay un manifiesto COG auténtico que inspeccionar.
+
+## Verificación operativa adicional (14 de noviembre de 2026)
+
+- Confirmé el checkout remoto en `b8656dc`, sincronizado con `origin/main` y sin
+  cambios sin guardar. La imagen `spaceapps2-nisar-processor:latest` está
+  construida; dentro de ella importan Rasterio 1.5.2 y el CLI del inspector de
+  COG arranca. El fallo previo por `libexpat.so.1` quedó resuelto instalando
+  `libexpat1` en `pipeline/Dockerfile`. El procesador corre como trabajo
+  puntual del perfil Compose `processing`; no se deja como servicio continuo.
+- La API de SAROS continúa saludable y la tabla `nisar.observations` sigue con
+  cero filas. Los `.env` privados comprobados en el servidor no tienen usuario
+  ni contraseña Earthdata configurados; no se intentó una descarga autenticada
+  ni se copiaron credenciales al repositorio.
+- El contenedor `spaceapps2-model` que expone inferencia ONNX está `unhealthy`
+  porque su volumen no contiene `models/nisar-change/best.onnx`. Es un servicio
+  de segmentación/cambio distinto del pronóstico temporal LOS alojado en la
+  API. No se inventó ni entrenó un checkpoint sin observaciones reales y
+  etiquetas verificadas.
+- Con las 18 escenas PROVISIONAL que devolvió la última consulta conocida para
+  Neiva (nueve pares por stack, de junio a octubre de 2026), no se justifican
+  un modelo secuencial ni una componente estacional anual. Además, un par GUNW
+  mide el cambio interferométrico entre dos adquisiciones y no es directamente
+  un valor acumulado de la serie. Se necesita resolver una red temporal de
+  pares por píxel con referencia espacial consistente antes de resumir cada
+  adquisición y entrenar el pronosticador. El CSV de entrada al pronosticador
+  no debe prepararse sumando estadísticas de pares sin esa inversión.
+- La guía oficial de GUNW confirma fase desenrollada en radianes, coherencia,
+  componentes conectados y máscara; indica que las correcciones de fase
+  externas incluidas no se aplican por defecto. La documentación de problemas
+  conocidos también reporta temas vigentes de desenvolvimiento y artefactos de
+  fase en productos recientes. La conversión de fase, el signo y las correcciones
+  se mantienen pendientes hasta contrastar metadatos de un COG/HDF5 real del
+  stack y la especificación del producto; no se interpreta aún `-fase × λ/4π`
+  como un resultado científicamente validado.
+- No hay métricas RMSE/MAE sobre observaciones NISAR reales ni fundamento para
+  prometer un pequeño porcentaje de error. El porcentaje relativo también deja
+  de ser estable cuando LOS se acerca a cero. Se conservará MAE/RMSE en mm y
+  solo se evaluará fiabilidad tras una serie real por stack, validación temporal
+  de objetivos no reutilizados, comparación con persistencia y suficientes
+  observaciones independientes.
+
+Referencias de producto consultadas: [guía NISAR GUNW de ASF](https://nisar-docs.asf.alaska.edu/gunw/),
+[problemas conocidos de NISAR](https://nisar-docs.asf.alaska.edu/provisional-known-issues/).
