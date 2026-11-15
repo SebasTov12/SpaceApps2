@@ -6,6 +6,7 @@ import { type MotionValue } from "framer-motion";
 import { Component, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import NisarOrbit from "@/components/nisar-orbit";
 import RiskMarkers from "@/components/globe/risk-markers";
+import HazardPoints from "@/components/globe/hazard-points";
 import ReconScan from "@/components/globe/recon-scan";
 import CompanionSats from "@/components/globe/companion-sats";
 import { RELIEF, globeState } from "@/components/globe/globe-state";
@@ -70,6 +71,8 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
         </mesh>
         {/* Zonas de riesgo; giran con la superficie */}
         <RiskMarkers />
+        {/* Registros reales de amenazas de la base de datos */}
+        <HazardPoints />
         <group ref={clouds}>
         {/* A faint offset veil gives cloud systems depth without heavy shadow maps. */}
         <mesh scale={1 + RELIEF + 0.004} rotation={[0, 0.006, 0.003]}>

@@ -549,7 +549,9 @@ export default function SaroGuide() {
       ...past.slice(-6).map((m) => ({ role: m.from === "user" ? "user" : "assistant", content: m.text.slice(0, 1400) })),
       { role: "user", content: (context + q).slice(0, 1450) },
     ].slice(-8);
-    let text = local.text;
+    let text = es
+      ? "No pude consultar a Saru ahora. Inténtalo de nuevo en un momento."
+      : "I couldn't reach Saru right now. Please try again in a moment.";
     try {
       const response = await fetch("/api/assistant", {
         method: "POST",
@@ -558,9 +560,15 @@ export default function SaroGuide() {
         signal: AbortSignal.timeout(45000),
       });
       const payload = (await response.json().catch(() => ({}))) as { answer?: string };
-      if (response.ok && payload.answer?.trim()) text = plainText(payload.answer);
+      if (response.ok && payload.answer?.trim()) {
+        text = plainText(payload.answer);
+      } else if (response.status === 503 || response.status === 502) {
+        text = es
+          ? "El asistente de datos no está disponible en este momento; no voy a responder con información local desactualizada."
+          : "The data assistant is unavailable right now; I won't answer with stale local information.";
+      }
     } catch {
-      /* sin asistente disponible: responde Saru con los datos de la zona */
+      /* Saru answers only through the Groq-backed server assistant. */
     }
     setThinking(false);
     setReply(text);

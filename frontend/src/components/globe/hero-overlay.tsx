@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import { riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { loadSites, type SiteSummary } from "@/lib/sites";
 import LanguageModal from "@/components/language-modal";
+import { HAZARDS_EVENT, type HazardPoints } from "@/lib/hazard-points";
 import { focusZone, globeState, UI_REVEAL } from "./globe-state";
 
 const copy = {
@@ -33,6 +34,13 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
   const [sites, setSites] = useState<SiteSummary[]>([]);
   const [open, setOpen] = useState(false);
   const [shown, setShown] = useState(false);
+  // resumen de los registros reales de la base que se dibujan en el planeta
+  const [hazards, setHazards] = useState<HazardPoints | null>(null);
+  useEffect(() => {
+    const onData = (event: Event) => setHazards((event as CustomEvent<HazardPoints>).detail);
+    window.addEventListener(HAZARDS_EVENT, onData);
+    return () => window.removeEventListener(HAZARDS_EVENT, onData);
+  }, []);
   useEffect(() => {
     const onReveal = (event: Event) => setShown(Boolean((event as CustomEvent<boolean>).detail));
     window.addEventListener(UI_REVEAL, onReveal);
@@ -98,6 +106,13 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
           </button>
         ))}
       </div>
+      {hazards && hazards.located > 0 && (
+        <div className="hz-legend" title={hazards.note}>
+          <i />
+          <span><b>{hazards.located.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</b> {lang === "es" ? "registros reales en el mapa" : "real records on the map"}</span>
+          <small>{lang === "es" ? "Emergencias e inventarios · UNGRD · SGC" : "Emergencies & inventories · UNGRD · SGC"}</small>
+        </div>
+      )}
       <motion.button
         type="button"
         className="hero-search-btn"
