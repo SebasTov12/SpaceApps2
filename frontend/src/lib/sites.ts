@@ -28,6 +28,8 @@ export type SiteSummary = {
   country?: string;
   level?: AttentionLevel;
   accelerating?: boolean;
+  watch?: boolean;
+  extraction?: Extraction | null;
   mode: "demo" | "real";
   headline: SiteStat;
 };
@@ -48,6 +50,19 @@ export type Assessment = {
   basisEn: string;
 };
 
+/** Señales de extracción (vigilancia ambiental). Indican un cambio sospechoso, no un responsable. */
+export type Extraction = {
+  forestLostHa: number;
+  recentHa: number;
+  newWaterHa: number;
+  pits: number;
+  waterChangePct: number | null;
+  confidence: "alta" | "media" | "baja";
+  persistence: number;
+  context: { miningTitle?: string; protected?: string; territory?: string; river?: string };
+  kind: string;
+};
+
 export type SiteManifest = Omit<SiteSummary, "mode" | "headline"> & {
   metric: string;
   range: [number, number];
@@ -60,6 +75,7 @@ export type SiteManifest = Omit<SiteSummary, "mode" | "headline"> & {
   stats: SiteStat[];
   source: { mode: "demo" | "real"; product: string; granules: string[]; note: string; noteEn?: string };
   assessment?: Assessment;
+  extraction?: Extraction | null;
   generated: string;
 };
 

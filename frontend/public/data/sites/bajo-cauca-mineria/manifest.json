@@ -1,0 +1,210 @@
+{
+  "id": "bajo-cauca-mineria",
+  "name": "Minería en el Bajo Cauca",
+  "place": "Antioquia, Colombia",
+  "lat": 7.62,
+  "lon": -74.8,
+  "bbox": [
+    -75.0,
+    7.47,
+    -74.6,
+    7.77
+  ],
+  "change": "backscatter",
+  "changeLabel": "Minería aluvial",
+  "product": "GCOV",
+  "metric": "Retrodispersión HV",
+  "unit": "dB",
+  "range": [
+    -26,
+    -8
+  ],
+  "colormap": "forest",
+  "story": "En el Bajo Cauca antioqueño la minería aluvial transforma las orillas de los ríos. SAROS marca las piscinas nuevas y el bosque perdido para que la autoridad lo verifique.",
+  "en": {
+    "name": "Mining in Bajo Cauca",
+    "place": "Antioquia, Colombia",
+    "changeLabel": "Alluvial mining",
+    "metric": "HV backscatter",
+    "story": "In Bajo Cauca, alluvial mining reshapes riverbanks. SAROS flags new ponds and lost forest for authorities to verify.",
+    "unit": "dB"
+  },
+  "pilot": false,
+  "country": "CO",
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/bajo-cauca-mineria/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/bajo-cauca-mineria/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/bajo-cauca-mineria/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/bajo-cauca-mineria/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/bajo-cauca-mineria/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/bajo-cauca-mineria/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/bajo-cauca-mineria/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/bajo-cauca-mineria/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/bajo-cauca-mineria/change.png",
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "unit": "dB"
+  },
+  "legend": {
+    "colors": [
+      "#8a5a2b",
+      "#c79a5b",
+      "#e6d6a2",
+      "#9cc98a",
+      "#3f8f52",
+      "#1d5c34"
+    ],
+    "range": [
+      -26,
+      -8
+    ],
+    "diverging": false
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Área sin bosque al inicio",
+      "labelEn": "Cleared area at start",
+      "value": "34",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-08-02",
+      "noteEn": "2026-08-02"
+    },
+    {
+      "label": "Área sin bosque al final",
+      "labelEn": "Cleared area at end",
+      "value": "62",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-10-25",
+      "noteEn": "2026-10-25"
+    },
+    {
+      "label": "Cambio neto",
+      "labelEn": "Net change",
+      "value": "+28",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "Umbral -15 dB",
+      "noteEn": "Threshold -15 dB"
+    }
+  ],
+  "assessment": {
+    "level": "alta",
+    "rate": {
+      "recent": 12.08,
+      "early": 7.63,
+      "unit": "km²/mes",
+      "unitEn": "km²/month"
+    },
+    "accelerating": true,
+    "current": 62.32,
+    "projection": {
+      "d30": 74.4,
+      "d90": 98.56,
+      "unit": "km²"
+    },
+    "hotspots": [
+      {
+        "lat": 7.64667,
+        "lon": -74.7805,
+        "value": 15.34
+      },
+      {
+        "lat": 7.61444,
+        "lon": -74.91309,
+        "value": 15.02
+      },
+      {
+        "lat": 7.61444,
+        "lon": -74.97326,
+        "value": 14.85
+      },
+      {
+        "lat": 7.64111,
+        "lon": -74.68468,
+        "value": 14.81
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
+  "extraction": {
+    "forestLostHa": 1496,
+    "recentHa": 968,
+    "newWaterHa": 1298,
+    "pits": 12,
+    "waterChangePct": 39,
+    "confidence": "media",
+    "persistence": 0.65,
+    "context": {
+      "miningTitle": "parcial",
+      "protected": "no",
+      "territory": "Zona rural con comunidades campesinas",
+      "river": "Ríos Nechí y Cauca"
+    },
+    "kind": "mining"
+  },
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GCOV",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
+  },
+  "generated": "2026-11-15T02:30:31+00:00"
+}

@@ -1,0 +1,210 @@
+{
+  "id": "atrato-mineria",
+  "name": "Minería en el río Atrato",
+  "place": "Chocó, Colombia",
+  "lat": 5.55,
+  "lon": -76.62,
+  "bbox": [
+    -76.82,
+    5.4,
+    -76.42,
+    5.7
+  ],
+  "change": "backscatter",
+  "changeLabel": "Minería aluvial",
+  "product": "GCOV",
+  "metric": "Retrodispersión HV",
+  "unit": "dB",
+  "range": [
+    -26,
+    -8
+  ],
+  "colormap": "forest",
+  "story": "En el Atrato, la minería aluvial abre piscinas junto al río y deja el agua turbia. El radar ve las piscinas (muy oscuras) y el bosque que desaparece, incluso bajo las nubes del Pacífico.",
+  "en": {
+    "name": "Mining on the Atrato River",
+    "place": "Chocó, Colombia",
+    "changeLabel": "Alluvial mining",
+    "metric": "HV backscatter",
+    "story": "On the Atrato, alluvial mining opens ponds next to the river. Radar sees the ponds (very dark) and the vanishing forest, even under Pacific clouds.",
+    "unit": "dB"
+  },
+  "pilot": false,
+  "country": "CO",
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/atrato-mineria/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/atrato-mineria/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/atrato-mineria/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/atrato-mineria/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/atrato-mineria/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/atrato-mineria/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/atrato-mineria/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/atrato-mineria/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/atrato-mineria/change.png",
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "unit": "dB"
+  },
+  "legend": {
+    "colors": [
+      "#8a5a2b",
+      "#c79a5b",
+      "#e6d6a2",
+      "#9cc98a",
+      "#3f8f52",
+      "#1d5c34"
+    ],
+    "range": [
+      -26,
+      -8
+    ],
+    "diverging": false
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Área sin bosque al inicio",
+      "labelEn": "Cleared area at start",
+      "value": "35",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-08-02",
+      "noteEn": "2026-08-02"
+    },
+    {
+      "label": "Área sin bosque al final",
+      "labelEn": "Cleared area at end",
+      "value": "68",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-10-25",
+      "noteEn": "2026-10-25"
+    },
+    {
+      "label": "Cambio neto",
+      "labelEn": "Net change",
+      "value": "+33",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "Umbral -15 dB",
+      "noteEn": "Threshold -15 dB"
+    }
+  ],
+  "assessment": {
+    "level": "alta",
+    "rate": {
+      "recent": 13.47,
+      "early": 6.43,
+      "unit": "km²/mes",
+      "unitEn": "km²/month"
+    },
+    "accelerating": true,
+    "current": 67.6,
+    "projection": {
+      "d30": 81.07,
+      "d90": 108.02,
+      "unit": "km²"
+    },
+    "hotspots": [
+      {
+        "lat": 5.55672,
+        "lon": -76.80217,
+        "value": 15.47
+      },
+      {
+        "lat": 5.51642,
+        "lon": -76.68741,
+        "value": 15.42
+      },
+      {
+        "lat": 5.57463,
+        "lon": -76.51916,
+        "value": 15.31
+      },
+      {
+        "lat": 5.53881,
+        "lon": -76.44674,
+        "value": 15.29
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
+  "extraction": {
+    "forestLostHa": 1875,
+    "recentHa": 1078,
+    "newWaterHa": 1406,
+    "pits": 13,
+    "waterChangePct": 42,
+    "confidence": "media",
+    "persistence": 0.67,
+    "context": {
+      "miningTitle": "fuera",
+      "protected": "no",
+      "territory": "Territorio colectivo de comunidades negras",
+      "river": "Río Atrato · sujeto de derechos (Sentencia T-622 de 2016)"
+    },
+    "kind": "mining"
+  },
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GCOV",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
+  },
+  "generated": "2026-11-15T02:30:30+00:00"
+}

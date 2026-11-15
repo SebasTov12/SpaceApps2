@@ -1,19 +1,22 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Beef, Box, Database, Droplets, Fish, History, House, Info, ListChecks, MapPin, MapPinned, MousePointerClick, Pickaxe, Radar, Route, Store, Trees, TrendingUp, Wheat, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, Database, Info, MapPin, MapPinned, MousePointerClick, Radar, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
+import ZoneSimple from "./zone-simple";
+import { POINT_EVENT } from "./saro-guide";
+import type { LegendKind, SaroAction } from "@/lib/saro-brain";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
-import { adviceNote, levelInfo, recommendations, trendSentence } from "@/lib/insights";
+import { levelInfo, trendSentence } from "@/lib/insights";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
-import { riskKindInfo, riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
-import { exposureNames, sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
+import { riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
+import { sectorImpacts } from "@/lib/sector-impacts";
 import {
   formatCoord, loadAvailability, loadManifest, loadTimeSeries, longDate, radarExplainer, seriesAt, shortDate, strongestChange,
-  type AttentionLevel, type Availability, type Bbox, type SiteManifest, type SiteStat, type TimeSeries,
+  type AttentionLevel, type Availability, type Bbox, type SiteManifest, type TimeSeries,
 } from "@/lib/sites";
 import { GLOBE_SELECT, SITE_EVENT, closeZone, focusZone, globeState } from "./globe-state";
 
@@ -32,6 +35,12 @@ const copy = {
     compare: "Antes · después", opacity: "Opacidad de la capa", loading: "Acercando a la zona…",
     explore: "Explorar el lugar", view3d: "Activar vista 3D a ras de suelo", view2d: "Volver a vista desde arriba",
     street: "Abrir esta ubicación en Google Maps", streetHint: "Abre esta ubicación en Google Maps y Street View, si hay cobertura",
+    watchTitle: "Señales de extracción", suspicious: "Cambio sospechoso", conf: "confianza",
+    watchNote: "SAROS detecta el cambio en el terreno; no identifica responsables ni dice si es legal. Requiere verificación en campo.",
+    lost: "Bosque perdido", recent30: "Últimos 30 días", pits: "Piscinas nuevas", river: "Agua en el área", ha: "ha",
+    cross: "Cruce con capas oficiales (demo)", title: "Título minero", protectedA: "Área protegida", territory: "Territorio", riverL: "Río",
+    titleOut: "fuera de títulos", titlePart: "parcialmente fuera", none: "no",
+    notify: "A quién avisar", notifyList: ["Autoridad ambiental regional (CAR)", "Parques Nacionales, si toca un área protegida", "Consejo comunitario o cabildo del territorio", "Fiscalía o Policía ambiental, ante un posible delito ambiental"],
     impact: "Cómo afectaría a la región", impactIntro: "Si el cambio del terreno continúa, estos sectores son los más expuestos:", reinforce: "Cómo reforzar",
     impactNote: "Escenario ilustrativo (DEMO): muestra exposición posible, no daños confirmados ni probabilidades. SAROS no predice terremotos.",
   },
@@ -47,13 +56,25 @@ const copy = {
     compare: "Before · after", opacity: "Layer opacity", loading: "Zooming into the zone…",
     explore: "Explore the place", view3d: "Enable 3D ground-level view", view2d: "Return to top-down view",
     street: "Open this location in Google Maps", streetHint: "Opens this location in Google Maps and Street View, where covered",
+    watchTitle: "Extraction signals", suspicious: "Suspicious change", conf: "confidence",
+    watchNote: "SAROS detects ground change; it does not identify who is responsible or whether it is legal. Field verification required.",
+    lost: "Forest lost", recent30: "Last 30 days", pits: "New ponds", river: "Water in the area", ha: "ha",
+    cross: "Cross-check with official layers (demo)", title: "Mining title", protectedA: "Protected area", territory: "Territory", riverL: "River",
+    titleOut: "outside titles", titlePart: "partly outside", none: "no",
+    notify: "Who to notify", notifyList: ["Regional environmental authority", "National Parks, if it touches a protected area", "Community council or indigenous authority", "Prosecutors or environmental police for a possible crime"],
     impact: "How it could affect the region", impactIntro: "If the ground change continues, these sectors are the most exposed:", reinforce: "How to reinforce",
     impactNote: "Illustrative scenario (DEMO): shows possible exposure, not confirmed damage or probabilities. SAROS does not predict earthquakes.",
   },
 };
 
-const sectorIcons: Record<SectorKey, LucideIcon> = {
-  agriculture: Wheat, livestock: Beef, mining: Pickaxe, housing: House, roads: Route, forest: Trees, water: Droplets, commerce: Store, fishing: Fish,
+
+/** Qué significa cada color, según el tipo de capa (lo muestra Saro con una tarjeta animada). */
+const EXPLAIN: Record<LegendKind, [string, string][]> = {
+  deformation: [["#b8322a", "Rojo: el suelo se aleja del satélite (baja o se desliza)"], ["#f3f6f4", "Blanco: sin cambio"], ["#245f9e", "Azul: el suelo se acerca (sube)"]],
+  forest: [["#2f7d3a", "Verde: bosque en pie"], ["#9a6b3d", "Café: suelo sin árboles"], ["#10141f", "Muy oscuro: agua quieta"]],
+  mining: [["#2f7d3a", "Verde: bosque en pie"], ["#9a6b3d", "Café: bosque talado alrededor"], ["#10141f", "Manchas oscuras junto al río: piscinas mineras"]],
+  flood: [["#10141f", "Muy oscuro: agua"], ["#6fa8e8", "Si la mancha crece entre pasadas, la inundación aumenta"]],
+  velocity: [["#bfe9f2", "Claro: hielo lento"], ["#245f9e", "Intenso: hielo que se mueve rápido"]],
 };
 
 const MAP_DELAY = 250;   // ms: el mapa empieza a cargar oculto mientras la cámara 3D se acerca
@@ -90,6 +111,9 @@ export default function ZoneView() {
   const readyHandled = useRef(false);
   const revealTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [terrain, setTerrain] = useState(false);
+  const [annotate, setAnnotate] = useState<{ nonce: number; points: { lat: number; lon: number; label: string; sub?: string }[] } | null>(null);
+  const [explain, setExplain] = useState<{ nonce: number; kind: LegendKind } | null>(null);
+  const activeRef = useRef<SiteManifest | null>(null);
   const [tab, setTab] = useState<"simple" | "analysis">("simple");
   const [manifest, setManifest] = useState<SiteManifest | null>(null);
   const [series, setSeries] = useState<TimeSeries | null>(null);
@@ -123,6 +147,8 @@ export default function ZoneView() {
       setMapReady(false);
       setDiving(false);
       setTerrain(false);
+      setAnnotate(null);
+      setExplain(null);
       revealTimers.current.forEach(clearTimeout);
       revealTimers.current = [];
       readyHandled.current = false;
@@ -134,6 +160,7 @@ export default function ZoneView() {
       if (stage) {
         stage.dataset.zoomed = id ? "true" : "false";
         stage.dataset.mapview = "false";
+        window.dispatchEvent(new CustomEvent("saros:mapview", { detail: false }));
       }
       if (id) {
         const hero = document.getElementById("inicio");
@@ -182,9 +209,6 @@ export default function ZoneView() {
 
   const active = manifest && manifest.id === siteId ? manifest : null;
   const pointSeries = useMemo(() => (series && pick && active ? seriesAt(series, pick.lon, pick.lat) : null), [series, pick, active]);
-  const statText = useCallback((stat: SiteStat) => ({
-    label: (en && stat.labelEn) || stat.label, unit: (en && stat.unitEn) || stat.unit, note: (en && stat.noteEn) || stat.note,
-  }), [en]);
   const sd = (iso: string) => shortDate(iso, lang);
   const isDemo = active?.source.mode !== "real";
   const metric = (en && active?.en?.metric) || active?.metric || "";
@@ -210,6 +234,8 @@ export default function ZoneView() {
         setMapReady(true);
         const stage = wrapper.current?.closest(".earth-stage") as HTMLElement | null;
         if (stage) stage.dataset.mapview = "true";
+        // el planeta termina de desvanecerse y se pausa
+        revealTimers.current.push(setTimeout(() => window.dispatchEvent(new CustomEvent("saros:mapview", { detail: true })), 1200));
       }, HAZE_PEAK));
     }, wait));
   }, []);
@@ -225,6 +251,38 @@ export default function ZoneView() {
     const fallback = setTimeout(onMapReady, 2600);
     return () => clearTimeout(fallback);
   }, [mapVisible, mapReady, onMapReady]);
+  // Saro pide señalar puntos o explicar colores
+  useEffect(() => {
+    activeRef.current = active;
+  });
+  useEffect(() => {
+    const onPoint = (event: Event) => {
+      const action = (event as CustomEvent<SaroAction | null>).detail;
+      if (!action) return;
+      const m = activeRef.current;
+      if (action.type === "legend") setExplain({ nonce: Date.now(), kind: action.kind });
+      if (action.type === "hotspots" && m?.assessment?.hotspots.length) {
+        const unit = m.assessment.rate.unit.replace(/\/mes$/, "");
+        const showValue = m.change === "deformation";
+        setAnnotate({
+          nonce: Date.now(),
+          points: m.assessment.hotspots.map((h) => ({
+            lat: h.lat, lon: h.lon, label: action.label,
+            sub: showValue ? `${h.value > 0 ? "+" : "−"}${Math.abs(h.value).toFixed(1)} ${unit} recientes` : action.sub,
+          })),
+        });
+      }
+    };
+    window.addEventListener(POINT_EVENT, onPoint);
+    return () => window.removeEventListener(POINT_EVENT, onPoint);
+  }, []);
+  // la tarjeta de colores se va sola
+  useEffect(() => {
+    if (!explain) return;
+    const id = window.setTimeout(() => setExplain(null), 11000);
+    return () => window.clearTimeout(id);
+  }, [explain]);
+
   const impacts = useMemo(() => (zone ? sectorImpacts(zone.id, zone.kind) : []), [zone]);
   const mapBbox = active?.bbox ?? (zone ? zoneBbox(zone) : null);
   // el mapa ocupa solo el área visible (a la izquierda del panel o encima de la hoja)
@@ -273,9 +331,20 @@ export default function ZoneView() {
               terrain={terrain}
               scene={sceneFor(zone.kind)}
               hotspots={assessment?.hotspots}
+              annotate={annotate}
               splitValue={split}
               padding={padding}
             />
+            <AnimatePresence>
+              {explain && active && legend && (
+                <motion.div key={explain.nonce} className="sp-explain" initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+                  <button type="button" className="sp-explain-x" onClick={() => setExplain(null)} aria-label={en ? "Cerrar" : "Cerrar"}>×</button>
+                  <strong>{en ? "How to read the map" : "Cómo leer el mapa"}</strong>
+                  <div className="sp-scale"><span className="sp-bar" style={{ background: `linear-gradient(90deg, ${legend.colors.join(",")})` }} /><span className="sp-scan" /></div>
+                  <ul>{EXPLAIN[explain.kind].map(([color, textEs], i) => <li key={i} style={{ "--d": `${0.25 + i * 0.18}s` } as React.CSSProperties}><i style={{ background: color }} />{textEs}</li>)}</ul>
+                </motion.div>
+              )}
+            </AnimatePresence>
             {active && legend && (
               <div className="zone-legend">
                 <strong>{mode === "change" ? `${t.changeFrom} ${sd(active.dates[0])} → ${sd(active.dates[lastIndex])}` : metric}</strong>
@@ -335,55 +404,11 @@ export default function ZoneView() {
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={`${zone.id}-${tab}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3 }}>
                 {tab === "simple" ? (
-                  <div className="zone-simple">
-                    <section>
-                      <h3><TrendingUp size={14} /> {c.now}</h3>
-                      <p>{assessment && active ? trendSentence(assessment, active.change, zone.kind, lang) : (siteId ? c.loading : riskKindInfo[zone.kind][lang])}</p>
-                      {!siteId && <p className="zone-muted">{c.noDataNow}</p>}
-                      {assessment && assessment.hotspots.length > 0 && <p className="zone-muted">{c.watch(assessment.hotspots.length)}</p>}
-                    </section>
-                    {impacts.length > 0 && (
-                      <section>
-                        <h3><Wheat size={14} /> {c.impact}</h3>
-                        <p className="zone-muted">{c.impactIntro}</p>
-                        <ul className="zone-sectors">
-                          {impacts.map((item) => {
-                            const Icon = sectorIcons[item.sector];
-                            return (
-                              <li key={item.sector} style={{ "--exp": exposureNames[item.exposure].color } as React.CSSProperties}>
-                                <header><Icon size={16} /><strong>{sectorNames[item.sector][lang]}</strong><em>{exposureNames[item.exposure][lang]}</em></header>
-                                <p>{item.effect[lang]}</p>
-                                <p className="zone-reinforce"><b>{c.reinforce}:</b> {item.reinforce[lang]}</p>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                        <p className="zone-muted"><ProtectedTerms text={c.impactNote} /></p>
-                      </section>
-                    )}
-                    {zone.event && (
-                      <section>
-                        <h3><History size={14} /> {c.history}</h3>
-                        <p><b>{longDate(zone.event.date, lang)}</b> — {zone.event[lang]}</p>
-                      </section>
-                    )}
-                    <section>
-                      <h3><ListChecks size={14} /> {c.todo}</h3>
-                      <ul className="zone-advice">
-                        {recommendations(zone.kind, level, colombia, lang).map((item) => <li key={item}>{item}</li>)}
-                      </ul>
-                      <p className="zone-muted">{adviceNote[lang]}</p>
-                    </section>
-                    {active && (
-                      <div className="zone-stats">
-                        {active.stats.slice(0, 2).map((stat) => {
-                          const st = statText(stat);
-                          return <div key={stat.label}><small>{st.label}</small><strong>{stat.value}<span>{st.unit}</span></strong></div>;
-                        })}
-                      </div>
-                    )}
-                    {!siteId && (
-                      <>
+                  <ZoneSimple
+                    zone={zone} active={active} level={level} colombia={colombia} siteId={siteId} lang={lang} impacts={impacts}
+                    trend={assessment && active ? trendSentence(assessment, active.change, zone.kind, lang) : null}
+                    noData={!siteId ? (
+                      <div className="zs-card">
                         <p className="zone-nodata"><ProtectedTerms text={c.noData} /></p>
                         <p className="zone-sub">{c.withData}</p>
                         <div className="zone-chips">
@@ -393,9 +418,9 @@ export default function ZoneView() {
                             </button>
                           ))}
                         </div>
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    ) : null}
+                  />
                 ) : (
                   <div className="zone-analysis">
                     {!active ? <p className="zone-muted">{siteId ? c.loading : c.noDataNow}</p> : (

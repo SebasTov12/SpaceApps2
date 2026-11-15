@@ -1,0 +1,209 @@
+{
+  "id": "chiribiquete-borde",
+  "name": "Borde norte de Chiribiquete",
+  "place": "Guaviare, Colombia",
+  "lat": 1.95,
+  "lon": -73.1,
+  "bbox": [
+    -73.35,
+    1.75,
+    -72.85,
+    2.15
+  ],
+  "change": "backscatter",
+  "changeLabel": "Deforestación",
+  "product": "GCOV",
+  "metric": "Retrodispersión HV",
+  "unit": "dB",
+  "range": [
+    -22,
+    -8
+  ],
+  "colormap": "forest",
+  "story": "La tala avanza por trochas hacia el Parque Nacional Chiribiquete. El radar sigue el avance mes a mes aunque haya nubes.",
+  "en": {
+    "name": "Northern edge of Chiribiquete",
+    "place": "Guaviare, Colombia",
+    "changeLabel": "Deforestation",
+    "metric": "HV backscatter",
+    "story": "Logging advances along tracks toward Chiribiquete National Park. Radar tracks it month by month despite clouds.",
+    "unit": "dB"
+  },
+  "pilot": false,
+  "country": "CO",
+  "dates": [
+    "2026-08-02",
+    "2026-08-14",
+    "2026-08-26",
+    "2026-09-07",
+    "2026-09-19",
+    "2026-10-01",
+    "2026-10-13",
+    "2026-10-25"
+  ],
+  "layers": [
+    {
+      "date": "2026-08-02",
+      "url": "/data/sites/chiribiquete-borde/2026-08-02.png"
+    },
+    {
+      "date": "2026-08-14",
+      "url": "/data/sites/chiribiquete-borde/2026-08-14.png"
+    },
+    {
+      "date": "2026-08-26",
+      "url": "/data/sites/chiribiquete-borde/2026-08-26.png"
+    },
+    {
+      "date": "2026-09-07",
+      "url": "/data/sites/chiribiquete-borde/2026-09-07.png"
+    },
+    {
+      "date": "2026-09-19",
+      "url": "/data/sites/chiribiquete-borde/2026-09-19.png"
+    },
+    {
+      "date": "2026-10-01",
+      "url": "/data/sites/chiribiquete-borde/2026-10-01.png"
+    },
+    {
+      "date": "2026-10-13",
+      "url": "/data/sites/chiribiquete-borde/2026-10-13.png"
+    },
+    {
+      "date": "2026-10-25",
+      "url": "/data/sites/chiribiquete-borde/2026-10-25.png"
+    }
+  ],
+  "changeLayer": {
+    "url": "/data/sites/chiribiquete-borde/change.png",
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "unit": "dB"
+  },
+  "legend": {
+    "colors": [
+      "#8a5a2b",
+      "#c79a5b",
+      "#e6d6a2",
+      "#9cc98a",
+      "#3f8f52",
+      "#1d5c34"
+    ],
+    "range": [
+      -22,
+      -8
+    ],
+    "diverging": false
+  },
+  "changeLegend": {
+    "colors": [
+      "#b8322a",
+      "#e8805a",
+      "#f6d3b6",
+      "#f3f6f4",
+      "#bfe0ee",
+      "#5aa3cf",
+      "#245f9e"
+    ],
+    "range": [
+      -10.0,
+      10.0
+    ],
+    "diverging": true
+  },
+  "stats": [
+    {
+      "label": "Área sin bosque al inicio",
+      "labelEn": "Cleared area at start",
+      "value": "309",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-08-02",
+      "noteEn": "2026-08-02"
+    },
+    {
+      "label": "Área sin bosque al final",
+      "labelEn": "Cleared area at end",
+      "value": "434",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "2026-10-25",
+      "noteEn": "2026-10-25"
+    },
+    {
+      "label": "Cambio neto",
+      "labelEn": "Net change",
+      "value": "+126",
+      "unit": "km²",
+      "unitEn": "km²",
+      "note": "Umbral -15 dB",
+      "noteEn": "Threshold -15 dB"
+    }
+  ],
+  "assessment": {
+    "level": "alta",
+    "rate": {
+      "recent": 35.96,
+      "early": 60.37,
+      "unit": "km²/mes",
+      "unitEn": "km²/month"
+    },
+    "accelerating": false,
+    "current": 434.5,
+    "projection": {
+      "d30": 470.46,
+      "d90": 542.39,
+      "unit": "km²"
+    },
+    "hotspots": [
+      {
+        "lat": 1.98719,
+        "lon": -72.91128,
+        "value": 10.39
+      },
+      {
+        "lat": 1.88754,
+        "lon": -72.97674,
+        "value": 10.28
+      },
+      {
+        "lat": 1.89596,
+        "lon": -73.04499,
+        "value": 9.96
+      },
+      {
+        "lat": 1.89877,
+        "lon": -73.19123,
+        "value": 9.85
+      }
+    ],
+    "basis": "Tendencia de las últimas adquisiciones (proyección lineal, no probabilidad).",
+    "basisEn": "Trend of the latest acquisitions (linear projection, not a probability)."
+  },
+  "extraction": {
+    "forestLostHa": 12562,
+    "recentHa": 2877,
+    "newWaterHa": 7,
+    "pits": 0,
+    "waterChangePct": null,
+    "confidence": "media",
+    "persistence": 0.77,
+    "context": {
+      "miningTitle": "no aplica",
+      "protected": "Zona de influencia del PNN Chiribiquete",
+      "territory": "Cercano a resguardos indígenas"
+    },
+    "kind": "deforestation"
+  },
+  "source": {
+    "mode": "demo",
+    "product": "NISAR L2 GCOV",
+    "granules": [],
+    "note": "Datos sintéticos con la estructura de un producto NISAR, generados para la demostración.",
+    "noteEn": "Synthetic data shaped like a NISAR product, generated for the demo."
+  },
+  "generated": "2026-11-15T02:30:31+00:00"
+}

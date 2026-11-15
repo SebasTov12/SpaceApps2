@@ -268,6 +268,12 @@
         "changeLabel": "Deforestation",
         "metric": "HV backscatter",
         "story": "The Amazon foothills of Caquetá concentrate much of the country's deforestation. Radar HV signal drops where forest is cleared."
+      },
+      "watch": true,
+      "context": {
+        "miningTitle": "no aplica",
+        "protected": "no",
+        "territory": "Piedemonte amazónico con fincas y comunidades campesinas"
       }
     },
     {
@@ -301,6 +307,125 @@
         "changeLabel": "Volcano",
         "metric": "Cumulative line-of-sight displacement",
         "story": "The Ruiz, behind the 1985 Armero tragedy, is monitored permanently. When magma accumulates the ground inflates a few millimetres and radar detects it."
+      }
+    },
+    {
+      "change": "backscatter",
+      "product": "GCOV",
+      "metric": "Retrodispersión HV",
+      "unit": "dB",
+      "range": [
+        -26,
+        -8
+      ],
+      "colormap": "forest",
+      "country": "CO",
+      "watch": true,
+      "id": "atrato-mineria",
+      "name": "Minería en el río Atrato",
+      "place": "Chocó, Colombia",
+      "lat": 5.55,
+      "lon": -76.62,
+      "bbox": [
+        -76.82,
+        5.4,
+        -76.42,
+        5.7
+      ],
+      "template": "mining",
+      "changeLabel": "Minería aluvial",
+      "story": "En el Atrato, la minería aluvial abre piscinas junto al río y deja el agua turbia. El radar ve las piscinas (muy oscuras) y el bosque que desaparece, incluso bajo las nubes del Pacífico.",
+      "context": {
+        "miningTitle": "fuera",
+        "protected": "no",
+        "territory": "Territorio colectivo de comunidades negras",
+        "river": "Río Atrato · sujeto de derechos (Sentencia T-622 de 2016)"
+      },
+      "en": {
+        "name": "Mining on the Atrato River",
+        "place": "Chocó, Colombia",
+        "changeLabel": "Alluvial mining",
+        "metric": "HV backscatter",
+        "story": "On the Atrato, alluvial mining opens ponds next to the river. Radar sees the ponds (very dark) and the vanishing forest, even under Pacific clouds."
+      }
+    },
+    {
+      "change": "backscatter",
+      "product": "GCOV",
+      "metric": "Retrodispersión HV",
+      "unit": "dB",
+      "range": [
+        -26,
+        -8
+      ],
+      "colormap": "forest",
+      "country": "CO",
+      "watch": true,
+      "id": "bajo-cauca-mineria",
+      "name": "Minería en el Bajo Cauca",
+      "place": "Antioquia, Colombia",
+      "lat": 7.62,
+      "lon": -74.8,
+      "bbox": [
+        -75.0,
+        7.47,
+        -74.6,
+        7.77
+      ],
+      "template": "mining",
+      "changeLabel": "Minería aluvial",
+      "story": "En el Bajo Cauca antioqueño la minería aluvial transforma las orillas de los ríos. SAROS marca las piscinas nuevas y el bosque perdido para que la autoridad lo verifique.",
+      "context": {
+        "miningTitle": "parcial",
+        "protected": "no",
+        "territory": "Zona rural con comunidades campesinas",
+        "river": "Ríos Nechí y Cauca"
+      },
+      "en": {
+        "name": "Mining in Bajo Cauca",
+        "place": "Antioquia, Colombia",
+        "changeLabel": "Alluvial mining",
+        "metric": "HV backscatter",
+        "story": "In Bajo Cauca, alluvial mining reshapes riverbanks. SAROS flags new ponds and lost forest for authorities to verify."
+      }
+    },
+    {
+      "change": "backscatter",
+      "product": "GCOV",
+      "metric": "Retrodispersión HV",
+      "unit": "dB",
+      "range": [
+        -22,
+        -8
+      ],
+      "colormap": "forest",
+      "country": "CO",
+      "watch": true,
+      "id": "chiribiquete-borde",
+      "name": "Borde norte de Chiribiquete",
+      "place": "Guaviare, Colombia",
+      "lat": 1.95,
+      "lon": -73.1,
+      "bbox": [
+        -73.35,
+        1.75,
+        -72.85,
+        2.15
+      ],
+      "template": "deforestation",
+      "changeLabel": "Deforestación",
+      "story": "La tala avanza por trochas hacia el Parque Nacional Chiribiquete. El radar sigue el avance mes a mes aunque haya nubes.",
+      "context": {
+        "miningTitle": "no aplica",
+        "protected": "Zona de influencia del PNN Chiribiquete",
+        "territory": "Cercano a resguardos indígenas"
+      },
+      "en": {
+        "name": "Northern edge of Chiribiquete",
+        "place": "Guaviare, Colombia",
+        "changeLabel": "Deforestation",
+        "metric": "HV backscatter",
+        "story": "Logging advances along tracks toward Chiribiquete National Park. Radar tracks it month by month despite clouds."
       }
     }
   ]

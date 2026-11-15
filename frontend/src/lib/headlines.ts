@@ -117,6 +117,26 @@ async function fromStaticData(): Promise<Headline[]> {
     });
   }
 
+  // Vigilancia ambiental: huellas de extracción (cambio sospechoso, sin atribuir responsables)
+  for (const m of manifests) {
+    const x = m?.extraction;
+    if (!m || !x) continue;
+    const mining = x.kind === "mining";
+    items.push({
+      id: `watch-${m.id}`,
+      kind: m.change,
+      severity: x.confidence === "alta" || m.assessment?.level === "alta" ? "alta" : "media",
+      title: mining
+        ? { es: `Cambio sospechoso · ${x.pits} piscinas nuevas junto al río y ${x.recentHa} ha intervenidas en 30 días`, en: `Suspicious change · ${x.pits} new ponds by the river and ${x.recentHa} ha disturbed in 30 days` }
+        : { es: `Cambio sospechoso · ${x.recentHa} ha de bosque perdidas en 30 días`, en: `Suspicious change · ${x.recentHa} ha of forest lost in 30 days` },
+      place: { es: m.place, en: m.en?.place ?? m.place },
+      time: m.dates[m.dates.length - 1] + "T13:00:00Z",
+      source: "SAROS · vigilancia ambiental",
+      demo: m.source.mode !== "real",
+      siteId: m.id,
+    });
+  }
+
   // Referencias: qué pasó y dónde (hechos documentados)
   for (const zone of riskZones) {
     if (!zone.event) continue;

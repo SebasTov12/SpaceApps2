@@ -3,7 +3,7 @@
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdditiveBlending, Color, DoubleSide, Vector3, type Group, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial, type ShaderMaterial } from "three";
-import { riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
+import { riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { GLOBE_SELECT, RELIEF, focusZone, globeState } from "./globe-state";
 
 /** Posición en la esfera de three.js (SphereGeometry con textura equirectangular). */
@@ -107,7 +107,8 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     anchor.parent.worldToLocal(cameraLocal);
     cameraLocal.sub(anchor.position);
     facingCamera.current = cameraLocal.dot(normal) > 0.03;
-    if (!globeState.revealed.has(zone.id) || !facingCamera.current) {
+    const inMode = globeState.mode === "all" || (globeState.mode === "watch") === watchKinds.has(zone.kind);
+    if (!globeState.revealed.has(zone.id) || !facingCamera.current || !inMode) {
       node.visible = false;
       return;
     }

@@ -28,6 +28,12 @@ export function trendSentence(a: Assessment, change: ChangeType, kind: RiskKind,
       ? `En las últimas pasadas ${dir} a unos ${rate} ${r}${acc}. Si la tendencia continúa, en 90 días el desplazamiento acumulado llegaría a ${a.projection.d90} ${unit}.`
       : `Over the latest passes ${dir} at about ${rate} ${r}${acc}. If the trend continues, cumulative displacement would reach ${a.projection.d90} ${unit} in 90 days.`;
   }
+  if (change === "backscatter" && kind === "mining") {
+    const growing = a.rate.recent > 0;
+    return lang === "es"
+      ? `${growing ? "La huella minera crece" : "La huella minera se detuvo"} a unos ${rate} ${r}: aparecen piscinas nuevas y se pierde bosque en las orillas. Si sigue así, en 90 días el área transformada sería de ${a.projection.d90} ${unit}.`
+      : `${growing ? "The mining footprint is growing" : "The mining footprint has stopped"} at about ${rate} ${r}: new ponds appear and riverbank forest is lost. If it continues, the transformed area would be ${a.projection.d90} ${unit} in 90 days.`;
+  }
   if (change === "backscatter") {
     const flood = kind === "flood";
     const growing = a.rate.recent > 0;
@@ -90,6 +96,18 @@ const advice: Record<RiskKind, Record<AttentionLevel, L[]>> = {
     ],
     moderada: [{ es: "Apoye procesos comunitarios de restauración y vigilancia del bosque.", en: "Support community restoration and forest monitoring." }],
     baja: [{ es: "Mantenga el seguimiento de la cobertura forestal.", en: "Keep monitoring forest cover." }],
+  },
+  mining: {
+    alta: [
+      { es: "No consuma pescado ni agua del río sin saber si hay mercurio: pida análisis a la secretaría de salud.", en: "Do not eat fish or drink river water without knowing if there is mercury: ask health authorities to test." },
+      { es: "Reporte el cambio a la autoridad ambiental (CAR o Codechocó/Corantioquia) con las coordenadas que marca SAROS.", en: "Report the change to the environmental authority with the coordinates SAROS marks." },
+      { es: "No se acerque a las piscinas: son profundas e inestables.", en: "Stay away from the ponds: they are deep and unstable." },
+    ],
+    moderada: [
+      { es: "Comparta las señales con el consejo comunitario o la junta de acción comunal.", en: "Share the signals with the community council." },
+      { es: "Vigile el color del agua y la pesca: son los primeros indicios.", en: "Watch water colour and fishing: they are the first signs." },
+    ],
+    baja: [{ es: "Mantenga el seguimiento del río y de sus orillas.", en: "Keep monitoring the river and its banks." }],
   },
   volcano: {
     alta: [

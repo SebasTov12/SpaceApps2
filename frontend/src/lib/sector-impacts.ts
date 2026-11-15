@@ -4,7 +4,7 @@ import type { RiskKind } from "./risk-zones";
  * Cómo un cambio del terreno puede afectar a cada sector productivo y social, y cómo reforzarlo.
  * Son efectos posibles por tipo de amenaza (no daños confirmados ni probabilidades).
  */
-export type SectorKey = "agriculture" | "livestock" | "mining" | "housing" | "roads" | "forest" | "water" | "commerce" | "fishing";
+export type SectorKey = "agriculture" | "livestock" | "mining" | "housing" | "roads" | "forest" | "water" | "commerce" | "fishing" | "health" | "culture" | "economy";
 export type Exposure = "low" | "medium" | "high";
 type T = { es: string; en: string };
 const t = (es: string, en: string): T => ({ es, en });
@@ -19,6 +19,9 @@ export const sectorNames: Record<SectorKey, T> = {
   water: t("Agua y acueductos", "Water supply"),
   commerce: t("Comercio", "Commerce"),
   fishing: t("Pesca", "Fishing"),
+  health: t("Salud", "Health"),
+  culture: t("Cultura y territorio", "Culture & territory"),
+  economy: t("Economía local", "Local economy"),
 };
 
 export const exposureNames: Record<Exposure, T & { color: string }> = {
@@ -74,7 +77,27 @@ export const sectorEffects: Partial<Record<RiskKind, Partial<Record<SectorKey, E
     water: e("Pozos y acueductos contaminados por el agua de la inundación.", "Wells and water systems contaminated by floodwater.",
       "Tapar pozos, hervir o clorar el agua y tener reservas de agua potable.", "Cap wells, boil or chlorinate water and store drinking water."),
   },
+  mining: {
+    water: e("El río se llena de sedimento y puede llevar mercurio: el agua deja de ser apta para beber o cocinar.", "The river fills with sediment and may carry mercury: water is no longer safe to drink or cook with.",
+      "Análisis de agua y sedimentos en los puntos marcados y fuentes alternas de agua segura para las comunidades.", "Water and sediment testing at flagged points and safe alternative water sources for communities."),
+    fishing: e("Menos peces y peces con mercurio: se pierde la principal fuente de proteína de muchas familias ribereñas.", "Fewer fish, and fish with mercury: many riverside families lose their main protein source.",
+      "Monitoreo de mercurio en peces y vedas temporales acordadas con las comunidades.", "Mercury monitoring in fish and temporary closures agreed with communities."),
+    health: e("El mercurio se acumula en el cuerpo: afecta a niños, mujeres embarazadas y a quienes comen pescado a diario.", "Mercury builds up in the body: it affects children, pregnant women and daily fish eaters.",
+      "Tamizaje de mercurio en la población expuesta y atención en salud diferencial.", "Mercury screening for exposed people and targeted healthcare."),
+    culture: e("El río es camino, despensa y lugar sagrado: su daño rompe prácticas tradicionales y el arraigo de comunidades negras e indígenas.", "The river is road, pantry and sacred place: its damage breaks traditions and the roots of Black and Indigenous communities.",
+      "Consulta y participación de los consejos comunitarios y cabildos en la vigilancia y la restauración.", "Consultation and participation of community councils and indigenous authorities in monitoring and restoration."),
+    forest: e("Las orillas pierden su bosque y el suelo removido queda estéril durante años.", "Riverbanks lose their forest and the turned-over soil stays barren for years.",
+      "Restaurar orillas con especies nativas y rellenar piscinas abandonadas.", "Restore banks with native species and fill abandoned ponds."),
+    economy: e("Se pierden pesca, cultivos de vega y turismo; el dinero rápido de la mina no se queda en la región.", "Fishing, floodplain crops and tourism are lost; quick mining money does not stay in the region.",
+      "Alternativas productivas legales: pesca responsable, agroforestería, ecoturismo comunitario.", "Legal livelihoods: responsible fishing, agroforestry, community ecotourism."),
+    agriculture: e("Las vegas inundables, donde se siembra plátano y arroz, quedan cubiertas de arena y lodo.", "Floodplain plots for plantain and rice get covered in sand and mud.",
+      "Recuperar suelos con abonos verdes y sembrar lejos de las zonas removidas.", "Recover soils with green manure and plant away from disturbed areas."),
+  },
   deforestation: {
+    culture: e("El bosque es territorio de pueblos indígenas y campesinos: su pérdida borra caminos, medicinas tradicionales y lugares sagrados.", "The forest is territory of Indigenous and peasant peoples: its loss erases paths, traditional medicine and sacred places.",
+      "Fortalecer la guardia indígena y la vigilancia comunitaria con las alertas de SAROS.", "Strengthen community and indigenous guards with SAROS alerts."),
+    economy: e("La madera y la ganadería extensiva dejan ingresos de corto plazo y pérdidas de largo plazo (agua, suelo, turismo).", "Timber and extensive ranching give short-term income and long-term losses (water, soil, tourism).",
+      "Pagos por conservación y cadenas de productos del bosque en pie (frutos, cacao, turismo).", "Conservation payments and standing-forest value chains (fruits, cacao, tourism)."),
     forest: e("Pérdida de bosque y de biodiversidad; el suelo descubierto se erosiona.", "Loss of forest and biodiversity; bare soil erodes.",
       "Restauración con especies nativas y control de la tala con las autoridades ambientales.", "Restoration with native species and logging control with environmental authorities."),
     agriculture: e("Al principio el suelo produce, pero sin bosque pierde nutrientes en pocos años y se vuelve poco fértil.", "Soil produces at first, but without forest it loses nutrients within a few years and becomes poor.",
@@ -117,7 +140,7 @@ export const zoneSectors: Record<string, [SectorKey, Exposure][]> = {
   "colombia-ladera": [["agriculture", "high"], ["housing", "high"], ["livestock", "medium"], ["mining", "medium"], ["roads", "medium"]],
   "bogota-subsidencia": [["housing", "high"], ["water", "high"], ["roads", "medium"], ["agriculture", "medium"], ["commerce", "medium"]],
   "la-mojana-inundacion": [["agriculture", "high"], ["livestock", "high"], ["housing", "high"], ["fishing", "medium"], ["water", "medium"]],
-  "caqueta-deforestacion": [["forest", "high"], ["livestock", "high"], ["agriculture", "medium"], ["water", "medium"]],
+  "caqueta-deforestacion": [["forest", "high"], ["livestock", "high"], ["culture", "medium"], ["economy", "medium"], ["water", "medium"]],
   "nevado-ruiz": [["agriculture", "high"], ["livestock", "medium"], ["housing", "medium"], ["roads", "medium"], ["water", "medium"]],
   mocoa: [["housing", "high"], ["roads", "high"], ["water", "medium"], ["commerce", "medium"]],
   gramalote: [["housing", "high"], ["agriculture", "medium"], ["roads", "medium"]],
@@ -128,6 +151,9 @@ export const zoneSectors: Record<string, [SectorKey, Exposure][]> = {
   "cdmx-subsidencia": [["housing", "high"], ["water", "high"], ["roads", "medium"], ["commerce", "medium"]],
   "sylhet-inundacion": [["agriculture", "high"], ["housing", "high"], ["livestock", "medium"], ["fishing", "medium"]],
   "rondonia-deforestacion": [["forest", "high"], ["livestock", "high"], ["agriculture", "medium"], ["water", "medium"]],
+  "atrato-mineria": [["water", "high"], ["fishing", "high"], ["health", "high"], ["culture", "high"], ["forest", "medium"], ["economy", "medium"], ["agriculture", "medium"]],
+  "bajo-cauca-mineria": [["water", "high"], ["health", "high"], ["fishing", "medium"], ["economy", "medium"], ["agriculture", "medium"], ["culture", "medium"]],
+  "chiribiquete-borde": [["forest", "high"], ["culture", "high"], ["water", "medium"], ["economy", "medium"]],
 };
 
 export type SectorImpact = { sector: SectorKey; exposure: Exposure; effect: T; reinforce: T };
