@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 import psycopg
 import numpy as np
@@ -33,6 +35,18 @@ ASSISTANT_TOKEN = os.getenv("SAROS_ASSISTANT_TOKEN", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b").strip()
 GROQ_API_URL = os.getenv("GROQ_API_URL", "https://api.groq.com/openai/v1/chat/completions").strip()
+PUBLIC_DATA_DIR = Path(os.getenv("SAROS_PUBLIC_DATA_DIR", str(Path(__file__).parent / "public-data"))).resolve()
+
+
+def read_public_json(relative_path: str):
+    """Read only known, packaged explorer JSON; never accept a user-supplied path."""
+    path = (PUBLIC_DATA_DIR / relative_path).resolve()
+    if not path.is_relative_to(PUBLIC_DATA_DIR.resolve()) or not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def connect_db() -> psycopg.Connection:
@@ -580,6 +594,78 @@ def hazard_points():
     response = jsonify(payload)
     response.headers["Cache-Control"] = "public, max-age=600"
     return response
+
+
+
+@app.get("/api/v1/sites")
+def explorer_sites():
+    payload = read_public_json("sites.json")
+    if not isinstance(payload, dict) or not isinstance(payload.get("sites"), list):
+        return jsonify({"error": "site_catalog_unavailable"}), 503
+    return jsonify(payload)
+
+
+@app.get("/api/v1/sites/<site_id>/manifest")
+def explorer_site_manifest(site_id: str):
+    if not re.fullmatch(r"[a-z0-9-]{1,80}", site_id):
+        return jsonify({"error": "invalid_site_id"}), 400
+    payload = read_public_json(f"sites/{site_id}/manifest.json")
+    if payload is None:
+        return jsonify({"error": "site_manifest_not_found", "site_id": site_id}), 404
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+    return response
+
+
+@app.get("/api/v1/sites/<site_id>/timeseries")
+def explorer_site_timeseries(site_id: str):
+    if not re.fullmatch(r"[a-z0-9-]{1,80}", site_id):
+        return jsonify({"error": "invalid_site_id"}), 400
+    payload = read_public_json(f"sites/{site_id}/timeseries.json")
+    if payload is None:
+        return jsonify({"error": "site_timeseries_not_found", "site_id": site_id}), 404
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+    return response
+
+
+@app.get("/api/v1/sites/<site_id>/availability")
+def explorer_site_availability(site_id: str):
+    if not re.fullmatch(r"[a-z0-9-]{1,80}", site_id):
+        return jsonify({"error": "invalid_site_id"}), 400
+    payload = read_public_json("availability.json")
+    if not isinstance(payload, dict) or not isinstance(payload.get("sites"), list):
+        return jsonify({"error": "site_availability_unavailable"}), 503
+    selected = [item for item in payload["sites"] if isinstance(item, dict) and item.get("id") == site_id]
+    if not selected:
+        return jsonify({"error": "site_availability_not_found", "site_id": site_id}), 404
+    return jsonify({"checked": payload.get("checked"), "source": payload.get("source"), "site": selected[0]})
+
+
+@app.get("/api/v1/sites/availability")
+def explorer_availability():
+    payload = read_public_json("availability.json")
+    if not isinstance(payload, dict) or not isinstance(payload.get("sites"), list):
+        return jsonify({"error": "site_availability_unavailable"}), 503
+    return jsonify(payload)
+
+
+@app.get("/api/v1/regions/<zone_id>/assessment")
+def region_assessment(zone_id: str):
+    if not re.fullmatch(r"[a-z0-9-]{1,80}", zone_id):
+        return jsonify({"error": "invalid_zone_id"}), 400
+    # A real satellite scene is not by itself a calibrated territorial risk assessment.
+    # Keep this contract explicitly unassessed until DANE exposure and reviewed LOS data join.
+    return jsonify({
+            "zoneId": zone_id, "mode": "demo",
+            "source": {"es": "Sin evaluación territorial publicada para esta zona.", "en": "No territorial assessment is published for this zone."},
+            "population": 0, "homes": 0, "productiveHa": 0, "infrastructure": [],
+            "vulnerability": {"status": "unassessed", "factors": []},
+            "risk": {"level": "unassessed", "method": {"es": "La evaluación territorial y el desplazamiento LOS validado aún no están disponibles.", "en": "A territorial assessment and validated LOS displacement are not yet available."}},
+            "assessedAt": None, "forecast": {"status": "unavailable", "horizon": {"es": "No disponible", "en": "Unavailable"}, "method": "none", "uncertainty": {"es": "No calculada", "en": "Not calculated"}, "summary": {"es": "No hay observaciones procesadas.", "en": "No processed observations are available."}},
+            "sectors": [], "consequence": {"es": "Sin evaluación publicada.", "en": "No assessment published."},
+            "prevention": {"es": "Consulte las autoridades locales.", "en": "Consult local authorities."}, "historicalImpacts": [],
+    })
 
 
 @app.get("/api/v1/datasets")

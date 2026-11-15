@@ -166,7 +166,7 @@ export default function EarthHero() {
         {/* Saro: guía animado que explica cada zona */}
         <SaroGuide />
         {/* Último evento, cifras y buscador de zonas */}
-        <HeroOverlay />
+        <HeroOverlay progress={progress} mobileMode={mobileMode} />
         {/* Cintillo de titulares (arriba → abajo con el scroll) */}
         <SarosHeroChrome progress={progress} departure={departure} />
         {sceneReady && !exploreLocked && <button

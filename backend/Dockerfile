@@ -8,6 +8,7 @@ COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --system --uid 10001 --no-create-home appuser
 COPY backend/app.py ./app.py
+COPY frontend/public/data ./public-data
 COPY ml/nisar_forecast ./nisar_forecast
 USER appuser
 EXPOSE 8000

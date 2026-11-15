@@ -99,9 +99,20 @@ function getJson<T>(url: string): Promise<T> {
   return cache.get(url) as Promise<T>;
 }
 
-export const loadSites = () => getJson<{ sites: SiteSummary[] }>("/data/sites.json").then((data) => data.sites);
-export const loadManifest = (id: string) => getJson<SiteManifest>(`/data/sites/${id}/manifest.json`);
-export const loadTimeSeries = (id: string) => getJson<TimeSeries>(`/data/sites/${id}/timeseries.json`);
+const apiUrl = (path: string) => `${(process.env.NEXT_PUBLIC_SAROS_API || "").replace(/\/$/, "")}/api/v1${path}`;
+async function fromApi<T>(path: string): Promise<T> {
+  const response = await fetch(apiUrl(path), { cache: "no-store" });
+  if (!response.ok) throw new Error(`SAROS API ${path}: ${response.status}`);
+  return response.json() as Promise<T>;
+}
+async function apiThenStatic<T>(path: string, staticPath: string): Promise<T> {
+  try { return await fromApi<T>(path); }
+  catch { return getJson<T>(staticPath); }
+}
+
+export const loadSites = () => apiThenStatic<{ sites: SiteSummary[] }>("/sites", "/data/sites.json").then((data) => data.sites);
+export const loadManifest = (id: string) => apiThenStatic<SiteManifest>(`/sites/${encodeURIComponent(id)}/manifest`, `/data/sites/${encodeURIComponent(id)}/manifest.json`);
+export const loadTimeSeries = (id: string) => apiThenStatic<TimeSeries>(`/sites/${encodeURIComponent(id)}/timeseries`, `/data/sites/${encodeURIComponent(id)}/timeseries.json`);
 
 /** Valor de la rejilla más cercano a un punto (lon, lat) para cada fecha. */
 export function seriesAt(series: TimeSeries, lon: number, lat: number) {
@@ -208,4 +219,4 @@ export type Availability = {
     latest: string | null;
   }[];
 };
-export const loadAvailability = () => getJson<Availability>("/data/availability.json");
+export const loadAvailability = () => apiThenStatic<Availability>("/sites/availability", "/data/availability.json");

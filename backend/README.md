@@ -6,7 +6,9 @@
 
 - `GET /health`: API liveness.
 - `GET /ready`: checks PostgreSQL and the loaded NISAR ONNX predictor.
-- `GET /api/v1/headlines`: returns an empty list while the reviewed publication pipeline is not connected; the frontend then uses its sourced static data.
+- `GET /api/v1/headlines`: returns database-backed recent NISAR observations and historical event records.
+- `GET /api/v1/sites`, `GET /api/v1/sites/{id}/manifest`, `GET /api/v1/sites/{id}/timeseries`, `GET /api/v1/sites/availability`, and `GET /api/v1/sites/{id}/availability`: serve the packaged explorer catalog, layer metadata, time series, and ASF inventory. Existing site layers retain their declared `demo` or `real` provenance.
+- `GET /api/v1/regions/{id}/assessment`: returns an explicit unassessed response until reviewed LOS measurements and territorial evidence are joined; it does not promote demo layers or catalog availability into a risk finding.
 - `GET /api/v1/manifest` and `GET /api/v1/datasets`: return database provenance counts for DIAN/NASA prediction records, separating synthetic, real and unclassified rows. The NASA table contains forecasts, not source granules.
 - `POST /api/v1/predictions`: accepts an NPZ body as `application/octet-stream`, requires `Authorization: Bearer <SAROS_PREDICTION_TOKEN>`, proxies the patch to the private predictor, and stores its result summary in PostgreSQL.
 - `POST /api/v1/nisar/observations`: accepts quality-controlled real LOS observations with granule provenance, requires the same bearer token, and inserts idempotently into `nisar.observations`.
