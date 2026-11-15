@@ -1583,31 +1583,32 @@ html body .space-stars {
   padding: 0;
   border: 1px solid rgba(104, 25, 147, .55);
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(104, 25, 147, .42) 0%, rgba(9, 13, 30, .75) 55%, rgba(0, 212, 255, .22) 100%);
+  background: linear-gradient(135deg, rgba(104, 25, 147, .42) 0%, rgba(9, 13, 30, .75) 55%, rgba(104, 25, 147, .22) 100%);
   backdrop-filter: blur(12px);
-  color: #00d4ff;
+  color: #c084fc;
   pointer-events: auto;
-  box-shadow: 0 0 16px rgba(104, 25, 147, .45), 0 0 8px rgba(0, 212, 255, .25);
+  box-shadow: 0 0 16px rgba(104, 25, 147, .45), 0 0 8px rgba(168, 85, 247, .25);
   transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
   cursor: pointer
 }
 
 .hero-search-btn:hover {
-  border-color: rgba(0, 212, 255, .7);
-  background: linear-gradient(135deg, rgba(104, 25, 147, .65) 0%, rgba(15, 22, 48, .88) 50%, rgba(0, 212, 255, .35) 100%);
+  border-color: rgba(168, 85, 247, .75);
+  background: linear-gradient(135deg, rgba(104, 25, 147, .65) 0%, rgba(15, 22, 48, .88) 50%, rgba(168, 85, 247, .35) 100%);
   transform: scale(1.06);
-  box-shadow: 0 0 22px rgba(104, 25, 147, .65), 0 0 12px rgba(0, 212, 255, .45)
+  box-shadow: 0 0 22px rgba(104, 25, 147, .75), 0 0 12px rgba(168, 85, 247, .45)
 }
 
 .hero-search-btn svg {
-  color: #00d4ff;
-  filter: drop-shadow(0 0 6px rgba(104, 25, 147, .8));
-  transition: transform .2s, filter .2s
+  color: #c084fc;
+  filter: drop-shadow(0 0 6px #681993) drop-shadow(0 0 10px rgba(168, 85, 247, .5));
+  transition: transform .2s, filter .2s, color .2s
 }
 
 .hero-search-btn:hover svg {
+  color: #e9d5ff;
   transform: scale(1.08);
-  filter: drop-shadow(0 0 8px #00d4ff)
+  filter: drop-shadow(0 0 8px #a855f7) drop-shadow(0 0 14px rgba(104, 25, 147, .8))
 }
 
 .hero-latest {
@@ -1741,8 +1742,8 @@ html body .space-stars {
 }
 
 .search-input svg {
-  color: #00d4ff;
-  filter: drop-shadow(0 0 6px rgba(104, 25, 147, .75))
+  color: #c084fc;
+  filter: drop-shadow(0 0 6px #681993) drop-shadow(0 0 10px rgba(168, 85, 247, .45))
 }
 
 .search-input input,
