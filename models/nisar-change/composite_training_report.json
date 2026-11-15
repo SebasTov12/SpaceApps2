@@ -1,0 +1,144 @@
+{
+  "model_version": "nisar-impact-composite-0.2.0",
+  "training_device": "cuda",
+  "training_device_name": "NVIDIA GeForce RTX 3050",
+  "data_mode": "real_exploratory",
+  "nisar_training_valid_pixels": 264684,
+  "nisar_tracks": {
+    "083-D-087": {
+      "training_observations": 7,
+      "validation_observations": 2,
+      "training_scene_changed_fraction": [
+        0.0221093837171793,
+        0.00301491585560143,
+        0.002485983306542039,
+        0.008991854265332222,
+        0.0011636517010629177,
+        0.0056066857650876045,
+        0.026658203452825546
+      ],
+      "validation_scene_changed_fraction": [
+        0.00042314609163440764,
+        0.005553792230784893
+      ],
+      "pixel_q99_threshold": 12.111759185791016,
+      "validation_interpretation": "unsupervised tail-rate check only; no event labels or predictive skill claim"
+    },
+    "047-A-003": {
+      "training_observations": 7,
+      "validation_observations": 2,
+      "training_scene_changed_fraction": [
+        0.009150533936917782,
+        0.01258859597146511,
+        0.0056066857650876045,
+        0.013699354603886604,
+        0.003385168733075261,
+        0.004495927132666111,
+        0.021104412153363228
+      ],
+      "validation_scene_changed_fraction": [
+        0.0056066857650876045,
+        0.006241404917091131
+      ],
+      "pixel_q99_threshold": 12.542608261108398,
+      "validation_interpretation": "unsupervised tail-rate check only; no event labels or predictive skill claim"
+    }
+  },
+  "impact_training_rows": 3315,
+  "impact_validation": {
+    "training_rows": 3315,
+    "validation_rows_2025": 1273,
+    "targets": {
+      "affected_families": {
+        "train_mean": 7.8826546003016595,
+        "train_q95": 23.0,
+        "validation_mae_shrinkage": 7.757204133005979,
+        "validation_mae_global_baseline": 10.303715051795088,
+        "validation_rows": 1273,
+        "validation_predicted_mean": 5.623815029605781,
+        "validation_actual_mean": 4.442262372348782
+      },
+      "affected_people": {
+        "train_mean": 25.33363499245852,
+        "train_q95": 80.0,
+        "validation_mae_shrinkage": 30.691675258315783,
+        "validation_mae_global_baseline": 37.66954463216189,
+        "validation_rows": 1273,
+        "validation_predicted_mean": 18.827135172697385,
+        "validation_actual_mean": 19.8216810683425
+      },
+      "homes_destroyed": {
+        "train_mean": 0.6787330316742082,
+        "train_q95": 1.0,
+        "validation_mae_shrinkage": 0.5135491962933919,
+        "validation_mae_global_baseline": 0.7810601671328996,
+        "validation_rows": 1273,
+        "validation_predicted_mean": 0.38371007486145303,
+        "validation_actual_mean": 0.1791044776119403
+      },
+      "homes_damaged": {
+        "train_mean": 3.0301659125188536,
+        "train_q95": 11.0,
+        "validation_mae_shrinkage": 3.6808388751928844,
+        "validation_mae_global_baseline": 4.077556963930052,
+        "validation_rows": 1273,
+        "validation_predicted_mean": 2.551040437226375,
+        "validation_actual_mean": 2.035349567949725
+      },
+      "deaths": {
+        "train_mean": 0.10920060331825038,
+        "train_q95": 1.0,
+        "validation_mae_shrinkage": 0.17653420942739784,
+        "validation_mae_global_baseline": 0.17679333743286427,
+        "validation_rows": 1273,
+        "validation_predicted_mean": 0.11710948546413401,
+        "validation_actual_mean": 0.07462686567164178
+      }
+    }
+  },
+  "input_asset_hashes": [
+    "0b5fdf08d9756b90653ede0c6875cd789513598b4dc9e99a95a40889e3163524",
+    "104c3a58e5dafeddf9b883c1b91a4b60eae0cef6d7d25ab3f167fae439ac64d3",
+    "118445ef80712e7f4e2be9dc6afc6e1fd7c49237edd843df817475c0600cdb1b",
+    "1d79b2351192e8eaa87ca03326778da772bf63927854fdd8d00d9253625bf73b",
+    "1ec21115023b8de39cae768170348e1afd2d9530493afaeb17311a6028dee863",
+    "27237d41b50ab5f2ea7adcbe8f1e42d7b79f3dc9e530624c192094bb10776ba2",
+    "2f3b1f16ad2251c5a2d37d6eb9748fbac7d119b66571e33f3fe4d6cc73d29f03",
+    "3caf47db32e03e76d7ed399a7a7660882d374523aaed5f0c488b73908bb5a573",
+    "3cce5c869145eb2e0cbe18861e219a10d639cb79dc1d9e2d7270eb27b533a6c2",
+    "3dcb229b692c4c6102c9720910b955b5737fdd5647c5a9d6ee7bc31e5c23f5cb",
+    "40834dd3cd9f82489d3abe1ea482da95dac045d7b06c352967199173e263edc8",
+    "4ec5f439f087e93a984c01a415cb40e6b4ea811754b82d83c34e3d2291729c3b",
+    "508dc0ba2591acfa90a34cae2651ba9a0fe38be62da7421e1d4ea9a85e24d8f0",
+    "54e868e93bcd4be7db62d9116869f0462e57c320fa17395b5230b87dd5fae00b",
+    "5dfcaa9cd8510bcaee7eaaa77f676c598ceb0d7559b07603413c6fbb36ffc03d",
+    "6544ae5d2b8a5eee20a989d3a8118e1420166329d8b187e8a6a48ccd1f3a5620",
+    "6635b71114d212312b008e06b0f18e909ec7672de0bb1f3518036fd4f64e9cba",
+    "6a560463d6b7f1e7600222aae4e78de6d3b3d775c4610364a1f94d66918bceda",
+    "6fcc62939b49597a2223b06b89f7a56aab3140796414d2019d714c1f23abc022",
+    "73e05c3279f6a46b2c17e2ec85e93839aae6d78529d2d2cda5012ba6693b5abd",
+    "745b0972e9e4758a86024e8a64118cd2fd226f5d09affdbf581c06285dca85ce",
+    "777a8a614dbcabed239d52894f2bf24dfefde6e93c7954b1d8a1d5f57d72f42a",
+    "796ad3fe78ed66b9d3de0b931375e8dfc4ca8d20d939a516d038fe027d2e46ba",
+    "7dd3f9833f8e8a0f98518a649b325d6e28fb60fde886a5d728943dddf603667f",
+    "85a3c5202616605eeb9b670fa372751ab0d0ad8f9e39c095f353011fd36cd841",
+    "8cf6af92e7a8a3da8bffb9a5283443744914d1aea4a75f18941e4e4cd404efb1",
+    "8fb595f5256b78b70cd3f803f353178e133dc91c5d7ff543307445e406053924",
+    "a7240ec59d5238c40968795eb9770011082c440a78325d74ee0dab76d284457c",
+    "cb8aab30a8c8c1b721dc8a3dcbae492e7c1a9c0576be624d00e1bdf0e936e7c0",
+    "d73031f2c2e3953f3d1e9390430cc674f0213f99509f4da324b2fe333d8c1e5c",
+    "d77d60fb41d868d5926f726121765e59f96d4449e7650221d598c5e094efe11b",
+    "d7ffeb8cb54806c757750f853b19f493344ae2ef80078c1201580561065bcd12",
+    "eafd7f375a1ff4765288ef6950f349a3d3bb2aa13564bf58e0879920bf973de7",
+    "f29f482bbf34deb3157f52e6ab3d645f9d0cb9af875a75360583f31a97b00938",
+    "f4a97b8c1f39b15501220f5f18f96ccff9f84eb4320ca3b057a71ecf24a7198c",
+    "fa6f73ae25a92a655da671eb6d1d2b75306468d3218142de5c82c439f96eb97b"
+  ],
+  "limitations": [
+    "NISAR anomaly scores have no expert-reviewed event labels and are not event probabilities.",
+    "The impact estimator predicts historical reported consequences by department and municipality; it is not a household survey or causal vulnerability model.",
+    "NISAR observations are provisional. Phase is normalized per granule; atmospheric and external phase corrections are not applied by this baseline.",
+    "Output priorities are relative screening recommendations, not evacuation routes or safety guarantees.",
+    "CUDA accelerates fitting the NISAR feature distribution; it does not add future-event labels or turn anomaly screening into event forecasting."
+  ]
+}
