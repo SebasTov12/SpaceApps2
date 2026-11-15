@@ -30,3 +30,7 @@ The forecast route body requires `aoi_id`, `stack_id`, and one exact `processing
 Apply `pipeline/sql/008_assistant_interactions.sql` before enabling Groq chat. The Next.js same-origin `/api/assistant` route keeps the assistant token server-side and applies a basic per-IP request limit. Configure `SAROS_INTERNAL_API_URL`, `SAROS_ASSISTANT_TOKEN`, `GROQ_API_KEY`, and `GROQ_MODEL` only in the private server environment; never use `NEXT_PUBLIC_` for secrets.
 
 See [the predictive-model and assistant status](../docs/modelo-predictivo-y-asistente.md) for data requirements and limits before using a forecast operationally.
+
+## Exposición municipal nacional
+
+`GET /api/v1/territorial/municipalities` entrega el GeoJSON nacional (filtro opcional `?department=05`); `GET /api/v1/territorial/municipalities/05001` devuelve un municipio por DIVIPOLA, y `GET /api/v1/territorial/agriculture?divipola=05001&year=2025` entrega la serie EVA. La migración 009 y la carga se explican en [datos-territoriales-colombia](../docs/datos-territoriales-colombia.md).

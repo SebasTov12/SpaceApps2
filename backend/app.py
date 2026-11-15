@@ -329,6 +329,122 @@ def manifest():
         return jsonify({"error": "dataset_manifest_unavailable"}), 503
 
 
+@app.get("/api/v1/territorial/municipalities")
+def territorial_municipalities():
+    """Return DANE DIVIPOLA municipality exposure profiles as a GeoJSON layer."""
+    department = request.args.get("department")
+    if department is not None and (len(department) != 2 or not department.isdigit()):
+        return jsonify({"error": "department_must_be_two_digit_divipola"}), 400
+    try:
+        with connect_db() as connection:
+            rows = connection.execute(
+                """
+                SELECT divipola, department_code, department_name, municipality_name,
+                       census_vintage, population_total, population_male, population_female,
+                       households_total, dwellings_total, occupied_dwellings,
+                       nonresidential_units, nonresidential_activity_counts,
+                       housing_deficit_count, housing_deficit_percent,
+                       housing_deficit_components, multidimensional_poverty_index,
+                       health_facility_count, school_site_count, geometry_geojson,
+                       source_snapshot_ids, quality, data_mode, updated_at
+                  FROM territorial.municipal_profiles
+                 WHERE (%s IS NULL OR department_code = %s)
+                 ORDER BY divipola
+                """,
+                (department, department),
+            ).fetchall()
+    except psycopg.errors.UndefinedTable:
+        return jsonify({"error": "territorial_data_not_loaded"}), 503
+    except psycopg.Error:
+        return jsonify({"error": "territorial_data_unavailable"}), 503
+
+    features = []
+    for row in rows:
+        (code, dept_code, dept_name, muni_name, vintage, population, male, female,
+         households, dwellings, occupied, nonres, activity_counts, deficit_count,
+         deficit_percent, deficit_components, ipm, health_count, school_count,
+         geometry, snapshots, quality, data_mode, updated_at) = row
+        features.append({
+            "type": "Feature", "id": code, "geometry": geometry,
+            "properties": {
+                "divipola": code, "department_code": dept_code, "department_name": dept_name,
+                "municipality_name": muni_name, "census_vintage": vintage,
+                "population_total": population, "population_male": male, "population_female": female,
+                "households_total": households, "dwellings_total": dwellings,
+                "occupied_dwellings": occupied, "nonresidential_units": nonres,
+                "nonresidential_activity_counts": activity_counts,
+                "housing_deficit_count": deficit_count, "housing_deficit_percent": deficit_percent,
+                "housing_deficit_components": deficit_components,
+                "multidimensional_poverty_index": ipm, "health_facility_count": health_count,
+                "school_site_count": school_count, "source_snapshot_ids": snapshots,
+                "quality": quality, "data_mode": data_mode,
+                "data_updated_at": updated_at.isoformat() if updated_at else None,
+            },
+        })
+    return jsonify({"type": "FeatureCollection", "features": features})
+
+
+@app.get("/api/v1/territorial/municipalities/<divipola>")
+def territorial_municipality(divipola: str):
+    if len(divipola) != 5 or not divipola.isdigit():
+        return jsonify({"error": "municipality_must_be_five_digit_divipola"}), 400
+    try:
+        with connect_db() as connection:
+            row = connection.execute(
+                """
+                SELECT geometry_geojson, to_jsonb(municipal_profiles) - 'geometry_geojson' AS properties
+                  FROM territorial.municipal_profiles
+                 WHERE divipola = %s
+                """, (divipola,),
+            ).fetchone()
+    except psycopg.errors.UndefinedTable:
+        return jsonify({"error": "territorial_data_not_loaded"}), 503
+    except psycopg.Error:
+        return jsonify({"error": "territorial_data_unavailable"}), 503
+    if not row:
+        return jsonify({"error": "municipality_not_found"}), 404
+    return jsonify({"type": "Feature", "id": divipola, "geometry": row[0], "properties": row[1]})
+
+
+@app.get("/api/v1/territorial/agriculture")
+def territorial_agriculture():
+    divipola = request.args.get("divipola", "")
+    year_value = request.args.get("year")
+    if len(divipola) != 5 or not divipola.isdigit():
+        return jsonify({"error": "divipola_query_parameter_required"}), 400
+    if year_value is not None and (len(year_value) != 4 or not year_value.isdigit()):
+        return jsonify({"error": "year_must_be_four_digits"}), 400
+    year = int(year_value) if year_value is not None else None
+    try:
+        with connect_db() as connection:
+            rows = connection.execute(
+                """
+                SELECT year, period, crop_group, crop_subgroup, crop_name, crop_detail,
+                       crop_cycle, area_sown_ha, area_harvested_ha, production_tonnes,
+                       yield_tonnes_per_ha, snapshot_id
+                  FROM territorial.agricultural_production
+                 WHERE divipola = %s AND (%s IS NULL OR year = %s)
+                 ORDER BY year DESC, period, crop_name
+                 LIMIT 5000
+                """, (divipola, year, year),
+            ).fetchall()
+    except psycopg.errors.UndefinedTable:
+        return jsonify({"error": "territorial_agriculture_not_loaded"}), 503
+    except psycopg.Error:
+        return jsonify({"error": "territorial_agriculture_unavailable"}), 503
+    return jsonify({
+        "divipola": divipola, "year": year, "source": "UPRA Evaluaciones Agropecuarias Municipales (EVA)",
+        "records": [
+            {"year": r[0], "period": r[1], "crop_group": r[2], "crop_subgroup": r[3],
+             "crop": r[4], "crop_detail": r[5], "cycle": r[6], "area_sown_ha": r[7],
+             "area_harvested_ha": r[8], "production_tonnes": r[9], "yield_tonnes_per_ha": r[10],
+             "source_snapshot_id": r[11]}
+            for r in rows
+        ],
+        "limit": 5000,
+    })
+
+
 @app.post("/api/v1/predictions")
 def create_prediction():
     if not PREDICTION_TOKEN:

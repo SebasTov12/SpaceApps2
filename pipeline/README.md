@@ -94,3 +94,7 @@ ORDER BY period_start;
 ```
 
 La investigación de campos, el método y las fuentes oficiales están en [modelo-sintesis-colombia](../docs/modelo-sintesis-colombia.md).
+
+## Datos territoriales nacionales
+
+La ingesta y API de exposición municipal para toda Colombia se documentan en [datos-territoriales-colombia](../docs/datos-territoriales-colombia.md).
