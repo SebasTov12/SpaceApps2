@@ -75,11 +75,60 @@ def validate_nisar_observation(row: object) -> dict[str, object]:
         raise ValueError(f"Missing observation fields: {sorted(missing)}")
     if row["data_mode"] != "real":
         raise ValueError("Only real NISAR observations are accepted")
+    collection_by_maturity = {
+        "VALIDATED": "NISAR_L2_GUNW_V1",
+        "PROVISIONAL": "NISAR_L2_GUNW_PROVISIONAL_V1",
+        "BETA": "NISAR_L2_GUNW_BETA_V1",
+    }
     for field in ("aoi_id", "stack_id", "reference_method", "source_collection", "source_maturity", "processing_version"):
         if not isinstance(row[field], str) or not row[field].strip():
             raise ValueError(f"{field} must be a non-empty string")
-    if not isinstance(row["source_granules"], list) or not row["source_granules"]:
-        raise ValueError("source_granules must be a non-empty list")
+    if row["source_maturity"] not in collection_by_maturity:
+        raise ValueError("source_maturity must be VALIDATED, PROVISIONAL, or BETA")
+    if row["source_collection"] != collection_by_maturity[row["source_maturity"]]:
+        raise ValueError("source_collection does not match source_maturity")
+    if (not isinstance(row["source_granules"], list) or not row["source_granules"]
+            or any(not isinstance(item, str) or not item.strip()
+                   or not item.startswith("NISAR_L2_") or "GUNW" not in item
+                   for item in row["source_granules"])):
+        raise ValueError("source_granules must contain NISAR L2 GUNW granule identifiers")
+    quality = row.get("quality")
+    if not isinstance(quality, dict):
+        raise ValueError("quality must be an object with inspected source and quality evidence")
+    evidence_fields = {
+        "hdf5_sha256", "phase_dataset_path", "coherence_dataset_path",
+        "mask_dataset_path", "connected_components_dataset_path",
+        "reference_geometry_id", "stable_reference_applied",
+        "coherence_threshold", "valid_pixel_count", "reference_pixel_count",
+    }
+    missing_evidence = evidence_fields - quality.keys()
+    if missing_evidence:
+        raise ValueError(f"Missing quality evidence fields: {sorted(missing_evidence)}")
+    if (not isinstance(quality["hdf5_sha256"], str)
+            or len(quality["hdf5_sha256"]) != 64
+            or any(char not in "0123456789abcdefABCDEF" for char in quality["hdf5_sha256"])):
+        raise ValueError("quality.hdf5_sha256 must be a 64-character SHA-256 hex digest")
+    for field in ("phase_dataset_path", "coherence_dataset_path", "mask_dataset_path",
+                  "connected_components_dataset_path", "reference_geometry_id"):
+        if not isinstance(quality[field], str) or not quality[field].strip():
+            raise ValueError(f"quality.{field} must be a non-empty value discovered during inspection")
+    if quality["stable_reference_applied"] is not True:
+        raise ValueError("A stable reference must be applied before ingestion")
+    try:
+        coherence_threshold = float(quality["coherence_threshold"])
+        valid_pixel_count_value = float(quality["valid_pixel_count"])
+        reference_pixel_count_value = float(quality["reference_pixel_count"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Quality thresholds and pixel counts must be numeric") from exc
+    if (not np.isfinite(coherence_threshold) or not 0 <= coherence_threshold <= 1
+            or not np.isfinite(valid_pixel_count_value)
+            or not np.isfinite(reference_pixel_count_value)
+            or not valid_pixel_count_value.is_integer()
+            or not reference_pixel_count_value.is_integer()
+            or valid_pixel_count_value <= 0 or reference_pixel_count_value <= 0):
+        raise ValueError("Quality threshold must be in [0, 1] and pixel counts must be positive")
+    valid_pixel_count = int(valid_pixel_count_value)
+    reference_pixel_count = int(reference_pixel_count_value)
     try:
         date.fromisoformat(str(row["observation_date"]))
         los_mm = float(row["los_mm"])
@@ -88,8 +137,8 @@ def validate_nisar_observation(row: object) -> dict[str, object]:
         uncertainty = float(uncertainty) if uncertainty is not None else None
     except (TypeError, ValueError) as exc:
         raise ValueError("Invalid date or numeric observation field") from exc
-    if not np.isfinite(los_mm) or not 0 <= valid_fraction <= 1:
-        raise ValueError("LOS must be finite and valid_fraction must be in [0, 1]")
+    if not np.isfinite(los_mm) or not 0 < valid_fraction <= 1:
+        raise ValueError("LOS must be finite and valid_fraction must be in (0, 1]")
     if uncertainty is not None and (not np.isfinite(uncertainty) or uncertainty <= 0):
         raise ValueError("uncertainty_mm must be positive when provided")
     return {
@@ -98,7 +147,12 @@ def validate_nisar_observation(row: object) -> dict[str, object]:
         "los_mm": los_mm,
         "valid_fraction": valid_fraction,
         "uncertainty_mm": uncertainty,
-        "quality": row.get("quality") or {},
+        "quality": {
+            **quality,
+            "coherence_threshold": coherence_threshold,
+            "valid_pixel_count": valid_pixel_count,
+            "reference_pixel_count": reference_pixel_count,
+        },
         "source_granules": [str(item) for item in row["source_granules"]],
     }
 

@@ -121,6 +121,16 @@ un `processing_version` único y exacto para no mezclar series calculadas con
 algoritmos diferentes. La migración ya se aplicó en el servidor. Para repetir
 su creación idempotente en otro entorno:
 
+La API rechaza procedencia que no corresponda a una colección GUNW y madurez
+conocida, así como observaciones sin evidencia de inspección del HDF5,
+coherencia, máscaras, componentes conectados y referencia estable. Los nombres
+de datasets se guardan como rutas descubiertas en cada archivo, sin asumir
+rutas internas fijas. `quality` exige SHA-256 del archivo, rutas de fase,
+coherencia, máscara y connected components, ID de la geometría de referencia,
+umbral de coherencia, conteos de píxeles válidos y de referencia y confirmación
+de que se aplicó una referencia estable. Así `data_mode: real` por sí solo no
+convierte un registro sin procedencia verificable en dato apto para pronóstico.
+
 ```sh
 docker compose -f infra/saros/docker-compose.yml --profile migration run --rm nisar-migrate
 ```
