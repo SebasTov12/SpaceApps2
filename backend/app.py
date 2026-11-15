@@ -362,6 +362,226 @@ def headlines():
     return jsonify({"headlines": items[:12]})
 
 
+# ---------------------------------------------------------------------------
+# Puntos del planeta: los registros reales de amenazas de la base, ubicados y agrupados.
+# ---------------------------------------------------------------------------
+
+HAZARD_KIND_RULES: list[tuple[str, tuple[str, ...]]] = [
+    ("landslide", ("MOVIMIENTO EN MASA", "DESLIZAMIENTO", "REMOCION", "DERRUMBE", "CAIDA DE ROCA", "REPTACION", "FLUJO DE", "LANDSLIDE")),
+    ("flood", ("INUNDACION", "CRECIENTE", "AVENIDA TORRENCIAL", "DESBORDAMIENTO", "ENCHARCAMIENTO", "LLUVIA", "FLOOD")),
+    ("wildfire", ("INCENDIO", "WILDFIRE")),
+    ("earthquake", ("SISMO", "TERREMOTO", "TEMBLOR", "EARTHQUAKE")),
+    ("volcano", ("VOLCAN", "ERUPCION", "CENIZA", "LAHAR")),
+    ("subsidence", ("SUBSIDENCIA", "HUNDIMIENTO", "SOCAVON")),
+    ("erosion", ("EROSION",)),
+    ("storm", ("VENDAVAL", "TORMENTA", "GRANIZ", "HURACAN", "TORNADO", "ELECTRICA", "RAYO", "TEMPORAL", "VIENTO")),
+    ("drought", ("SEQUIA", "DESABASTECIMIENTO", "ESTIAJE")),
+]
+RECORD_TYPE_LABELS = {
+    "landslide_inventory": "Inventario de movimientos en masa",
+    "event_impact": "Emergencia registrada",
+    "geologic_hazard": "Amenaza geológica",
+    "local_alert": "Alerta local",
+}
+_HAZARD_POINTS_CACHE: dict[str, object] = {"at": 0.0, "payload": None}
+HAZARD_POINTS_TTL = float(os.getenv("SAROS_HAZARD_POINTS_TTL", "900"))
+
+
+def _fold(text: object) -> str:
+    import unicodedata
+    raw = unicodedata.normalize("NFKD", str(text or "")).encode("ascii", "ignore").decode("ascii")
+    return " ".join(raw.upper().split())
+
+
+def hazard_kind(record_type: str, event_type: object) -> str:
+    folded = _fold(event_type)
+    for kind, words in HAZARD_KIND_RULES:
+        if any(word in folded for word in words):
+            return kind
+    return "landslide" if record_type == "landslide_inventory" else "other"
+
+
+def _ring_centroid(ring: list) -> tuple[float, float, float] | None:
+    """Centroide y área (shoelace) de un anillo [lon, lat]."""
+    points = [p for p in ring if isinstance(p, (list, tuple)) and len(p) >= 2]
+    if len(points) < 3:
+        return None
+    area = cx = cy = 0.0
+    for (x0, y0), (x1, y1) in zip(((p[0], p[1]) for p in points), ((p[0], p[1]) for p in points[1:] + points[:1])):
+        cross = x0 * y1 - x1 * y0
+        area += cross
+        cx += (x0 + x1) * cross
+        cy += (y0 + y1) * cross
+    if abs(area) < 1e-12:
+        xs = [p[0] for p in points]; ys = [p[1] for p in points]
+        return sum(xs) / len(xs), sum(ys) / len(ys), 0.0
+    return cx / (3 * area), cy / (3 * area), abs(area) / 2
+
+
+def geometry_point(geometry: object) -> tuple[float, float] | None:
+    """Un punto representativo (lon, lat) de una geometría GeoJSON."""
+    if not isinstance(geometry, dict):
+        return None
+    kind, coords = geometry.get("type"), geometry.get("coordinates")
+    try:
+        if kind == "Point":
+            return float(coords[0]), float(coords[1])
+        if kind == "MultiPoint" and coords:
+            return float(coords[0][0]), float(coords[0][1])
+        if kind in ("LineString", "MultiLineString"):
+            flat = coords if kind == "LineString" else [p for line in coords for p in line]
+            return float(flat[len(flat) // 2][0]), float(flat[len(flat) // 2][1])
+        polygons = [coords] if kind == "Polygon" else coords if kind == "MultiPolygon" else []
+        best = None
+        for polygon in polygons:
+            c = _ring_centroid(polygon[0]) if polygon else None
+            if c and (best is None or c[2] > best[2]):
+                best = c
+        if best:
+            return best[0], best[1]
+        if kind == "GeometryCollection":
+            for item in geometry.get("geometries") or []:
+                point = geometry_point(item)
+                if point:
+                    return point
+    except (TypeError, ValueError, IndexError):
+        return None
+    return None
+
+
+def _valid_lonlat(lon: float, lat: float) -> bool:
+    # Solo grados geográficos (las coordenadas planas en metros se descartan).
+    return -180 <= lon <= 180 and -90 <= lat <= 90 and not (lon == 0 and lat == 0)
+
+
+def build_hazard_points() -> dict[str, object]:
+    with connect_db() as connection:
+        municipalities = connection.execute(
+            """
+            SELECT divipola, department_name, municipality_name, geometry_geojson
+              FROM territorial.municipal_profiles
+            """
+        ).fetchall() if _table_exists(connection, "territorial.municipal_profiles") else []
+        rows = connection.execute(
+            """
+            SELECT source_id, record_type, event_type, event_date, department, municipality, divipola,
+                   deaths, affected_people, homes_destroyed, homes_damaged,
+                   normalized_metrics->>'latitude', normalized_metrics->>'longitude', geometry_geojson
+              FROM hazards.records
+             WHERE data_mode = 'real'
+            """
+        ).fetchall()
+
+    centroid_by_code: dict[str, tuple[float, float, str, str]] = {}
+    centroid_by_name: dict[tuple[str, str], tuple[float, float, str, str]] = {}
+    for code, dept, muni, geometry in municipalities:
+        point = geometry_point(geometry)
+        if not point:
+            continue
+        entry = (point[0], point[1], str(muni or ""), str(dept or ""))
+        centroid_by_code[str(code).zfill(5)] = entry
+        centroid_by_name[(_fold(dept), _fold(muni))] = entry
+
+    centroids = list(centroid_by_code.values())
+    groups: dict[tuple[str, str], dict[str, object]] = {}
+    located = unlocated = 0
+    for (source, record_type, event_type, day, dept, muni, code, deaths, affected,
+         destroyed, damaged, lat_text, lon_text, geometry) in rows:
+        lonlat = geometry_point(geometry)
+        if lonlat is None and lat_text and lon_text:
+            try:
+                lonlat = (float(lon_text), float(lat_text))
+            except ValueError:
+                lonlat = None
+        if lonlat is not None and not _valid_lonlat(*lonlat):
+            lonlat = None
+        place_muni, place_dept = muni, dept
+        if lonlat is not None:
+            key_place = f"{lonlat[1]:.2f},{lonlat[0]:.2f}"
+            if not place_muni and centroids:
+                # sin municipio en la fuente: el más cercano (aprox. por centroide)
+                near = min(centroids, key=lambda c: (c[0] - lonlat[0]) ** 2 + (c[1] - lonlat[1]) ** 2)
+                if (near[0] - lonlat[0]) ** 2 + (near[1] - lonlat[1]) ** 2 < 0.09:
+                    place_muni, place_dept = near[2], near[3]
+        else:
+            centroid = None
+            if code:
+                digits = "".join(ch for ch in str(code) if ch.isdigit())
+                centroid = centroid_by_code.get(digits.zfill(5)) if digits else None
+            if centroid is None and muni:
+                centroid = centroid_by_name.get((_fold(dept), _fold(muni)))
+            if centroid is None:
+                unlocated += 1
+                continue
+            lonlat = (centroid[0], centroid[1])
+            place_muni = place_muni or centroid[2]
+            place_dept = place_dept or centroid[3]
+            key_place = f"m{code or _fold(muni)}"
+        located += 1
+        kind = hazard_kind(record_type, event_type)
+        group = groups.setdefault((key_place, kind), {
+            "lat": 0.0, "lon": 0.0, "kind": kind, "n": 0, "first": None, "last": None,
+            "muni": place_muni, "dept": place_dept, "deaths": 0.0, "affected": 0.0, "homes": 0.0,
+            "sources": set(), "types": {},
+        })
+        n = int(group["n"])
+        group["lat"] = (float(group["lat"]) * n + lonlat[1]) / (n + 1)
+        group["lon"] = (float(group["lon"]) * n + lonlat[0]) / (n + 1)
+        group["n"] = n + 1
+        if day:
+            iso = day.isoformat()
+            group["first"] = min(filter(None, [group["first"], iso]))
+            group["last"] = max(filter(None, [group["last"], iso]))
+        for field, value in (("deaths", deaths), ("affected", affected), ("homes", destroyed), ("homes", damaged)):
+            if value is not None:
+                group[field] = float(group[field]) + float(value)
+        group["sources"].add(source)
+        label = str(event_type or RECORD_TYPE_LABELS.get(record_type, record_type)).strip().upper()[:60]
+        group["types"][label] = group["types"].get(label, 0) + 1
+
+    points = []
+    for group in groups.values():
+        types = sorted(group["types"].items(), key=lambda item: -item[1])
+        points.append({
+            "lat": round(float(group["lat"]), 4), "lon": round(float(group["lon"]), 4),
+            "kind": group["kind"], "n": group["n"], "first": group["first"], "last": group["last"],
+            "place": ", ".join(str(v).title() for v in (group["muni"], group["dept"]) if v),
+            "deaths": int(group["deaths"]), "affected": int(group["affected"]), "homes": int(group["homes"]),
+            "type": types[0][0].capitalize() if types else "",
+            "sources": sorted(group["sources"]),
+        })
+    points.sort(key=lambda p: -int(p["n"]))
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "records": len(rows), "located": located, "unlocated": unlocated,
+        "points": points,
+        "note": "Registros históricos reales (UNGRD, SGC y otras fuentes públicas) agrupados por lugar y tipo. No son alertas activas.",
+    }
+
+
+def _table_exists(connection: psycopg.Connection, name: str) -> bool:
+    return connection.execute("SELECT to_regclass(%s) IS NOT NULL", (name,)).fetchone()[0]
+
+
+@app.get("/api/v1/hazards/points")
+def hazard_points():
+    """Todos los registros reales de amenazas como puntos del planeta (agrupados por lugar y tipo)."""
+    import time
+    now = time.time()
+    payload = _HAZARD_POINTS_CACHE.get("payload")
+    if payload is None or now - float(_HAZARD_POINTS_CACHE["at"]) > HAZARD_POINTS_TTL:
+        try:
+            payload = build_hazard_points()
+        except psycopg.errors.UndefinedTable:
+            return jsonify({"error": "hazard_data_not_loaded"}), 503
+        except psycopg.Error:
+            return jsonify({"error": "hazard_data_unavailable"}), 503
+        _HAZARD_POINTS_CACHE.update(at=now, payload=payload)
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = "public, max-age=600"
+    return response
+
+
 @app.get("/api/v1/datasets")
 def datasets():
     try:
