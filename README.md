@@ -6,6 +6,90 @@ SAROS is a geospatial decision-support prototype that brings satellite radar obs
 
 > **SAROS is an exploratory planning and communication tool. It is not an official warning system, a substitute for local authorities, or a guarantee of safety.**
 
+## SAROS desplegado: resumen y evaluación en cinco criterios
+
+**Plataforma:** [saros.tobaru.xyz](https://saros.tobaru.xyz)
+
+**Estado:** aplicación publicada con frontend Next.js, API Flask, PostgreSQL y predictor SAROS en contenedores Docker. GitHub Actions construye y publica las imágenes; Orivia las actualiza desde `main` mediante un servicio programado. Caddy sirve el dominio con HTTPS.
+
+SAROS combina exploración geográfica, registros históricos de amenazas, contexto territorial y análisis de radar. El objetivo es ayudar a entender dónde hay información que merece revisión, qué se sabe de esa ubicación y qué datos faltan. Las pantallas, capas y resultados mantienen su procedencia y límites: que algo aparezca en el mapa no significa que sea una alerta ni que todos los datos sean observaciones satelitales reales.
+
+### 1. IMPACTO
+
+Los movimientos del terreno, inundaciones, incendios, cambios en glaciares y transformaciones del paisaje pueden afectar viviendas, vías, agricultura, servicios y medios de vida. SAROS acerca señales geoespaciales y registros públicos a una interfaz que permite explorar ubicaciones, fechas, fuentes e impactos reportados.
+
+La utilidad esperada es orientar preguntas, priorizar verificaciones en campo y apoyar conversaciones de prevención entre comunidades, analistas y autoridades. No afirmamos que SAROS ya haya reducido pérdidas, detectado una emergencia en curso o cambiado decisiones oficiales: esos resultados requieren evaluación con usuarios y autoridades locales.
+
+### 2. CREATIVIDAD
+
+- Globo 3D interactivo con navegación por países y zonas, más capas de mapa para examinar ubicaciones.
+- Explorador con fechas, comparación antes/después, capas de cambio y series temporales cuando hay datos disponibles.
+- Fichas para puntos de amenazas históricas y evaluaciones del modelo. Muestran ubicación y precisión geográfica, fuente, fechas, impactos que constan en el registro y resultado SAROS cuando existe uno guardado.
+- Capas territoriales y socioeconómicas para relacionar el fenómeno con población, viviendas, actividades y servicios; su disponibilidad y carácter DEMO o real se indican en la interfaz.
+- Saru, guía conversacional en español e inglés, conectada a Groq y al contexto guardado en SAROS. Responde brevemente, explica límites y no sustituye a una autoridad.
+
+La propuesta creativa es unir la exploración de la Tierra, la explicación del radar y el contexto humano en una sola experiencia. El globo y sus animaciones son visualización; no son una simulación física ni mediciones en vivo.
+
+### 3. VALIDEZ Y TRANSPARENCIA DE LOS DATOS
+
+| Componente | Estado de los datos | Qué significa |
+| --- | --- | --- |
+| Capas y series preempaquetadas del explorador | **Sintéticas / DEMO** | Se generaron para demostrar la experiencia y tienen estructura parecida a productos NISAR. No son mediciones de las escenas ni evidencia de movimiento, inundación o pérdida forestal. La interfaz las identifica como demo. |
+| Catálogo ASF/NASA de escenas NISAR | **Metadatos reales** | El catálogo permite consultar productos, fechas y madurez. Que una escena exista en ASF no significa que SAROS la haya descargado, procesado o validado para el mapa. |
+| Registros de amenazas UNGRD, SGC y otras fuentes públicas | **Registros históricos reales, según procedencia** | Los puntos y sus fechas representan lo reportado en las fuentes incorporadas a la base. Algunos lugares usan un centroide municipal o de geometría si la fuente no tiene coordenadas exactas. No son alertas activas ni necesariamente eventos recientes. |
+| Contexto territorial y agrícola | **Datos públicos o DEMO según la capa** | Las rutas permiten consultar información municipal y agrícola cuando está cargada. Los escenarios ilustrativos de exposición no son daños confirmados ni un censo en tiempo real. |
+| Evaluación compuesta SAROS | **Modelo entrenado con insumos reales; resultado exploratorio** | Detecta anomalías estadísticas en características de fase y coherencia NISAR y estima consecuencias históricas municipales. No estima probabilidad de desastre, causalidad, vulnerabilidad de cada hogar ni seguridad. |
+| Asistente Saru/Groq | **LLM real de proveedor externo; no entrenado por SAROS** | Resume y explica contexto que ya está guardado. No crea ni valida observaciones, imágenes, alertas o pronósticos científicos. |
+
+**¿El modelo de IA es real y está entrenado?** Sí: el artefacto compuesto `nisar-impact-composite-0.2.0` se entrenó el 15 de noviembre de 2026 con código PyTorch y se integra al servicio predictor. Es una combinación de métodos estadísticos, no una red neuronal que predice desastres:
+
+1. **Anomalías NISAR:** detector no supervisado por órbita que combina fase desenrollada GUNW estandarizada de forma robusta y magnitud de coherencia. El informe registra **264.684 píxeles válidos** de dos tracks (`083-D-087` y `047-A-003`), con siete observaciones de entrenamiento y dos observaciones posteriores reservadas por track para una comprobación temporal exploratoria. Se usaron escenas GUNW PROVISIONAL; la fase se normaliza por granule y esta línea base no aplica correcciones atmosféricas ni de fase externa. No hay etiquetas expertas de deslizamientos asociadas a esos píxeles; por tanto, una anomalía no equivale a un evento ni a una predicción validada.
+2. **Contexto de impactos históricos:** estimador empírico jerárquico por departamento y municipio, entrenado con **3.315 reportes UNGRD de afectaciones por movimientos en masa de 2019–2022** y evaluado fuera de tiempo con **1.273 reportes de 2025**. Produce estimaciones basadas en consecuencias históricas reportadas; no mide vulnerabilidad individual ni prueba que una anomalía NISAR haya causado esos impactos.
+3. **Validez medida:** la evaluación reporta MAE frente a una línea base global para los reportes de 2025. Es una evaluación temporal exploratoria del estimador histórico, no precisión/accuracy de un detector de deslizamientos ni calibración de riesgo. La rama de anomalías solo revisa la tasa de valores atípicos; no demuestra capacidad predictiva.
+4. **U-Net supervisado:** el repositorio incluye la arquitectura y el flujo de entrenamiento, pero **no está entrenado ni operativo**: faltan parches NISAR co-registrados con etiquetas de cambio revisadas por expertos y particiones espaciales/temporales sin fuga. El endpoint de predicción de máscara requiere el artefacto `best.onnx`.
+
+### Predicciones: qué calcula y qué no
+
+- `POST /api/v1/analysis` recibe una pareja de características GUNW (fase y coherencia) y devuelve fracción de píxeles anómalos, prioridad relativa, estimación histórica municipal y recomendación de revisión. Si esa evaluación se guarda, el punto correspondiente la puede mostrar en su ficha.
+- `POST /api/v1/nisar/forecasts/run` implementa una tendencia LOS robusta comparada con persistencia y backtesting. Solo acepta observaciones LOS reales con procedencia y control de calidad; cada resultado se etiqueta como exploratorio. La disponibilidad de esta ruta no implica que exista una serie apta o un pronóstico para cada punto.
+- SAROS **no calcula actualmente un pronóstico validado de movimiento a 30/90 días para cada marcador**. Las proyecciones lineales de demostración no se presentan como salidas del modelo. Si una ubicación no tiene un resultado guardado, la interfaz lo informa.
+- No se predicen terremotos. Ninguna prioridad SAROS es alerta oficial, probabilidad de desastre, ruta segura o instrucción de evacuación.
+
+### Asistente de la plataforma
+
+El chat de Saru pasa por `POST /api/assistant` (proxy privado del frontend) y `POST /api/v1/assistant/chat` (Flask). El backend consulta el contexto de PostgreSQL —observaciones y pronósticos NISAR disponibles, reportes históricos y análisis SAROS— y solicita a Groq una explicación en lenguaje natural. La configuración actual usa `openai/gpt-oss-20b`; la clave permanece en el entorno privado del servidor. Las interacciones y el contexto usado se registran para auditoría.
+
+Groq aporta generación de lenguaje, **no entrena el modelo geoespacial ni genera por sí mismo las predicciones**. Saru diferencia registros históricos de mediciones, análisis y pronósticos; debe decir cuando falta evidencia y remitir las emergencias a fuentes oficiales.
+
+### Servicios y rutas de la plataforma
+
+| Servicio | Rutas principales | Estado y función |
+| --- | --- | --- |
+| Estado y catálogo | `GET /health`, `GET /ready`, `GET /api/v1/manifest`, `GET /api/v1/datasets`, `GET /api/v1/headlines` | Estado de API/dependencias, procedencia de conjuntos y titulares guardados. |
+| Explorador NISAR | `GET /api/v1/sites`, `GET /api/v1/sites/{id}/manifest`, `GET /api/v1/sites/{id}/timeseries`, `GET /api/v1/sites/availability`, `GET /api/v1/sites/{id}/availability` | Catálogo, metadatos de capas, serie temporal e inventario ASF; cada sitio conserva su modo real o DEMO. |
+| Puntos y territorio | `GET /api/v1/hazards/points`, `GET /api/v1/regions/{id}/assessment`, `GET /api/v1/territorial/municipalities`, `GET /api/v1/territorial/municipalities/{divipola}`, `GET /api/v1/territorial/agriculture` | Puntos agrupados de fuentes históricas, respuesta territorial explícita y datos municipales/agropecuarios cuando están cargados. |
+| Procesamiento | `POST /api/v1/analysis`, `POST /api/v1/predictions` | Análisis compuesto disponible con características GUNW; predicción de máscara U-Net requiere el artefacto supervisado `best.onnx`, todavía pendiente de entrenamiento validado. Requieren token. |
+| Observaciones y pronóstico | `POST /api/v1/nisar/observations`, `GET /api/v1/nisar/observations/checkpoint`, `POST /api/v1/nisar/forecasts/run` | Ingesta de LOS con procedencia/calidad, checkpoint e intento de pronóstico temporal solo con observaciones reales aprobadas. Requieren token. |
+| Asistente | `POST /api/assistant` (frontend), `POST /api/v1/assistant/chat` (API privada) | Proxy same-origin que mantiene el token en servidor; Groq redacta respuestas basadas en contexto de la base. |
+
+Las rutas protegidas usan Bearer token. El contrato completo, campos obligatorios, controles de calidad y limitaciones está en [backend/README.md](backend/README.md).
+
+### 4. RELEVANCIA
+
+SAROS aborda una necesidad concreta: traducir información geoespacial compleja a preguntas territoriales comprensibles. NISAR puede observar cambios de superficie de manera amplia; las fuentes UNGRD/SGC aportan antecedentes y los datos territoriales ayudan a ubicar población y actividades. Esa combinación puede ayudar a equipos de gestión del riesgo, infraestructura, ambiente, investigación y organizaciones comunitarias a decidir qué revisar con mayor detalle.
+
+La plataforma es relevante para Colombia y también presenta zonas de ejemplo internacionales. Su valor operativo dependerá de procesar escenas reales con controles científicos, actualizar las fuentes, validar las estimaciones localmente y trabajar con las instituciones responsables. Hoy es un prototipo de apoyo a exploración y planificación, no un servicio oficial de monitoreo continuo.
+
+### 5. PRESENTACIÓN
+
+La experiencia se presenta en español e inglés, con globo 3D, sitios destacados, buscador, mapas temporales, leyendas, capas DEMO identificadas y fichas de punto. El panel distingue qué se reportó, a quién se reportó afectación, qué historial hay y si existe una salida del modelo. Saru usa explicaciones breves con contexto de la plataforma.
+
+**Sitio público:** [saros.tobaru.xyz](https://saros.tobaru.xyz)
+
+**Servicios desplegados:** frontend, API Flask, PostgreSQL y predictor en Docker; HTTPS por Caddy; imágenes versionadas en GHCR y actualización automática desde `main`.
+
+La presentación no debe esconder incertidumbre: las capas NISAR del explorador son DEMO hasta que se reemplacen por escenas procesadas y validadas; los registros históricos no son alertas actuales; las estimaciones del modelo requieren revisión técnica y territorial.
+
 ## Why SAROS matters
 
 Hazards become disasters when they affect people, homes, essential services, infrastructure and ways of earning a living. Satellite products can reveal changes across large areas, but those signals are difficult to interpret and rarely tell decision-makers who could be affected or what they should investigate next.
