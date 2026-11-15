@@ -10,10 +10,12 @@ El módulo `ml/nisar_forecast` pronostica desplazamiento relativo LOS agregado p
 
 Resultados ASF/CMR observados durante el inventario:
 
-| AOI aproximado | Granules GUNW | Provisional | Beta | UR |
-|---|---:|---:|---:|---:|
-| Núcleo de Neiva | 19 | 18 | 0 | 1 |
-| Caja amplia Huila | 50 | 34 | 11 | 5 |
+| AOI aproximado | Granules GUNW | Provisional | Beta | UR | Validated¹ |
+|---|---:|---:|---:|---:|---:|
+| Núcleo de Neiva | 19 | 18 | 0 | 1 | 0 |
+| Caja amplia Huila | 50 | 34 | 11 | 5 | 0 |
+
+¹ Consultas independientes del 14 de noviembre de 2026 para `NISAR_L2_GUNW_V1`.
 
 El núcleo contiene dos stacks provisionales de 9 pares. Ascendente 047/frame 003 y descendente 083/frame 087, ambos modo 2000 SH. Cada uno conecta 10 fechas entre junio y octubre de 2026. Aún no hay rásteres procesados ni pronósticos calculados.
 
