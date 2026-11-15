@@ -49,7 +49,7 @@ El explorador muestra el badge **Demo** o **NISAR** según `source.mode`.
 - El modo demo genera campos sintéticos con la forma y las unidades de cada producto. No son mediciones.
 - El modo real exige HDF5 disponibles y nunca sustituye una descarga ausente por datos demo. La lectura del ráster toma solo la ventana espacial del AOI. Si el nombre del dataset no es único, o falta la proyección/coordenadas, falla y reporta el problema.
 - La lectura de GUNW todavía no aplica la máscara de coherencia ni `connectedComponents`, y todavía no selecciona una referencia estable. Por eso sus capas sirven solo para inspección exploratoria; **no las uses aún para generar observaciones LOS del pronosticador**.
-- GUNW: el desplazamiento es `-fase × λ / 4π` con λ = 23.84 cm (banda L). Los pares solo se acumulan si sus nombres prueban una cadena de adquisiciones consecutivas. Los píxeles inválidos continúan como `NaN`; no se convierten en desplazamiento cero.
+- GUNW: la fase desenrollada está en radianes, pero no se debe convertir a LOS con una fórmula/signo fijo hasta validar la convención, longitud de onda efectiva, referencias y correcciones con los metadatos del producto y capas reales del stack. Los pares solo se acumulan tras invertir la red temporal y verificar conectividad; los píxeles inválidos continúan como `NaN`, nunca como desplazamiento cero.
 - Colecciones: `NISAR_L2_<GUNW|GCOV|GOFF>_<BETA_V1|PROVISIONAL_V1|V1>`. Por defecto se descarga la madurez con más escenas (`--maturity` para forzarla).
 - En modo real solo se usan escenas de la misma geometría (track, dirección y frame); el resto se descarta y se avisa.
 - No mezclar madureces (BETA, PROVISIONAL, VALIDATED) sin documentarlo (ver `docs/arquitectura/04`).

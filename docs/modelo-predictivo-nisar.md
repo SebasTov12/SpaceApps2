@@ -2,7 +2,9 @@
 
 ## Alcance
 
-El módulo `ml/nisar_forecast` pronostica desplazamiento relativo LOS agregado para un AOI y un único stack geométrico. No clasifica deslizamientos, no estima probabilidad de desastre y no predice terremotos. La salida es independiente de la U-Net en `ml/nisar_change`, que detecta cambios entre pares de imágenes.
+El objetivo final de SAROS es pronosticar **mapas de desplazamiento LOS por píxel** para una zona y un único stack geométrico. El pronóstico describe la evolución de deformación ya observada; no predice terremotos ni calcula por sí solo probabilidad de desastre.
+
+`ml/nisar_forecast` contiene hoy un baseline escalar por zona para diagnóstico. No es el modelo espacial final. La U-Net de `ml/nisar_change` clasifica cambios entre pares de imágenes y tampoco pronostica desplazamiento futuro.
 
 ## AOI inicial y cobertura consultada
 
@@ -41,13 +43,25 @@ explícita de armonización ([disponibilidad y madurez NISAR](https://nisar-docs
 
 ## Decisión del modelo
 
+### Baseline espacial por píxel
+
+Se añadió `scripts/forecast_nisar_rasters.py` como primer pronosticador raster. Lee rásteres georreferenciados por ventanas y ajusta una tendencia lineal robusta Huber independiente para cada píxel; puede ponderar por incertidumbre si se entrega su ráster. Produce un GeoTIFF LOS futuro en milímetros y un JSON con backtest temporal contra persistencia. No carga escenas completas en RAM y exige que todas las entradas compartan exactamente la rejilla.
+
+Este script **no convierte interferogramas GUNW en mapas de adquisición**. Su entrada es una serie `time,y,x` de LOS relativo, con máscaras por fecha, creada después de invertir la red de pares y establecer una referencia espacial común. El manifiesto exige procedencia GUNW real, madurez/colección coherentes, fecha, stack, evidencia de fase a LOS, referencia estable y hash del manifiesto. La declaración del manifiesto no demuestra por sí sola la validez científica: debe respaldarse con metadatos y trazabilidad de cada capa fuente.
+
+El flujo objetivo es: capas reales de fase, coherencia, componentes y máscara obtenidas de ASF/Harmony → controles de calidad y referencia estable en cada interferograma → inversión temporal de la red de pares por píxel sin rellenar faltantes con cero → serie de mapas LOS por adquisición en una rejilla común → tendencia raster robusta como baseline → modelos espaciotemporales solo cuando haya bastantes fechas independientes y validación. Las órbitas ascendente y descendente, stacks y madureces se evalúan por separado; LOS no equivale a vertical.
+
+La validación retiene fechas futuras completas, compara tendencia con persistencia y agrega primero errores por fecha para reportar MAE/RMSE/sesgo en mm. Los píxeles vecinos están correlacionados, así que el tamaño de la imagen no cuenta como muestra temporal independiente. El umbral de seis fechas objetivo es solo un cribado. Con diez adquisiciones por stack de Neiva y cinco observaciones mínimas de entrenamiento, el inventario permite como máximo cuatro objetivos distintos al horizonte configurado: no certifica fiabilidad. No se deben usar particiones aleatorias de píxeles ni ventanas que mezclen fechas de entrenamiento y prueba.
+
+Con la disponibilidad actual no procede añadir XGBoost/LightGBM sobre promedios como si fuese pronóstico espacial, ni entrenar una CNN/LSTM: aún no hay rásteres LOS reales invertidos ni etiquetas futuras, y la serie temporal es corta. La siguiente mejora válida es acumular nuevas adquisiciones del mismo stack y ejecutar un backtest real reproducible; después se decidirá si una arquitectura espaciotemporal supera el baseline.
+
 La primera comparación es persistencia frente a tendencia lineal robusta por zona. Se define `y(t)` como desplazamiento LOS relativo en mm desde una fecha ancla y una referencia estable:
 
 ```text
 y(t) = beta0 + beta1 * dias_desde_primera_observacion + error
 ```
 
-El estimador usa incertidumbre observacional como peso cuando existe y regresión iterativamente reponderada para limitar la influencia de residuos extremos. La evaluación usa orígenes temporales rodantes y fechas futuras con tolerancia configurable. Informa MAE, RMSE y sesgo para ambos comparadores. Con menos de dos orígenes evaluables devuelve `insufficient_backtest_origins` y estado exploratorio.
+El estimador escalar usa incertidumbre observacional como peso cuando existe y regresión iterativamente reponderada para limitar la influencia de residuos extremos. Sirve como referencia agregada complementaria, no reemplaza el pronóstico raster. La evaluación usa orígenes temporales rodantes y fechas futuras con tolerancia configurable.
 
 Las 9–10 fechas por stack permiten diagnóstico y una tendencia preliminar. No sustentan estacionalidad anual, LSTM ni generalización continental. El número de píxeles no aumenta la cantidad de fechas independientes.
 

@@ -417,3 +417,27 @@ actualizada `docker compose up -d --build --no-deps saros api predictor` y
 finalizó correctamente: `spaceapps2-saros` y `spaceapps2-api` quedaron
 saludables. PostgreSQL mantuvo su contenedor y volumen externos; el predictor
 ONNX continúa no saludable por el checkpoint ausente descrito arriba.
+
+## Pronóstico espacial raster LOS (15 de noviembre de 2026)
+
+- Se corrigió el enfoque documental: la meta de SAROS es pronosticar mapas LOS
+  por píxel; la regresión escalar existente es solo un baseline agregado y la
+  U-Net de `ml/nisar_change` sigue siendo detector de cambio, no pronóstico.
+- Se añadió `scripts/forecast_nisar_rasters.py`, que trabaja por ventanas y
+  ajusta una tendencia Huber por píxel, genera un GeoTIFF futuro y compara en
+  cortes temporales contra persistencia. La fecha de predicción se calcula
+  desde el fin del entrenamiento más el horizonte configurado.
+- Se documentó el contrato de entrada en `scripts/README.md` y el diseño y sus
+  límites en `docs/modelo-predictivo-nisar.md`. Se corrigió en
+  `pipeline/README.md` una fórmula de fase a LOS presentada como universal: la
+  conversión y el signo requieren validación con metadatos/capas reales.
+- No se descargaron, fabricaron ni procesaron rásteres de prueba. No hay mapas
+  LOS por adquisición invertidos ni manifiesto real; por tanto, no se generó un
+  pronóstico ni se reportan métricas reales. El catálogo de Neiva conocido
+  conserva 10 fechas por stack y no alcanza seis objetivos futuros distintos
+  para certificar siquiera el cribado mínimo.
+- Verificación local: `py_compile` y `git diff --check` pasan. El CLI `--help`
+  no pudo arrancar porque el Python local carece de Rasterio y Docker Desktop
+  no tiene el daemon disponible; además, Compose requiere el `.env` privado del
+  servidor. El diff y su publicación/despliegue quedan sujetos a la revisión
+  final.

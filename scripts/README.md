@@ -225,3 +225,35 @@ los parámetros soportados en el
 Una vez actualizado el catálogo todavía hay que descargar y validar las capas
 reales, procesarlas con el mismo `processing_version` e insertar observaciones
 antes de poder ejecutar el backtest.
+
+### Baseline de pronóstico LOS por píxel
+
+`forecast_nisar_rasters.py` consume un manifiesto JSON con una fila por fecha de
+adquisición. Cada fila apunta a GeoTIFF reales de LOS en mm, máscara válida 0/1
+y, opcionalmente, incertidumbre en mm. Todos deben compartir CRS, tamaño y
+transformación afín. Los mapas deben ser desplazamientos por adquisición
+relativos a una referencia estable común, obtenidos mediante inversión temporal
+de pares; el script rechaza una serie de interferogramas sin invertir o una
+conversión de fase a LOS que no se declare validada. El manifiesto requiere
+IDs de granules NISAR L2 GUNW, colección y madurez, stack, AOI, versión de
+procesamiento, referencia estable y evidencia de la convención fase-LOS.
+
+Ejemplo de ejecución cuando exista esa serie real y un manifiesto completo:
+
+```sh
+docker compose --env-file .env -f infra/saros/docker-compose.yml --profile processing run --rm processor \
+  scripts/forecast_nisar_rasters.py \
+  --manifest pipeline/data/neiva-core/los-series.json \
+  --forecast-raster pipeline/data/neiva-core/forecast-los-mm.tif \
+  --metrics-json pipeline/data/neiva-core/forecast-backtest.json \
+  --horizon-days 24 --tolerance-days 8 --min-train-observations 5
+```
+
+El cálculo lee ventanas de hasta 256×256 píxeles y produce tendencia Huber por
+píxel, GeoTIFF futuro y MAE/RMSE/sesgo en mm frente a persistencia para fechas
+retenidas completas. `--block-size` permite reducir la memoria de trabajo. El
+estado sigue siendo exploratorio; menos de seis fechas objetivo independientes
+se informa como evidencia insuficiente, no como error bajo ni fiabilidad. El
+script no extrae capas GUNW, no resuelve la red de pares ni inventa valores.
+No se debe crear el manifiesto hasta completar y verificar esas etapas con
+capas ASF/Harmony auténticas.
