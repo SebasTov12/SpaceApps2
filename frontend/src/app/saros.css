@@ -2060,6 +2060,10 @@ html body .space-stars {
 }
 
 /* Ocultar elementos invasivos de Google Translate */
+.maplibregl-ctrl-top-right {
+  display: none !important;
+}
+
 html {
   top: 0px !important;
 }

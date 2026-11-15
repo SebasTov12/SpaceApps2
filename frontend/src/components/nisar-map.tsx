@@ -193,7 +193,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   useEffect(() => {
     let cancelled = false;
     let cleanup = () => {};
-    import("maplibre-gl").then(({ Map, Marker, NavigationControl, ScaleControl, AttributionControl, setWorkerUrl }) => {
+    import("maplibre-gl").then(({ Map, Marker, ScaleControl, AttributionControl, setWorkerUrl }) => {
       if (cancelled || !mainRef.current || !afterRef.current) return;
       // copiado por scripts/copy-maplibre-worker.mjs (predev / prebuild)
       setWorkerUrl("/maplibre-gl-worker.mjs");
@@ -210,7 +210,6 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
         return;
       }
       const after = new Map({ container: afterRef.current, ...common, interactive: false });
-      main.addControl(new NavigationControl({ showCompass: false }), "top-right");
       main.addControl(new ScaleControl({ unit: "metric" }), "bottom-right");
       main.addControl(new AttributionControl({ compact: true }), "bottom-right");
 
