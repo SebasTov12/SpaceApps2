@@ -281,9 +281,23 @@ livianos y documentación de procedencia.
   componentes y fase HH del mismo stack, además de la máscara común. La lista
   de capacidades es la oferta de la colección; no prueba que una variable esté
   presente en cada granule individual.
-- El exportador ya se desplegó y permite enumerar esas rutas. Estoy afinando su
-  manifiesto para vincular sin ambigüedad cada COG con la variable solicitada,
-  tanto si Harmony devuelve un ID de job como una respuesta directa. Todavía no
+- El exportador ya se desplegó y permite enumerar esas rutas. Su manifiesto
+  vincula cada COG con la variable solicitada tanto si Harmony devuelve un ID
+  de job como una respuesta directa. Todavía no
   se ejecutó extracción: los dos `.env` privados carecen de Earthdata Login y
   el HDF5 directo respondió 403. Sin COGs reales no hay validación de unidades,
   referencia LOS, apilado, ni métricas predictivas.
+- La salida de capacidades incluye para el producto `HH` las rutas
+  `/science/LSAR/GUNW/grids/frequencyA/unwrappedInterferogram/HH/unwrappedPhase`,
+  `.../HH/coherenceMagnitude`, `.../HH/connectedComponents` y la máscara
+  común `.../unwrappedInterferogram/mask`. Son nombres de variables observados
+  en la respuesta viva de Harmony; ASF reporta `mainBandPolarization=[HH]` para
+  el granule concreto consultado. La API de capacidades enumera la colección,
+  así que la presencia de las cuatro capas en ese granule se confirmará solo al
+  autenticar y obtener los COG.
+- Verifiqué dentro del contenedor instalado `harmony-py==1.8.0`: importan
+  `Client`, `Request` y `download_all`; las firmas aceptan `auth`, `granule_name`,
+  `variables`, `max_results` y respuesta directa o ID de job. El manifiesto del
+  exportador vincula cada COG con la variable y hash correspondiente. La API
+  está `healthy`, contiene el validador de hashes por capa y PostgreSQL sigue
+  con cero filas NISAR. No ejecuté una solicitud autenticada ni creé datos.
