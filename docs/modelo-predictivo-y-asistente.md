@@ -6,6 +6,7 @@
 - La rama temporal NISAR existente es una tendencia robusta LOS frente a persistencia, implementada en `ml/nisar_forecast/forecast.py`. El backend la ejecuta con `POST /api/v1/nisar/forecasts/run` y guarda cada ejecución en `nisar.forecast_runs` y `nisar.forecasts`, solo cuando hay observaciones reales y validadas en `nisar.observations`.
 - Las escenas y los COGs por sí solos no forman todavía esa serie. Para derivar observaciones hacen falta máscaras de calidad, coherencia, componentes conectados y una referencia estable; no se deben convertir anomalías o promedios de fase sin calibrar en milímetros LOS.
 - El 15 de noviembre de 2026 se reentrenó la rama NISAR en CUDA con PyTorch 2.6.0+cu126 en una NVIDIA GeForce RTX 3050 de 6 GB: 264.684 píxeles válidos de dos tracks, con las dos últimas observaciones por track reservadas para diagnóstico temporal. El estimador histórico utilizó 3.315 reportes UNGRD y 1.273 reportes de 2025 para evaluación fuera de tiempo. La corrida no entrenó un predictor futuro de eventos: `data/filtered/manifest.parquet` y las etiquetas expertas no existen, así que no se entrenó el U-Net ni un modelo de impacto causal.
+- La API y el asistente omiten visualmente el indicador de fallecimientos; este cambio de presentación no reentrena ni altera el artefacto del modelo. Las métricas son MAE temporal frente a un baseline global, no accuracy de clasificación.
 
 ## Asistente con Groq
 

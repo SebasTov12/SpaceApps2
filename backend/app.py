@@ -130,11 +130,16 @@ def assistant_data_context() -> dict[str, object]:
             """
         ).fetchone()
         if row:
+            historical_impacts = row[9] if isinstance(row[9], dict) else {}
             context["latest_composite_assessment"] = {
                 "model_version": row[0], "track_id": row[1], "municipality": row[2],
                 "department": row[3], "anomaly_index": row[4], "changed_fraction": row[5],
                 "historical_impact_percentile": row[6], "relative_priority_score": row[7],
-                "priority": row[8], "historical_impact_estimates": row[9],
+                "priority": row[8],
+                "historical_impact_estimates": {
+                    key: value for key, value in historical_impacts.items()
+                    if key not in {"deaths", "fatalities"}
+                },
                 "recommendation": row[10], "data_mode": row[11], "created_at": row[12].isoformat(),
             }
     return context
@@ -450,9 +455,14 @@ def create_composite_analysis():
     except (psycopg.Error, KeyError, TypeError, ValueError):
         return jsonify({"error": "analysis_persistence_failed", "hint": "Apply pipeline/sql/007_composite_model.sql first."}), 503
 
-    analysis["id"] = assessment_id
-    analysis["created_at"] = created_at.isoformat()
-    return jsonify(analysis)
+    # Keep the full internal estimate for audit, but omit fatalities in the user-facing response.
+    visible_analysis = {**analysis, "estimated_historical_impacts": {
+        key: value for key, value in analysis["estimated_historical_impacts"].items()
+        if key not in {"deaths", "fatalities"}
+    }}
+    visible_analysis["id"] = assessment_id
+    visible_analysis["created_at"] = created_at.isoformat()
+    return jsonify(visible_analysis)
 
 
 @app.post("/api/v1/assistant/chat")
@@ -489,7 +499,7 @@ def assistant_chat():
             "di que no hay uno disponible. No inventes fechas, probabilidades, daños, sectores afectados, "
             "rutas seguras ni recomendaciones oficiales. El modelo compuesto actual da priorización relativa "
             "exploratoria; sus impactos son estimaciones históricas municipales, no causalidad ni pérdidas "
-            "futuras. NISAR no predice terremotos. Para acciones urgentes remite a autoridades locales y "
+            "futuras. No muestres el indicador de fallecimientos. NISAR no predice terremotos. Para acciones urgentes remite a autoridades locales y "
             "organismos oficiales. El usuario puede pedir acciones; presenta límites y fuente de cada dato.\n\n"
             "Contexto actual de la base SAROS (JSON):\n" + json.dumps(context, ensure_ascii=False, default=str)
         ),
