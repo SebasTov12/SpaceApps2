@@ -86,7 +86,7 @@ export default function HazardPointDetail({ point, lang, onClose }: Props) {
               </>}
               <p className="zone-muted">{es ? "Pronóstico a 30/90 días: no disponible para este punto." : "30/90-day forecast: unavailable for this point."}</p>
             </> : <p className="zone-muted">{es ? "No hay una evaluación de movimiento NISAR para este punto. Un registro de emergencia no basta para calcular una anomalía ni un pronóstico." : "There is no NISAR movement assessment for this point. An emergency record alone cannot produce an anomaly result or forecast."}</p>}
-            {point.model_context && <>
+            {point.model_context ? <>
               <p className="hz-subhead">{es ? "Contexto del modelo para el municipio" : "Municipal model context"}</p>
               <p>{es ? "Estimación de afectaciones históricas basada en datos reales reportados:" : "Estimated historical impacts from reported real data:"}</p>
               <ul className="hz-model-impacts">{Object.entries(point.model_context.estimated_historical_impacts).map(([key, value]) => <li key={key}>{(impactLabels[key] ?? { es: key.replaceAll("_", " "), en: key.replaceAll("_", " ") })[lang]}: {Number(value).toLocaleString(es ? "es-CO" : "en-US", { maximumFractionDigits: 1 })} <small>({estimateScope(key)})</small></li>)}</ul>
