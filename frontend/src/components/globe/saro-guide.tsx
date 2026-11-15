@@ -5,7 +5,7 @@ import { History, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "luc
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emergencyFor } from "@/lib/emergency";
 import { recommendations } from "@/lib/insights";
-import { isAutoLang, useI18n } from "@/lib/i18n";
+import { isAutoLang, useI18n, type Lang } from "@/lib/i18n";
 import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import { loadManifest, type AttentionLevel, type SiteManifest } from "@/lib/sites";
@@ -74,6 +74,7 @@ function stepsFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "e
 const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
 
 type Mood = "happy" | "attentive" | "worried";
+type LocalizedLine = { text: string; lang: Lang };
 type SpeechRecognitionLike = {
   lang: string; interimResults: boolean; start: () => void;
   onresult: ((e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null;
@@ -258,8 +259,12 @@ export default function SaroGuide() {
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [manifest, setManifest] = useState<SiteManifest | null>(null);
   const [step, setStep] = useState(0);
-  const [aside, setAside] = useState<string | null>(null);
-  const [reply, setReply] = useState<string | null>(null);
+  const [asideValue, setAsideValue] = useState<LocalizedLine | null>(null);
+  const [replyValue, setReplyValue] = useState<LocalizedLine | null>(null);
+  const aside = asideValue?.lang === lang ? asideValue.text : null;
+  const reply = replyValue?.lang === lang ? replyValue.text : null;
+  const setAside = useCallback((text: string | null) => setAsideValue(text === null ? null : { text, lang }), [lang]);
+  const setReply = useCallback((text: string | null) => setReplyValue(text === null ? null : { text, lang }), [lang]);
   const [prog, setProg] = useState({ text: "", n: 0 });
   // El primer HTML debe coincidir en servidor y navegador; activa escritura tras hidratar.
   const [hydrated, setHydrated] = useState(false);
@@ -382,7 +387,7 @@ export default function SaroGuide() {
       window.removeEventListener(GLOBE_SELECT, onSelect);
       window.removeEventListener(SECTOR_EVENT, onSector);
     };
-  }, [lang]);
+  }, [lang, setAside, setReply]);
 
   // mientras narra: el mapa señala lo que nombra y el panel resalta la parte de la que habla
   useEffect(() => {
@@ -475,6 +480,9 @@ export default function SaroGuide() {
         const ready = translatedOf(t);
         if (!ready && Date.now() - started < 4000) { window.setTimeout(read, 250); return; }
         const said = ready ?? t;
+        // Comparte con el subtítulo la misma traducción que encontró la voz. Así no
+        // puede ocurrir que Saru hable traducido mientras el texto conserve el original.
+        if (ready) setTranslated((map) => map[t] === ready ? map : { ...map, [t]: ready });
         if (!voiceFor) {
           // sin voz para ese idioma: no se lee en otro idioma; se da tiempo de lectura y sigue
           setSpeaking(true);
@@ -493,7 +501,7 @@ export default function SaroGuide() {
   const advance = useCallback(() => {
     if (aside) { setAside(null); return; }           // tras reaccionar a un sector, sigue el recorrido
     setStep((s) => (s < lines.length - 1 ? s + 1 : s));
-  }, [aside, lines.length]);
+  }, [aside, lines.length, setAside]);
   const autoNext = playing && !chatOpen && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
   useEffect(() => {
     if (away || minimized || thinking || (chatOpen && !reply) || (!playing && !reply && !aside)) { stopAll(); return; }   // fuera, en pausa o pensando: calla
@@ -565,7 +573,7 @@ export default function SaroGuide() {
     setThinking(false);
     setReply(text);
     setHistory((list) => [...list, { from: "saro" as const, text }].slice(-12));
-  }, [role, thinking, es]);
+  }, [role, thinking, es, setAside, setReply]);
   const listen = () => {
     const W = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike };
     const Rec = W.SpeechRecognition ?? W.webkitSpeechRecognition;

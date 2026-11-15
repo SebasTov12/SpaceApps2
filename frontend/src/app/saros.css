@@ -3237,11 +3237,10 @@ html body .hz-line{font-size:12px;color:#c3cbe8}
 html body .hz-line b{color:#fff}
 html body .hz-impact{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11.5px;color:#ffb4b4}
 html body .hz-src{font-size:10.5px;color:#8f9bc0}
-html body .hz-legend{position:absolute;right:22px;top:calc(50% + 96px);z-index:7;display:grid;grid-template-columns:auto 1fr;gap:2px 9px;align-items:center;min-width:196px;padding:10px 13px;border-radius:16px;
+html body .hz-legend{position:absolute;right:22px;bottom:56px;top:auto;z-index:7;display:grid;grid-template-columns:1fr;gap:2px 9px;align-items:center;min-width:196px;padding:10px 13px;border-radius:16px;
   background:rgba(9,13,30,.72);border:1px solid rgba(104,25,147,.55);backdrop-filter:blur(12px);font-size:12px;color:#cfd8f0;opacity:0;transform:translateX(28px);transition:opacity .45s ease .55s,transform .55s cubic-bezier(.22,1,.36,1) .55s;pointer-events:none}
 html body .hero-overlay.ui-shown .hz-legend{opacity:1;transform:none;pointer-events:auto}
-html body .hz-legend i{grid-row:span 2;width:10px;height:10px;border-radius:50%;background:conic-gradient(#e8b36b 0 40%,#5aa8ff 0 70%,#ff7a3d 0 85%,#c084fc 0);box-shadow:0 0 10px rgba(232,179,107,.7)}
-html body .hz-legend b{color:#fff}
+html body .hz-legend b{background:linear-gradient(100deg,#12c9ef,#7625c9 68%,#bd27c2);-webkit-background-clip:text;background-clip:text;color:transparent}
 html body .hz-legend small{font-size:10px;color:#8f9bc0}
 @media(max-width:720px){html body .hz-legend{display:none}}
 
