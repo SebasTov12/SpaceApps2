@@ -163,61 +163,21 @@ function scriptFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "
   const es = lang === "es";
   if (!zone) {
     return es
-      ? ["¡Hola! Soy Saru, el explorador de SAROS. Vigilo la Tierra con el radar de NISAR.",
-         "Toca un punto del planeta, o búscalo con la lupa, y te cuento qué está pasando allí.",
-         "Arriba puedes cambiar a «Vigilancia ambiental» para ver minería y tala."]
-      : ["Hi! I'm Saru, SAROS's explorer. I watch the Earth with NISAR's radar.",
-         "Tap a point on the planet, or search it, and I'll tell you what's happening there.",
-         "Switch to «Environmental watch» at the top to see mining and logging."];
+      ? ["👋 Soy Saru. Toca un punto para ver sus datos y el análisis disponible."]
+      : ["👋 I'm Saru. Tap a point to see its data and available analysis."];
   }
   const name = zone.name[lang];
   const a = m?.assessment;
-  const x = m?.extraction;
-  const lines: string[] = [];
-  const level = a?.level;
-  lines.push(level === "alta"
-    ? (es ? `Ojo con esta zona: ${name} está en atención alta.` : `Careful here: ${name} is at high attention.`)
-    : level === "moderada"
-      ? (es ? `${name} está en atención moderada: vale la pena seguirla de cerca.` : `${name} is at moderate attention: worth following closely.`)
-      : (es ? `Te muestro ${name}.` : `Here is ${name}.`));
-  if (a && m) {
-    if (x?.kind === "mining") {
-      lines.push(es ? `Veo ${x.pits} piscinas nuevas junto al río y ${x.recentHa} hectáreas intervenidas en 30 días.` : `I see ${x.pits} new ponds by the river and ${x.recentHa} hectares disturbed in 30 days.`);
-      lines.push(es ? "No sé quién lo hizo ni si es legal: por eso lo marco como cambio sospechoso para que se verifique en campo." : "I don't know who did it or whether it's legal: that's why I flag it as a suspicious change for field checks.");
-    } else if (x) {
-      lines.push(es ? `Aquí se perdieron ${x.recentHa} hectáreas de bosque en el último mes. El radar lo ve aunque haya nubes.` : `${x.recentHa} hectares of forest were lost here last month. Radar sees it even through clouds.`);
-    } else if (m.change === "deformation") {
-      const dir = a.rate.recent < 0 ? (es ? "baja" : "drops") : (es ? "sube" : "rises");
-      lines.push(es
-        ? `El suelo ${dir} unos ${fmt(a.rate.recent)} ${a.rate.unit}${a.accelerating ? ", y cada vez más rápido" : ""}. Si sigue así, en 90 días serían ${fmt(a.projection.d90, 0)} ${a.projection.unit}.`
-        : `The ground ${dir} about ${fmt(a.rate.recent)} ${a.rate.unitEn}${a.accelerating ? ", and faster each time" : ""}. If it continues, that's ${fmt(a.projection.d90, 0)} ${a.projection.unit} in 90 days.`);
-    } else {
-      lines.push(es ? `El cambio avanza unos ${fmt(a.rate.recent)} ${a.rate.unit}.` : `The change advances about ${fmt(a.rate.recent)} ${a.rate.unitEn}.`);
-    }
-    if (a.hotspots.length) lines.push(es ? `Marqué ${a.hotspots.length} puntos en el mapa: ahí el cambio reciente es más rápido.` : `I marked ${a.hotspots.length} points on the map: recent change is fastest there.`);
-  } else if (!zone.siteId) {
-    lines.push(es ? "Aún no tengo capas de radar procesadas aquí, pero te muestro la imagen satelital del lugar." : "I don't have processed radar layers here yet, but here's the satellite image.");
-  }
-  const impacts = sectorImpacts(zone.id, zone.kind).filter((s) => s.exposure === "high").slice(0, 2);
-  if (impacts.length) {
-    const names = impacts.map((s) => sectorNames[s.sector][lang].toLowerCase()).join(es ? " y " : " and ");
-    lines.push(es ? `Lo más expuesto: ${names}. Toca una ficha y te digo cómo reforzarla.` : `Most exposed: ${names}. Tap a card and I'll tell you how to reinforce it.`);
-  }
-  const advice = recommendations(zone.kind, level ?? "baja", zone.country === "CO", lang);
-  if (advice[0]) lines.push(es ? `Si vives cerca: ${advice[0].charAt(0).toLowerCase()}${advice[0].slice(1)}` : `If you live nearby: ${advice[0].charAt(0).toLowerCase()}${advice[0].slice(1)}`);
-  if (zone.country === "CO") lines.push(es ? "Y si ves una emergencia, llama al 123. Yo te ayudo a entender; las alertas oficiales son de UNGRD, SGC e IDEAM." : "And in an emergency, dial 123. I help you understand; official alerts come from UNGRD, SGC and IDEAM.");
-  else {
-    // fuera de Colombia: el número de ese país y de esa amenaza
-    const sos = emergencyFor(zone, lang);
-    if (sos?.callable) {
-      const what = sos.first.label[lang];
-      const who = sos.agencies.replace(/ · /g, ", ");
-      lines.push(es
-        ? `Y si ves una emergencia en ${sos.countryName}, llama al ${sos.first.n}: ${what}. Las alertas oficiales son de ${who}.`
-        : `And in an emergency in ${sos.countryName}, dial ${sos.first.n}: ${what}. Official alerts come from ${who}.`);
-    }
-  }
-  return lines;
+  if (m?.source.mode === "demo") return [es
+    ? `📍 ${name}: esta capa es DEMO y no mide movimiento real. Abre la ficha para ver fuentes y límites.`
+    : `📍 ${name}: this layer is DEMO and does not measure real movement. Open its details for sources and limits.`];
+  if (a && m) return [es
+    ? `📡 ${name}: la serie muestra ${fmt(a.rate.recent)} ${a.rate.unit}; es una medición de la capa, no un pronóstico.`
+    : `📡 ${name}: the series shows ${fmt(a.rate.recent)} ${a.rate.unitEn}; this is a layer measurement, not a forecast.`,
+  es ? "🤖 Revisa Análisis para ver si SAROS tiene una evaluación guardada." : "🤖 Check Analysis for a saved SAROS assessment."];
+  return [es
+    ? `📍 ${name}: aún no hay una escena NISAR procesada ni una evaluación del modelo para mostrar.`
+    : `📍 ${name}: no processed NISAR scene or model assessment is available yet.`];
 }
 
 /** Frase de reacción al abrir la ficha de un sector. */

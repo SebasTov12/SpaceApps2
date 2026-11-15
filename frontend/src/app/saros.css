@@ -859,6 +859,25 @@ html body .earth-stage[data-zoomed="true"] .earth-orbit {
   scrollbar-width: thin
 }
 
+.hz-point-panel{z-index:22;display:flex;flex-direction:column;gap:12px}
+.hz-point-panel .zone-title{margin-top:2px}
+.hz-point-panel .zone-tabs{margin-top:0;flex:none}
+.hz-point-panel .hz-point-content{min-height:0;overflow:visible}
+.hz-point-panel .hz-point-content .zs-card{margin-top:12px}
+.hz-point-panel .zone-source{margin-top:auto;padding-top:10px;flex-wrap:wrap;gap:8px;border-top:1px solid rgba(163,190,202,.12)}
+.hz-impact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.hz-impact-grid span{padding:10px;border-radius:10px;background:rgba(255,255,255,.035);color:#d9def2;font-size:12px;line-height:1.45}
+.hz-event-list{display:grid;gap:9px;margin:0;padding:0;list-style:none}
+.hz-event-list li{display:grid;gap:3px;padding:10px 12px;border-left:2px solid #38bdf8;border-radius:0 10px 10px 0;background:rgba(255,255,255,.035);font-size:12px;color:#d9def2}
+.hz-event-list li b{color:#9bdcf5;font-size:11px}
+.hz-event-list li small,.hz-subhead{color:#9aa6c6;font-size:11px}
+.hz-model-priority{display:inline-flex;padding:6px 9px;border:1px solid rgba(232,179,107,.28);border-radius:999px;background:rgba(232,179,107,.08);color:#f3c77d;font-size:12px;font-weight:700}
+.hz-model-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.hz-model-metrics div{padding:9px;border-radius:10px;background:rgba(255,255,255,.035)}
+.hz-model-metrics dt{color:#9aa6c6;font-size:10px}
+.hz-model-metrics dd{margin:4px 0 0;color:#f4f1ff;font-size:12px;font-weight:700;overflow-wrap:anywhere}
+.hz-model-impacts{display:grid;gap:4px;margin:4px 0 10px;padding-left:18px;color:#d9def2;font-size:12px}
+
 .zone-head {
   display: flex;
   align-items: center;
@@ -1675,6 +1694,7 @@ html body .zone-panel {
     border-radius: 22px 22px 0 0;
     padding-top: 10px
   }
+  html body .hz-point-panel{max-height:76vh;bottom:0;padding:12px 16px 18px}
 
   .zone-grab {
     display: block;
@@ -3243,3 +3263,22 @@ html body .hero-overlay.ui-shown .hz-legend{opacity:1;transform:none;pointer-eve
 html body .hz-legend b{background:linear-gradient(100deg,#12c9ef,#7625c9 68%,#bd27c2);-webkit-background-clip:text;background-clip:text;color:transparent}
 html body .hz-legend small{font-size:10px;color:#8f9bc0}
 @media(max-width:720px){html body .hz-legend{display:none}}
+
+/* ---------- Vista de países ---------- */
+html body .cy-pin{transform:translateY(-34px);display:grid;justify-items:center;gap:1px;padding:5px 10px;border-radius:12px;background:rgba(8,12,28,.78);border:1px solid rgba(94,240,255,.45);
+  white-space:nowrap;color:#e8ecff;font-family:var(--font-inter),Inter,sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.4);transition:opacity .35s ease;backdrop-filter:blur(8px)}
+html body .cy-pin strong{font-size:12.5px;font-weight:700}
+html body .cy-pin span{font-size:10.5px;color:#9fdcf0}
+html body .cy-panel{position:absolute;left:22px;top:96px;z-index:8;width:min(320px,calc(100vw - 44px));display:grid;gap:8px;padding:14px 16px;border-radius:18px;
+  background:rgba(9,13,30,.82);border:1px solid rgba(104,25,147,.55);backdrop-filter:blur(14px);box-shadow:0 18px 40px rgba(0,0,0,.4);color:#e8ecff;pointer-events:auto}
+html body .cy-back{justify-self:start;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid rgba(94,240,255,.4);background:rgba(94,240,255,.08);color:#bdf6ff;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s}
+html body .cy-back:hover{background:rgba(94,240,255,.18)}
+html body .cy-name{font-family:var(--font-orbitron),Orbitron,sans-serif;font-size:22px;letter-spacing:.04em}
+html body .cy-total{font-size:13px;color:#c3cbe8}
+html body .cy-total b{color:#fff}
+html body .cy-kinds{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+html body .cy-kinds li{display:flex;align-items:center;gap:8px;font-size:12px;color:#c3cbe8}
+html body .cy-kinds li i{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+html body .cy-kinds li b{margin-left:auto;color:#fff;font-variant-numeric:tabular-nums}
+html body .cy-hint{display:flex;gap:6px;align-items:flex-start;font-size:11px;color:#8f9bc0;line-height:1.35}
+@media(max-width:720px){html body .cy-panel{top:auto;bottom:150px;left:10px;width:calc(100vw - 20px)}html body .cy-kinds{grid-template-columns:1fr 1fr}}

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useTransform } from "framer-motion";
-import { Globe2, Leaf, Search, TriangleAlert, X } from "lucide-react";
+import { ArrowLeft, Globe2, Leaf, MousePointerClick, Search, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MotionValue } from "framer-motion";
 import { levelInfo } from "@/lib/insights";
@@ -10,7 +10,9 @@ import { riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-z
 import { loadSites, type SiteSummary } from "@/lib/sites";
 import LanguageModal from "@/components/language-modal";
 import { HAZARDS_EVENT, type HazardPoints } from "@/lib/hazard-points";
-import { focusZone, globeState, UI_REVEAL } from "./globe-state";
+import { COUNTRY_EVENT, closeCountry, focusZone, globeState, UI_REVEAL } from "./globe-state";
+import { countryName, countryOf } from "@/lib/emergency";
+import { hazardKind, pointCountry } from "@/lib/hazard-points";
 
 const copy = {
   es: {
@@ -36,6 +38,27 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
   const [shown, setShown] = useState(false);
   // resumen de los registros reales de la base que se dibujan en el planeta
   const [hazards, setHazards] = useState<HazardPoints | null>(null);
+  // país abierto en el planeta (un solo punto por país; al abrirlo, sus puntos)
+  const [country, setCountry] = useState<string | null>(null);
+  useEffect(() => {
+    const onCountry = (event: Event) => setCountry((event as CustomEvent<string | null>).detail);
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && globeState.country && !globeState.selected) closeCountry(); };
+    window.addEventListener(COUNTRY_EVENT, onCountry);
+    window.addEventListener("keydown", onKey);
+    return () => { window.removeEventListener(COUNTRY_EVENT, onCountry); window.removeEventListener("keydown", onKey); };
+  }, []);
+  const countryStats = useMemo(() => {
+    if (!country) return null;
+    const kinds = new Map<string, number>();
+    let records = 0;
+    for (const p of hazards?.points ?? []) {
+      if (pointCountry(p) !== country) continue;
+      records += p.n;
+      kinds.set(p.kind, (kinds.get(p.kind) ?? 0) + p.n);
+    }
+    const zones = riskZones.filter((z) => countryOf(z) === country).length;
+    return { records, zones, kinds: Array.from(kinds.entries()).sort((a, b) => b[1] - a[1]) };
+  }, [country, hazards]);
   useEffect(() => {
     const onData = (event: Event) => setHazards((event as CustomEvent<HazardPoints>).detail);
     window.addEventListener(HAZARDS_EVENT, onData);
@@ -106,12 +129,37 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
           </button>
         ))}
       </div>
-      {hazards && hazards.located > 0 && (
+      {hazards && hazards.located > 0 && !country && (
         <div className="hz-legend" title={hazards.note}>
           <span><b>{hazards.located.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</b> {lang === "es" ? "Registros totales" : "Total records"}</span>
-          <small>{lang === "es" ? "Emergencias e inventarios · UNGRD · SGC" : "Emergencies & inventories · UNGRD · SGC"}</small>
+          <small>{lang === "es" ? "Toca un país para verlos · UNGRD · SGC" : "Tap a country to see them · UNGRD · SGC"}</small>
         </div>
       )}
+      <AnimatePresence>
+        {country && countryStats && (
+          <motion.div key={country} className="cy-panel" initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
+            <button type="button" className="cy-back" onClick={closeCountry}>
+              <ArrowLeft size={15} /> {lang === "es" ? "Volver al planeta" : "Back to the planet"}
+            </button>
+            <strong className="cy-name">{countryName(country, lang === "es" ? "es" : "en")}</strong>
+            <span className="cy-total">
+              {countryStats.records > 0 && <><b>{countryStats.records.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</b> {lang === "es" ? "registros reales" : "real records"}</>}
+              {countryStats.records > 0 && countryStats.zones > 0 && " · "}
+              {countryStats.zones > 0 && <><b>{countryStats.zones}</b> {lang === "es" ? (countryStats.zones === 1 ? "zona vigilada" : "zonas vigiladas") : (countryStats.zones === 1 ? "watched zone" : "watched zones")}</>}
+            </span>
+            {countryStats.kinds.length > 0 && (
+              <ul className="cy-kinds">
+                {countryStats.kinds.slice(0, 7).map(([kind, n]) => (
+                  <li key={kind} style={{ "--c": hazardKind(kind).color } as React.CSSProperties}>
+                    <i />{hazardKind(kind)[lang === "es" ? "es" : "en"]}<b>{n.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</b>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <small className="cy-hint"><MousePointerClick size={13} /> {lang === "es" ? "Pasa o toca un punto para ver su detalle; toca una zona para abrirla." : "Hover or tap a point for details; tap a zone to open it."}</small>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <motion.button
         type="button"
         className="hero-search-btn"

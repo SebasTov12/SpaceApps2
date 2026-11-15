@@ -38,6 +38,10 @@ export const globeState = {
   uiRevealed: false,
   /** Qué se ve en el planeta: todo, solo amenazas o solo vigilancia ambiental (tala y minería). */
   mode: "all" as "all" | "risk" | "watch",
+  /** País abierto (código ISO-2): el planeta se acerca y muestra dentro todos sus puntos. null = vista de países. */
+  country: null as string | null,
+  /** Acercamiento de la cámara a un país (0 = planeta completo, 1 = país en primer plano). */
+  countryZoom: 0,
   /** Zona a la que el usuario pidió llevar el planeta. */
   focus: null as string | null,
   /** Acercamiento de la cámara a una zona: 0 = vista general, 1 = zona abierta. */
@@ -61,6 +65,23 @@ export const GLOBE_RECON = "saros:recon";
 export const GLOBE_SELECT = "saros:zone-select";
 /** Pedir que se abra un sitio con datos (lo usan el cintillo y otros componentes). */
 export const SITE_EVENT = "saros:site";
+
+/** Se abrió o cerró un país (detail: código ISO-2 o null). */
+export const COUNTRY_EVENT = "saros:country";
+
+/** Acerca el planeta a un país y muestra todos sus puntos. */
+export function openCountry(code: string) {
+  globeState.country = code;
+  globeState.countryZoom = 1;
+  window.dispatchEvent(new CustomEvent(COUNTRY_EVENT, { detail: code }));
+}
+
+/** Vuelve a la vista de países. */
+export function closeCountry() {
+  globeState.country = null;
+  globeState.countryZoom = 0;
+  window.dispatchEvent(new CustomEvent(COUNTRY_EVENT, { detail: null }));
+}
 
 /** Aviso de que la interfaz del planeta se mostró u ocultó (detail: boolean). */
 export const UI_REVEAL = "saros:ui-reveal";

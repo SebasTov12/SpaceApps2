@@ -4,6 +4,7 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdditiveBlending, Color, DoubleSide, Vector3, type Group, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial, type ShaderMaterial } from "three";
 import { riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
+import { countryOf } from "@/lib/emergency";
 import { GLOBE_SELECT, RELIEF, focusZone, globeState } from "./globe-state";
 
 /** Posición en la esfera de three.js (SphereGeometry con textura equirectangular). */
@@ -113,7 +114,9 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
       revealAt.current = null; // al volver a mostrarse, entra otra vez con su animación
       return;
     }
-    if (!globeState.revealed.has(zone.id) || !facingCamera.current || !inMode) {
+    // en la vista de países las zonas se agrupan en el punto de su país; se ven al abrirlo (o si están abiertas)
+    const inCountry = globeState.selected === zone.id || (globeState.country !== null && countryOf(zone) === globeState.country);
+    if (!globeState.revealed.has(zone.id) || !facingCamera.current || !inMode || !inCountry) {
       node.visible = false;
       return;
     }

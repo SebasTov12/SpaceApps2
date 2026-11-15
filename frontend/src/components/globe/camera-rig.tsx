@@ -8,6 +8,7 @@ import { globeState } from "./globe-state";
 const FAR = 3.5;   // posición original de la cámara (earth-globe)
 const NEAR = 2.2;  // acercamiento al abrir una zona
 const DIVE = 1.22; // zambullida final hacia la superficie, justo antes de pasar al mapa
+const COUNTRY = 1.68; // acercamiento a un país (vista de sus puntos)
 
 const smooth = (x: number) => x * x * (3 - 2 * x);
 
@@ -25,6 +26,7 @@ function mapCenter() {
 export default function CameraRig() {
   const zoom = useRef(0);
   const dive = useRef(0);
+  const country = useRef(0);
   const offset = useRef({ x: 0, y: 0 });
   const tmp = useMemo(() => new Vector3(), []);
   useFrame(({ camera, gl }, delta) => {
@@ -34,8 +36,11 @@ export default function CameraRig() {
     // la zambullida acelera al final (como una caída), al salir vuelve más despacio
     const diveRate = globeState.dive > dive.current ? 2.4 : 3.2;
     dive.current += (globeState.dive - dive.current) * (1 - Math.exp(-step * diveRate));
+    country.current += (globeState.countryZoom - country.current) * (1 - Math.exp(-step * 2.2));
     const near = NEAR + (DIVE - NEAR) * smooth(Math.min(1, dive.current));
-    camera.position.z = FAR + (near - FAR) * smooth(Math.min(1, zoom.current));
+    // con un país abierto la cámara parte más cerca; al abrir una zona sigue acercándose desde ahí
+    const far = FAR + (COUNTRY - FAR) * smooth(Math.min(1, country.current));
+    camera.position.z = far + (Math.min(near, far) - far) * smooth(Math.min(1, zoom.current));
     camera.lookAt(0, 0, 0);
 
     // seguir la zona: llevarla al centro del área del mapa
