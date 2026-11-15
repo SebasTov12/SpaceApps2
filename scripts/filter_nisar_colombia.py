@@ -93,8 +93,6 @@ def search_query(args: argparse.Namespace) -> dict[str, Any]:
     end = os.getenv("NISAR_END_DATE", "").strip()
     if short_name:
         query["shortName"] = short_name
-    if maturity:
-        query["dataMaturity"] = maturity
     if start:
         query["start"] = start
     if end:
