@@ -425,7 +425,7 @@ export default function ZoneView() {
             </header>
             <h2 className="zone-title">{zone.name[lang]}</h2>
             <p className="zone-place"><MapPin size={13} /> {zone.place[lang]} · {formatCoord(zone.lat, zone.lon)}</p>
-            <TerritorialImpact key={zone.id} zoneId={zone.id} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
+            <TerritorialImpact key={zone.id} zoneId={zone.id} lat={zone.lat} lon={zone.lon} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
             <div className="zone-level" data-tour="level" style={{ "--level": levelInfo[level].color } as React.CSSProperties}>
               <i />{levelInfo[level].label[lang]}
               {assessment?.accelerating && <b><AlertTriangle size={12} /> {c.accel}</b>}

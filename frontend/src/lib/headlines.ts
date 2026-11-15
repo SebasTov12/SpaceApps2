@@ -42,7 +42,7 @@ async function fromApi(): Promise<Headline[] | null> {
     const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/headlines`, { cache: "no-store" });
     if (!response.ok) return null;
     const data = (await response.json()) as { headlines?: Headline[] };
-    return data.headlines?.length ? data.headlines : null;
+    return Array.isArray(data.headlines) ? data.headlines : null;
   } catch {
     return null;
   }
@@ -168,6 +168,8 @@ async function fromStaticData(): Promise<Headline[]> {
 
 let cached: Promise<Headline[]> | null = null;
 export function loadHeadlines() {
-  cached ??= fromApi().then((api) => api ?? fromStaticData());
+  cached ??= process.env.NEXT_PUBLIC_SAROS_API
+    ? fromApi().then((api) => api ?? [])
+    : fromStaticData();
   return cached;
 }

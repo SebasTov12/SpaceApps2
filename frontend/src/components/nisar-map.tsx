@@ -5,6 +5,7 @@ import type { ImageSource, Map as MapLibreMap, Marker, StyleSpecification } from
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useI18n } from "@/lib/i18n";
 import type { Bbox } from "@/lib/sites";
+import type { LiveInput } from "@/components/live/live-data";
 
 export type MapMode = "single" | "swipe" | "change";
 /** Ajustes de cámara y relieve; las edificaciones se obtienen por ubicación. */
@@ -42,6 +43,8 @@ type NisarMapProps = {
   annotate?: { nonce: number; points: { lat: number; lon: number; label: string; sub?: string }[]; active?: number } | null;
   /** Posición del deslizador antes/después controlada desde fuera (0–100). */
   splitValue?: number;
+  /** «Zona viva»: escena 3D con lo medido por NISAR sobre el relieve (solo en la vista 3D). */
+  live?: LiveInput | null;
   /** Margen del encuadre (p. ej. para dejar libre el panel lateral). */
   padding?: { top: number; right: number; bottom: number; left: number };
 };
@@ -133,7 +136,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
   aoi?.setData?.(outline(bbox));
 }
 
-export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE, annotate = null, onZoomOut }: NisarMapProps) {
+export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE, annotate = null, onZoomOut, live = null }: NisarMapProps) {
   const { t, lang } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
@@ -328,6 +331,23 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   }, [ready, reveal, bbox, recenterKey]);
 
   // Vista 3D: relieve y edificios cartografiados en la ubicación, sin depender del tipo de riesgo.
+  // «Zona viva»: la escena three.js entra con el relieve 3D y sale al volver al mapa plano
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !terrain || !live) return;
+    let cancelled = false;
+    let added = false;
+    Promise.all([import("maplibre-gl"), import("@/components/live/live-scene")]).then(([lib, scene]) => {
+      if (cancelled || !mapRef.current || map.getLayer("live-scene")) return;
+      map.addLayer(scene.createLiveLayer(map, lib.MercatorCoordinate as never, live));
+      added = true;
+    }).catch(() => undefined);
+    return () => {
+      cancelled = true;
+      if (added && map.getLayer("live-scene")) map.removeLayer("live-scene");
+    };
+  }, [ready, terrain, live]);
+
   const terrainOn = useRef(false);
   useEffect(() => {
     const map = mapRef.current;
