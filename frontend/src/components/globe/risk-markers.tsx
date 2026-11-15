@@ -109,55 +109,59 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     const featured = globeState.featured === zone.id;
     const emphasis = (hover ? 1.35 : 1) * (selected || featured ? 1.25 : 1);
 
-    // 1. Detección en tiempo real por el satélite NISAR (proximidad y pasada directa)
+    // 1. Detección en tiempo real por el satélite NISAR (proximidad y pasada suave)
     const prox = globeState.radarProximity.get(zone.id) ?? 0;
     const flashAt = globeState.flashes.get(zone.id) ?? -99;
-    const f = (t - flashAt) / 2.2;
+    const f = (t - flashAt) / 3.0;
     const flashing = f >= 0 && f < 1;
-    const flashBoost = flashing ? Math.sin(f * Math.PI) * 2.2 : 0;
-    const detectorGlow = prox * 1.35 + flashBoost;
+    // Curva senoidal armónica (sin picos bruscos que produzcan parpadeo)
+    const flashBoost = flashing ? Math.sin(f * Math.PI) : 0;
+    const detectorGlow = Math.min(1.2, prox * 0.75 + flashBoost * 0.7);
 
-    // Escala general y pulso
-    node.scale.setScalar(Math.max(0.001, easeOutBack(appear)) * emphasis * (1 + detectorGlow * 0.12));
+    // Escala general sutil y sin parpadeo
+    node.scale.setScalar(Math.max(0.001, easeOutBack(appear)) * emphasis * (1 + detectorGlow * 0.05));
 
     // Iluminación reactiva del orbe 3D y su anillo holográfico
-    const baseEmissive = selected ? 1.8 : hover ? 1.4 : 0.65;
-    const emissiveIntensity = baseEmissive + detectorGlow * 1.4;
+    const baseEmissive = selected ? 1.6 : hover ? 1.3 : 0.7;
+    const emissiveIntensity = baseEmissive + detectorGlow * 0.55;
     if (orbMaterial.current) orbMaterial.current.emissiveIntensity = emissiveIntensity;
     if (ringMaterial.current) ringMaterial.current.emissiveIntensity = emissiveIntensity * 0.95;
 
     // Halo atmosférico alrededor de la esfera
     if (haloMesh.current) {
-      (haloMesh.current.material as MeshBasicMaterial).opacity = 0.2 + detectorGlow * 0.35 + (hover || selected ? 0.3 : 0);
+      (haloMesh.current.material as MeshBasicMaterial).opacity = 0.2 + detectorGlow * 0.18 + (hover || selected ? 0.25 : 0);
     }
 
-    // Rotación orbital del anillo holográfico alrededor de la esfera (más viva al ser detectado)
+    // Rotación orbital del anillo holográfico alrededor de la esfera (aceleración sutil)
     if (ringGroup.current) {
-      ringGroup.current.rotation.z += delta * (0.85 + detectorGlow * 1.8);
-      ringGroup.current.rotation.x = 0.42 + Math.sin(t * 1.8 + index) * 0.12;
+      ringGroup.current.rotation.z += delta * (0.65 + detectorGlow * 0.35);
+      ringGroup.current.rotation.x = 0.42 + Math.sin(t * 1.5 + index) * 0.1;
     }
 
-    // Columna de luz: se estira y resplandece al recibir el detector del satélite
+    // Columna de luz: se estira y resplandece suavemente al recibir el detector del satélite
     if (pillar.current) {
-      pillar.current.scale.set(1, 1, Math.max(0.001, appear * (1 + flashBoost * 0.8 + prox * 0.35 + (selected ? 0.25 : 0))));
+      pillar.current.scale.set(1, 1, Math.max(0.001, appear * (1 + detectorGlow * 0.22 + (selected ? 0.2 : 0))));
     }
     if (pillarMaterial.current) {
-      pillarMaterial.current.uniforms.uOpacity.value = 0.52 + flashBoost * 0.5 + prox * 0.4 + (selected ? 0.25 : 0);
+      pillarMaterial.current.uniforms.uOpacity.value = 0.45 + detectorGlow * 0.28 + (selected ? 0.2 : 0);
     }
 
-    // Pulso constante en la superficie
+    // Pulso constante y sereno en la superficie: velocidad constante para evitar saltos o parpadeos bruscos
     if (pulse.current) {
-      const p = (t * (0.45 + detectorGlow * 0.4) + index * 0.137) % 1;
-      pulse.current.scale.setScalar(1 + p * 2.8);
-      (pulse.current.material as MeshBasicMaterial).opacity = (0.35 + detectorGlow * 0.45) * (1 - p) * appear;
+      const p = (t * 0.38 + index * 0.18) % 1;
+      pulse.current.scale.setScalar(1 + p * 1.8);
+      // Desvanecimiento suave en campana: aparece y desaparece sin cortes
+      const fade = Math.sin(p * Math.PI);
+      (pulse.current.material as MeshBasicMaterial).opacity = (0.2 + detectorGlow * 0.22) * fade * appear;
     }
 
-    // Onda de choque expansiva cuando el satélite detecta directamente el punto
+    // Onda de choque sutil y difusa cuando el satélite detecta directamente el punto
     if (burst.current) {
       burst.current.visible = flashing;
       if (flashing) {
-        burst.current.scale.setScalar(1 + f * 5.2);
-        (burst.current.material as MeshBasicMaterial).opacity = 0.68 * (1 - f) ** 2;
+        burst.current.scale.setScalar(1 + f * 2.6);
+        const burstFade = Math.sin(f * Math.PI);
+        (burst.current.material as MeshBasicMaterial).opacity = 0.32 * burstFade * (1 - f * 0.5);
       }
     }
     if (base.current) (base.current.material as MeshBasicMaterial).opacity = selected || hover ? 0.95 : 0.65;

@@ -51,9 +51,15 @@ export default function EarthHero() {
         </motion.div>
         <div className="space-dust" aria-hidden="true" />
         <SpaceDepth />
-        {!sceneReady && <div className="scene-prelude" role="status"><span>SAROS</span><i aria-hidden="true" /><small>Preparando la Tierra 3D</small></div>}
-        {/* Logotipo SAROS detrás del planeta */}
-        <SarosWordmark progress={progress} departure={departure} />
+        {!sceneReady && (
+          <div className="scene-prelude" role="status">
+            <div className="scene-loader-orb" aria-hidden="true" />
+            <i aria-hidden="true" />
+            <small>Preparando la Tierra 3D</small>
+          </div>
+        )}
+        {/* Logotipo SAROS detrás del planeta: aparece exactamente junto con el planeta al estar cargado */}
+        <SarosWordmark progress={progress} departure={departure} ready={sceneReady} />
         <motion.div className="earth-orbit" style={{ y, scale, rotate, opacity }}>
           <OrbitRings />
           <div className="earth-premiere"><EarthGlobe progress={progress} playing={playing} onReady={revealScene} /></div>

@@ -590,11 +590,13 @@ html body .review-card {
   animation: none
 }
 
+.earth-stage[data-scene-ready="false"] .hero-wordmark,
 .earth-stage[data-scene-ready="false"] .wordmark-premiere,
 .earth-stage[data-scene-ready="false"] .wordmark-title span,
 .earth-stage[data-scene-ready="false"] .wordmark-horizon {
   animation: none;
-  opacity: 0
+  opacity: 0 !important;
+  visibility: hidden !important
 }
 
 .earth-stage[data-scene-ready="false"] .saros-chrome,
@@ -610,9 +612,26 @@ html body .review-card {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 16px;
   pointer-events: none;
   color: #b8cedf
+}
+
+.scene-loader-orb {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(104, 25, 147, .25);
+  border-top-color: #c084fc;
+  border-right-color: #00d4ff;
+  box-shadow: 0 0 24px rgba(104, 25, 147, .45), 0 0 12px rgba(0, 212, 255, .3);
+  animation: scene-orb-spin 1.2s cubic-bezier(.5, 0, .5, 1) infinite
+}
+
+@keyframes scene-orb-spin {
+  to {
+    transform: rotate(360deg)
+  }
 }
 
 .scene-prelude span {

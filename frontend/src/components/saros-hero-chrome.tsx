@@ -40,12 +40,14 @@ export default function SarosHeroChrome({ progress, departure }: { progress: Mot
  * y el planeta asciende para descubrirse, el título desciende sutilmente con un suave desenfoque espacial
  * y desaparece por completo (opacidad 0), de modo que al estar completamente descubierto solo se ve el planeta.
  */
-export function SarosWordmark({ progress }: { progress: MotionValue<number>; departure?: MotionValue<number> }) {
+export function SarosWordmark({ progress, ready = true }: { progress: MotionValue<number>; departure?: MotionValue<number>; ready?: boolean }) {
   // Acompaña el ascenso del planeta y se desvanece con suavidad antes de que el planeta se centre por completo
   const y = useTransform(progress, [0, 0.65], ["-25vh", "-3vh"]);
   const scale = useTransform(progress, [0, 0.65], [1, 0.82]);
   const opacity = useTransform(progress, [0, 0.08, 0.56], [1, 1, 0]);
   const filter = useTransform(progress, [0.12, 0.56], ["blur(0px)", "blur(12px)"]);
+
+  if (!ready) return null;
 
   return (
     <motion.div className="hero-wordmark" style={{ y, scale, opacity, filter }} aria-hidden="true">
