@@ -168,6 +168,21 @@ La descripción de extracción y recorte está en la [guía ASF de Harmony](http
 y los parámetros de colección, variable y `granuleName` en la
 [API oficial de Harmony](https://harmony.earthdata.nasa.gov/docs).
 
+Tras obtener los COG reales, inspecciona su hash, metadatos, estadísticas por
+bloques y coincidencia de rejillas antes de combinarlos:
+
+```sh
+docker compose --env-file .env -f infra/saros/docker-compose.yml --profile processing run --rm processor \
+  scripts/inspect_nisar_harmony_cogs.py \
+  pipeline/data/neiva-core/harmony/<granule-id>/harmony-manifest.json
+```
+
+El inspector verifica que cada hash coincida con el manifiesto, lee una ventana
+ráster a la vez y detiene la ejecución si los COG no comparten la misma rejilla.
+Reporta tags, unidades, nodata y estadísticas descriptivas sin decidir
+umbrales ni convertir fase a desplazamiento. No presupone metadatos que aún no
+se hayan observado en archivos reales.
+
 ### Actualización incremental desde el checkpoint SAROS
 
 `update_nisar_catalog.py` consulta el último día de observación LOS real

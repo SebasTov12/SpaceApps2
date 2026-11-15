@@ -301,3 +301,8 @@ livianos y documentación de procedencia.
   exportador vincula cada COG con la variable y hash correspondiente. La API
   está `healthy`, contiene el validador de hashes por capa y PostgreSQL sigue
   con cero filas NISAR. No ejecuté una solicitud autenticada ni creé datos.
+- Añadí `scripts/inspect_nisar_harmony_cogs.py`: en cuanto haya un manifiesto
+  COG real, verifica SHA-256, reporta atributos/unidades y resume píxeles en
+  bloques, sin leer las capas completas. Rechaza COGs sin píxeles válidos o con
+  rejillas distintas y no convierte fase a LOS. Aún no se ha ejecutado porque
+  no hay un manifiesto COG auténtico que inspeccionar.
