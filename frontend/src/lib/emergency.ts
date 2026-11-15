@@ -103,6 +103,11 @@ const COUNTRIES: Record<string, CountryLines> = {
   },
 };
 
+/** Nombre del país en el idioma pedido (o el código si no está en la tabla). */
+export function countryName(code: string, lang: "es" | "en") {
+  return COUNTRIES[code]?.name[lang] ?? code;
+}
+
 /** País de cada zona (las de Colombia ya lo traen en los datos). */
 const ZONE_COUNTRY: Record<string, string> = {
   "cdmx-subsidencia": "MX", "sylhet-inundacion": "BD", "jakobshavn-glaciar": "GL", "rondonia-deforestacion": "BR",

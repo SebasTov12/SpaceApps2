@@ -3,6 +3,8 @@
  * agrupados por lugar y tipo en el backend: GET /api/v1/hazards/points (vía /api/hazards).
  */
 export type HazardPoint = {
+  /** País (ISO-2). Las fuentes actuales son colombianas: si falta, es Colombia. */
+  country?: string;
   lat: number;
   lon: number;
   kind: string;
@@ -39,6 +41,7 @@ export const HAZARD_KINDS: Record<string, { color: string; es: string; en: strin
   model_assessment: { color: "#ff8c69", es: "Evaluación exploratoria", en: "Exploratory assessment" },
 };
 export const hazardKind = (kind: string) => HAZARD_KINDS[kind] ?? HAZARD_KINDS.other;
+export const pointCountry = (p: Pick<HazardPoint, "country">) => p.country ?? "CO";
 
 const SOURCE_NAMES: Record<string, string> = {
   ungrd_emergencies_v1: "UNGRD",

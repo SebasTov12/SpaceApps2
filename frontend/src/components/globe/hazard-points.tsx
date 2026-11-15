@@ -5,7 +5,7 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleGeometry, Color, Group, InstancedMesh, MeshBasicMaterial, Object3D, Quaternion, Vector3 } from "three";
 import { useI18n } from "@/lib/i18n";
-import { HAZARDS_EVENT, hazardKind, loadHazardPoints, sourceName, type HazardPoint } from "@/lib/hazard-points";
+import { HAZARDS_EVENT, hazardKind, pointCountry, loadHazardPoints, sourceName, type HazardPoint } from "@/lib/hazard-points";
 import { RELIEF, globeState } from "./globe-state";
 import { spherePosition } from "./risk-markers";
 
@@ -30,7 +30,7 @@ export default function HazardPoints() {
   const [hover, setHover] = useState<number | null>(null);
   const [pinned, setPinned] = useState<number | null>(null);
   const revealAt = useRef<number | null>(null);
-  const settled = useRef<number | null | undefined>(undefined); // punto activo con el que se dejó quieta la malla
+  const settled = useRef<string | undefined>(undefined); // punto activo con el que se dejó quieta la malla
 
   useEffect(() => {
     let alive = true;
@@ -47,7 +47,7 @@ export default function HazardPoints() {
     const pos = new Vector3(...spherePosition(p.lat, p.lon, RADIUS));
     const quat = new Quaternion().setFromUnitVectors(up, pos.clone().normalize());
     const size = 0.0019 + 0.0016 * Math.log10(p.n + 1);
-    return { pos, quat, size, color: new Color(hazardKind(p.kind).color) };
+    return { country: pointCountry(p), pos, quat, size, color: new Color(hazardKind(p.kind).color) };
   }), [points]);
 
   const geometry = useMemo(() => new CircleGeometry(1, 14), []);
@@ -68,7 +68,8 @@ export default function HazardPoints() {
     const m = mesh.current;
     if (!m || !layout.length) return;
     const t = clock.getElapsedTime();
-    const show = globeState.uiRevealed && globeState.mode !== "watch";
+    // en la vista de países se agrupan en el punto del país; aparecen al abrirlo
+    const show = globeState.uiRevealed && globeState.mode !== "watch" && globeState.country !== null && globeState.countryZoom > 0;
     m.visible = show;
     if (!show) { revealAt.current = null; settled.current = undefined; return; }
     if (revealAt.current === null) revealAt.current = t;
@@ -76,12 +77,14 @@ export default function HazardPoints() {
     const active = pinned ?? hover;
     // terminada la entrada, la malla queda quieta: solo se recalcula si cambia el punto señalado
     const done = since > 0.5 + 60 * 0.012;
-    if (done && settled.current === active) return;
-    if (done) settled.current = active;
+    const key = `${active}|${globeState.country}`;
+    if (done && settled.current === key) return;
+    if (done) settled.current = key;
     for (let i = 0; i < layout.length; i++) {
       const item = layout[i];
       const k = Math.min(1, Math.max(0, (since - (i % 60) * 0.012) / 0.5));
-      const scale = item.size * (k < 1 ? k * (1.4 - 0.4 * k) : 1) * (i === active ? 3 : 1);
+      const here = item.country === globeState.country ? 1 : 0;
+      const scale = here * item.size * (k < 1 ? k * (1.4 - 0.4 * k) : 1) * (i === active ? 3 : 1);
       dummy.position.copy(item.pos);
       dummy.quaternion.copy(item.quat);
       dummy.scale.setScalar(Math.max(1e-5, scale));
@@ -94,12 +97,13 @@ export default function HazardPoints() {
   // los puntos son diminutos: se elige el más cercano al cursor en pantalla (máx. ~12 px)
   const { size: view } = useThree();
   const nearest = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
-    if (!root.current || !(globeState.uiRevealed && globeState.mode !== "watch")) return null;
+    if (!root.current || !(globeState.uiRevealed && globeState.mode !== "watch" && globeState.country !== null)) return null;
     const m = root.current.matrixWorld;
     const camPos = e.camera.position;
     center.setFromMatrixPosition(m);
     let best = -1, bestD = 12 * 12;
     for (let i = 0; i < layout.length; i++) {
+      if (layout[i].country !== globeState.country) continue;
       tmp.copy(layout[i].pos).applyMatrix4(m);
       // solo la cara visible del planeta
       if (tmp3.copy(tmp).sub(center).dot(tmp2.copy(camPos).sub(tmp)) <= 0) continue;

@@ -7,6 +7,7 @@ import { Component, Suspense, useCallback, useEffect, useRef, useState, type Rea
 import NisarOrbit from "@/components/nisar-orbit";
 import RiskMarkers from "@/components/globe/risk-markers";
 import HazardPoints from "@/components/globe/hazard-points";
+import CountryLayer from "@/components/globe/country-layer";
 import ReconScan from "@/components/globe/recon-scan";
 import CompanionSats from "@/components/globe/companion-sats";
 import { RELIEF, globeState } from "@/components/globe/globe-state";
@@ -51,7 +52,7 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
     if (!playing) return;
     const step = Math.min(delta, 0.1);
     // con una zona abierta la Tierra deja de girar: la zona se queda en el centro durante la zambullida
-    if (surface.current) surface.current.rotation.y += step * 0.04 * (1 - globeState.zoom);
+    if (surface.current) surface.current.rotation.y += step * 0.04 * (1 - Math.max(globeState.zoom, globeState.countryZoom));
     if (clouds.current) clouds.current.rotation.y += step * 0.006;
   });
   // más subdivisiones para que el relieve desplazado se vea sobresalir
@@ -73,6 +74,8 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
         <RiskMarkers />
         {/* Registros reales de amenazas de la base de datos */}
         <HazardPoints />
+        {/* Un punto por país; al abrir uno, su croquis y todos sus puntos */}
+        <CountryLayer />
         <group ref={clouds}>
         {/* A faint offset veil gives cloud systems depth without heavy shadow maps. */}
         <mesh scale={1 + RELIEF + 0.004} rotation={[0, 0.006, 0.003]}>
