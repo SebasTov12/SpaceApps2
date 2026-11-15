@@ -64,3 +64,40 @@ python scripts/filter_nisar_colombia.py --max-results 100
 Consulta los conteos completos del catálogo para NISAR, América y el AOI configurado; por defecto usa el nivel GUNW y la caja de Colombia. Guarda las huellas candidatas en `03_colombia_bbox.geojson` y el conteo en `00_summary.json` bajo `NISAR_FILTERED_DIR` (por defecto `data/filtered/`). `--max-results` limita únicamente cuántas huellas se guardan, no los conteos del catálogo. Son metadatos y geometrías, no imágenes descargadas ni entradas `.npz` listas para entrenar el modelo. Este paso no requiere publicar ni imprimir las credenciales del `.env`.
 
 La búsqueda sigue las recomendaciones de ASF para filtrar el conjunto NISAR y procesar resultados paginados con `asf_search`. La autenticación Earthdata será necesaria al descargar/abrir productos, que es una etapa distinta a este inventario.
+
+## AOI Neiva y pronóstico LOS
+
+El polígono `data/aoi/neiva-core.geojson` guarda la caja aproximada usada en
+el inventario inicial. Reemplázala con un límite oficial del estudio antes de
+interpretar los resultados científicamente. El filtro existente acepta otra
+caja explícita y puede guardar sus salidas fuera del repositorio:
+
+```powershell
+$env:NISAR_FILTERED_DIR = "C:/ruta/persistente/neiva-core"
+python scripts/filter_nisar_colombia.py --colombia-bbox "-75.34,2.88,-75.24,2.98" --max-results 500
+python scripts/analyze_nisar_colombia.py --input "C:/ruta/persistente/neiva-core/03_colombia_bbox.geojson"
+python scripts/download_nisar_colombia.py --manifest "C:/ruta/persistente/neiva-core/03_colombia_bbox.geojson" --output "C:/ruta/persistente/neiva-h5" --products 2 --dry-run
+```
+
+El dry-run no descarga. Para descargar, habilita Earthdata en el entorno
+privado del proceso y retira `--dry-run`. El entorno local no debe guardar
+credenciales en Git. Los dos pares candidatos del stack descendente
+083/frame 087 requieren aproximadamente 4.555 GB.
+
+## Ajuste de tendencia por zona
+
+Cuando el procesador científico haya producido el CSV documentado en
+`docs/modelo-predictivo-nisar.md`, ejecutar:
+
+```sh
+python -m ml.nisar_forecast.forecast \
+  --observations data/processed/neiva/los_observations.csv \
+  --output models/nisar-forecast/neiva/forecast.json \
+  --horizon-days 24 --tolerance-days 8
+```
+
+El módulo acepta mediciones reales de un AOI y stack, compara persistencia
+con tendencia lineal robusta y genera JSON con procedencia y evaluación
+temporal. No genera observaciones a partir de capas demo. El procesador
+HDF5→CSV y la aplicación de la migración SQL son pasos pendientes hasta
+disponer de acceso a los archivos y al entorno de base de datos.

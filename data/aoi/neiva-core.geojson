@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "name": "SAROS Neiva core AOI candidate",
+  "metadata": {
+    "status": "approximate_bbox_candidate",
+    "source": "User-directed initial study area centered on Neiva, Huila",
+    "crs": "OGC:CRS84",
+    "note": "This rectangle is the area used for the first ASF metadata query. Replace it with an authoritative municipal or study-area polygon before scientific processing."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "aoi_id": "neiva-core",
+        "place": "Neiva, Huila, Colombia",
+        "west": -75.34,
+        "south": 2.88,
+        "east": -75.24,
+        "north": 2.98
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-75.34, 2.88],
+          [-75.24, 2.88],
+          [-75.24, 2.98],
+          [-75.34, 2.98],
+          [-75.34, 2.88]
+        ]]
+      }
+    }
+  ]
+}
