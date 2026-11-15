@@ -194,7 +194,9 @@ export default function ZoneView() {
     };
     const onHazardPoint = (event: Event) => {
       const point = (event as CustomEvent<HazardPoint | null>).detail;
-      if (point) closeZone();
+      // Closing an active zone first is needed to clear the satellite map. In the country
+      // explorer there is no zone to close; emitting GLOBE_SELECT there also resets detail state.
+      if (point && globeState.zoom > 0) closeZone();
       setSelectedHazard(point ?? null);
     };
     window.addEventListener(GLOBE_SELECT, onSelect);

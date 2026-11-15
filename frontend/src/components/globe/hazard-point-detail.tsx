@@ -39,8 +39,8 @@ export default function HazardPointDetail({ point, lang, onClose }: Props) {
       const response = await fetch("/api/assistant", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ point_id: point.id, messages: [{ role: "user", content: es
-          ? `Resume este punto en 2 frases: qué muestran sus registros y qué acción preventiva prudente recomiendas. Aclara si no hay medición NISAR o pronóstico.`
-          : `Summarize this point in 2 sentences: what its records show and one prudent preventive action. State if NISAR measurement or forecast is unavailable.` }] }),
+          ? `Responde en 2 frases breves. Di explícitamente: qué datos reales hay (fuente y fecha), qué dato no está disponible, y una acción preventiva prudente. No uses “demo”. No llames movimiento a una escena NISAR sin medición LOS procesada ni presentes contexto histórico del modelo como predicción.`
+          : `Answer in 2 short sentences. State explicitly which real data are available (source and date), which data are unavailable, and one prudent preventive action. Do not say “demo”. Do not call a NISAR scene movement without a processed LOS measurement or present historical model context as a forecast.` }] }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "assistant_unavailable");

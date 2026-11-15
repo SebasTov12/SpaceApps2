@@ -108,6 +108,22 @@ def assistant_data_context(selected_point_id: str | None = None) -> dict[str, ob
         context["nisar_real_observations"] = {
             "count": row[0], "latest_date": row[1].isoformat() if row[1] else None,
         }
+        row = connection.execute(
+            """
+            SELECT
+              (SELECT count(*) FROM nisar.catalog_assets WHERE data_mode = 'real_metadata'),
+              (SELECT count(*) FROM nisar.raster_assets WHERE data_mode = 'real')
+            """
+        ).fetchone()
+        context["nisar_real_source_inventory"] = {
+            "catalog_scenes": row[0],
+            "raster_layers": row[1],
+            "processed_los_observations": context["nisar_real_observations"]["count"],
+            "interpretation": (
+                "Scenes and raster assets are real NASA-ISRO NISAR products. They are not a point-specific "
+                "ground-motion measurement unless a quality-controlled LOS observation is present."
+            ),
+        }
         forecasts = connection.execute(
             """
             SELECT r.aoi_id, r.stack_id, r.model_name, r.model_version, r.origin_date,
@@ -169,6 +185,22 @@ def assistant_data_context(selected_point_id: str | None = None) -> dict[str, ob
                     "sources", "location_precision", "impact_reports", "affected", "homes",
                     "events", "model_assessment", "model_context",
                 )
+            }
+            context["selected_point_data_status"] = {
+                "reported_records": {
+                    "available": bool(selected.get("events")),
+                    "status": "real_historical_reports" if selected.get("events") else "unavailable",
+                    "sources": selected.get("sources", []),
+                },
+                "nisar_motion_measurement_for_this_point": {
+                    "available": False,
+                    "processed_los_observations_in_database": context["nisar_real_observations"]["count"],
+                    "status": "unavailable_for_this_point",
+                    "reason": "A catalog scene or raster layer is not a point-linked LOS motion measurement.",
+                },
+                "model_output_for_this_point": bool(selected.get("model_assessment")),
+                "historical_model_context_for_municipality": bool(selected.get("model_context")),
+                "forecast_for_this_point": False,
             }
     return context
 
@@ -1237,8 +1269,12 @@ def assistant_chat():
             "Eres Saru, guía breve de SAROS. Contesta en el idioma del usuario, en 1–3 frases cortas; "
             "usa como máximo un emoji pertinente. Ve directo a la respuesta y a una acción práctica cuando "
             "la pidan. Basa afirmaciones del proyecto solo en el JSON de contexto; indica la fuente o fecha "
-            "si está disponible y di claramente cuando falta el dato. Distingue reportes históricos, mediciones "
-            "NISAR, resultados del modelo y pronósticos. Nunca inventes movimiento, fechas, probabilidades, "
+            "si está disponible y di claramente cuando falta el dato. No uses 'demo' o 'demostración' para "
+            "describir el estado de una fuente: di 'dato real disponible: [fuente y fecha]' o 'dato no disponible: [tipo]'. "
+            "Distingue reportes históricos reales, escenas/raster NISAR reales, mediciones LOS procesadas, "
+            "resultados del modelo y pronósticos. Una escena o raster real no equivale a movimiento medido. "
+            "Si selected_point_data_status indica que falta movimiento NISAR, dilo explícitamente y nombra "
+            "qué sí hay (por ejemplo, registros reales UNGRD/SGC o contexto histórico municipal). Nunca inventes movimiento, fechas, probabilidades, "
             "daños, personas afectadas, recomendaciones oficiales ni rutas seguras. Usa selected_hazard_point "
             "si existe para responder sobre el punto pulsado; sus eventos y cifras son reportes históricos y "
             "model_context es solo una línea base histórica municipal, nunca un diagnóstico actual. Una evaluación SAROS es "

@@ -786,7 +786,8 @@ html body .earth-stage[data-zoomed="true"] .earth-orbit {
 .zone-layer {
   position: absolute;
   inset: 0;
-  z-index: 6;
+  /* Keep point details above HeroOverlay's country/NISAR cards. */
+  z-index: 40;
   pointer-events: none
 }
 
@@ -860,6 +861,7 @@ html body .earth-stage[data-zoomed="true"] .earth-orbit {
 }
 
 .hz-point-panel{z-index:22;display:flex;flex-direction:column;gap:12px}
+html body .zone-layer .hz-point-panel{z-index:22}
 .hz-point-panel .zone-title{margin-top:2px}
 .hz-point-panel .zone-tabs{margin-top:0;flex:none}
 .hz-point-panel .hz-point-content{min-height:0;overflow:visible}

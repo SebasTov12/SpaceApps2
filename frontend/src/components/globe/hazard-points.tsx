@@ -125,9 +125,9 @@ export default function HazardPoints() {
     const i = nearest(e);
     if (i === null) { setPinned(null); window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: null })); return; }
     e.stopPropagation();
-    const next = pinned === i ? null : i;
-    setPinned(next);
-    window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: next === null ? null : points[next] }));
+    // A second click on the same marker must keep its detail panel open.
+    setPinned(i);
+    window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: points[i] }));
   };
 
   const shown = pinned ?? hover;
