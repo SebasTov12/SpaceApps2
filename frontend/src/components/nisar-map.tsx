@@ -37,7 +37,9 @@ type NisarMapProps = {
   /** Puntos a vigilar (tendencia más rápida). */
   hotspots?: { lat: number; lon: number; value: number }[];
   /** Puntos que Saro señala (marcadores con etiqueta y una línea desde Saro hasta el primero). */
-  annotate?: { nonce: number; points: { lat: number; lon: number; label: string; sub?: string }[] } | null;
+  /** Se llama cuando el usuario aleja mucho el zoom: la app vuelve al planeta 3D en vez del mapa plano. */
+  onZoomOut?: () => void;
+  annotate?: { nonce: number; points: { lat: number; lon: number; label: string; sub?: string }[]; active?: number } | null;
   /** Posición del deslizador antes/después controlada desde fuera (0–100). */
   splitValue?: number;
   /** Margen del encuadre (p. ej. para dejar libre el panel lateral). */
@@ -131,7 +133,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
   aoi?.setData?.(outline(bbox));
 }
 
-export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE, annotate = null }: NisarMapProps) {
+export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE, annotate = null, onZoomOut }: NisarMapProps) {
   const { t, lang } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
@@ -371,61 +373,122 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   }, [ready, terrain]);
 
 
-  // Saro señala: marcadores escalonados, vuelo hasta ellos y línea desde Saro hasta el primero
-  const pointerPath = useRef<SVGPathElement>(null);
-  const pointerSvg = useRef<SVGSVGElement>(null);
+  // Alejar el zoom: aviso a mitad de camino y, si sigue, vuelta al planeta 3D
+  const zoomHint = useRef<HTMLDivElement>(null);
+  const onZoomOutRef = useRef(onZoomOut);
+  useEffect(() => {
+    onZoomOutRef.current = onZoomOut;
+  });
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map || !annotate || !annotate.points.length) return;
+    if (!ready || !map) return;
+    let base = map.getZoom();
+    let left = false;
+    const onMoveEnd = (e: { originalEvent?: unknown }) => { if (!e.originalEvent) base = map.getZoom(); };
+    const onZoom = (e: { originalEvent?: unknown }) => {
+      if (!e.originalEvent || left) return;      // solo cuando lo hace el usuario
+      const drop = base - map.getZoom();
+      zoomHint.current?.classList.toggle("is-on", drop > 1.1);
+      if (drop > 2.3) {
+        left = true;
+        zoomHint.current?.classList.remove("is-on");
+        onZoomOutRef.current?.();
+      }
+    };
+    map.on("moveend", onMoveEnd);
+    map.on("zoom", onZoom);
+    return () => { map.off("moveend", onMoveEnd); map.off("zoom", onZoom); };
+  }, [ready]);
+
+  // Saru señala: los marcadores se crean una vez por grupo de puntos; al recorrerlos solo cambia el activo
+  const pointerPath = useRef<SVGPathElement>(null);
+  const pointerSvg = useRef<SVGSVGElement>(null);
+  const markerEls = useRef<{ el: HTMLDivElement; marker: Marker }[]>([]);
+  const activeIndex = useRef(0);
+  const annotateNonce = annotate?.nonce;
+  const annotatePoints = annotate?.points;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !annotatePoints?.length) return;
     let cancelled = false;
-    const markers: Marker[] = [];
-    import("maplibre-gl").then(({ Marker: MarkerClass, LngLatBounds }) => {
+    import("maplibre-gl").then(({ Marker: MarkerClass }) => {
       if (cancelled) return;
-      annotate.points.forEach((p, i) => {
+      markerEls.current = annotatePoints.map((p, i) => {
         const el = document.createElement("div");
         // MapLibre mueve el elemento raíz con transform: la animación va en un hijo
         el.className = "sp-mark";
         el.innerHTML = `<div class="sp-in" style="--i:${i}"><span class="sp-ring"></span><span class="sp-core">${i + 1}</span><span class="sp-call"><b></b><small></small></span></div>`;
         (el.querySelector("b") as HTMLElement).textContent = p.label;
         (el.querySelector("small") as HTMLElement).textContent = p.sub ?? "";
-        markers.push(new MarkerClass({ element: el, anchor: "center" }).setLngLat([p.lon, p.lat]).addTo(map));
+        return { el, marker: new MarkerClass({ element: el, anchor: "center" }).setLngLat([p.lon, p.lat]).addTo(map) };
       });
-      const bounds = new LngLatBounds();
-      annotate.points.forEach((p) => bounds.extend([p.lon, p.lat]));
-      const pad = paddingRef.current;
-      // deja libre el espacio que ocupa el globo de Saro
-      const box = map.getContainer().getBoundingClientRect();
-      const bubble = document.querySelector(".saro-bubble")?.getBoundingClientRect();
-      const left = bubble && bubble.right > box.left && bubble.left < box.left + box.width / 2 ? Math.max(pad.left + 60, bubble.right - box.left + 40) : pad.left + 60;
-      const padding = { top: pad.top + 70, right: pad.right + 50, bottom: pad.bottom + 90, left: Math.min(left, box.width * 0.6) };
-      // encuadra todos los puntos en el espacio libre (solo el primero lleva etiqueta, así no se amontonan)
-      const cam = map.cameraForBounds(bounds, { padding, maxZoom: 14 });
-      if (cam) map.easeTo({ center: cam.center, zoom: cam.zoom ?? map.getZoom(), duration: 1600, essential: true });
+      window.dispatchEvent(new Event("saros:markers-ready"));
     });
-    // línea que sale de Saro (arriba a la izquierda) hasta el primer punto; se recalcula al mover el mapa
-    const first = annotate.points[0];
+    // línea que sale de Saru hasta el punto activo; se recalcula al mover el mapa
     const draw = () => {
       const svg = pointerSvg.current, path = pointerPath.current, avatar = document.querySelector(".saro-avatar");
-      if (!svg || !path || !avatar) return;
+      const target = annotatePoints[Math.min(activeIndex.current, annotatePoints.length - 1)];
+      if (!svg || !path || !avatar || !target) return;
       const box = svg.getBoundingClientRect(), a = avatar.getBoundingClientRect();
-      // sale por debajo de Saro, baja por el borde y luego va al punto (no cruza su globo de texto)
       const from = { x: a.left + a.width * 0.5 - box.left, y: a.bottom - box.top - 6 };
-      const to = map.project([first.lon, first.lat]);
+      const to = map.project([target.lon, target.lat]);
       path.setAttribute("d", `M${from.x.toFixed(1)} ${from.y.toFixed(1)} C${from.x.toFixed(1)} ${(to.y + 40).toFixed(1)} ${(to.x - 120).toFixed(1)} ${to.y.toFixed(1)} ${to.x.toFixed(1)} ${to.y.toFixed(1)}`);
     };
     map.on("move", draw);
-    draw();
     const svgEl = pointerSvg.current;
-    svgEl?.classList.remove("is-on");
-    void svgEl?.getBoundingClientRect();
-    svgEl?.classList.add("is-on");
     return () => {
       cancelled = true;
-      markers.forEach((m) => m.remove());
+      markerEls.current.forEach((m) => m.marker.remove());
+      markerEls.current = [];
       map.off("move", draw);
       svgEl?.classList.remove("is-on");
     };
-  }, [ready, annotate]);
+  }, [ready, annotateNonce, annotatePoints]);
+
+  // punto activo: etiqueta, anillo, línea y cámara que vuela hasta él (o encuadra todos)
+  const annotateActive = annotate?.active;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !annotatePoints?.length) return;
+    let cancelled = false;
+    const apply = () => {
+      if (cancelled) return;
+      const active = annotateActive ?? -1;
+      activeIndex.current = Math.max(0, active);
+      markerEls.current.forEach(({ el }, i) => {
+        el.classList.toggle("is-active", active === -1 ? i === 0 : i === active);
+        el.classList.toggle("is-dim", active !== -1 && i !== active);
+        // la etiqueta sigue al punto del que habla Saru
+        const p = annotatePoints[i];
+        if (p) {
+          (el.querySelector("b") as HTMLElement).textContent = p.label;
+          (el.querySelector("small") as HTMLElement).textContent = p.sub ?? "";
+        }
+      });
+      const box = map.getContainer().getBoundingClientRect();
+      const bubble = document.querySelector(".saru-caption")?.getBoundingClientRect();
+      const pad = paddingRef.current;
+      const left = bubble && bubble.right > box.left && bubble.left < box.left + box.width / 2 ? Math.max(pad.left + 60, bubble.right - box.left + 40) : pad.left + 60;
+      const padding = { top: pad.top + 70, right: pad.right + 50, bottom: pad.bottom + 90, left: Math.min(left, box.width * 0.6) };
+      import("maplibre-gl").then(({ LngLatBounds }) => {
+        if (cancelled) return;
+        const bounds = new LngLatBounds();
+        const pts = active === -1 ? annotatePoints : [annotatePoints[Math.min(active, annotatePoints.length - 1)]];
+        pts.forEach((p) => bounds.extend([p.lon, p.lat]));
+        if (pts.length === 1) { const p = pts[0]; bounds.extend([p.lon + 0.02, p.lat + 0.02]); bounds.extend([p.lon - 0.02, p.lat - 0.02]); }
+        const cam = map.cameraForBounds(bounds, { padding, maxZoom: 13.5 });
+        if (cam) map.easeTo({ center: cam.center, zoom: cam.zoom ?? map.getZoom(), duration: 1500, essential: true });
+        const svgEl = pointerSvg.current;
+        svgEl?.classList.remove("is-on");
+        void svgEl?.getBoundingClientRect();
+        svgEl?.classList.add("is-on");
+        map.fire("move");
+      });
+    };
+    if (markerEls.current.length) apply();
+    else window.addEventListener("saros:markers-ready", apply, { once: true });
+    return () => { cancelled = true; window.removeEventListener("saros:markers-ready", apply); };
+  }, [ready, annotateNonce, annotatePoints, annotateActive]);
 
   // Puntos a vigilar
   useEffect(() => {
@@ -468,6 +531,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     <div className={`nisar-map mode-${mode}`}>
       <div ref={mainRef} className="nisar-map-canvas" />
       <svg ref={pointerSvg} className="sp-pointer" aria-hidden="true"><path ref={pointerPath} /></svg>
+      <div ref={zoomHint} className="sp-zoomhint" aria-hidden="true">{lang === "es" ? "Sigue alejando para volver al planeta" : "Keep zooming out to return to the planet"}</div>
       <div ref={afterRef} className="nisar-map-canvas nisar-map-after" style={{ clipPath: `inset(0 0 0 ${split}%)` }} aria-hidden="true" />
       {mode === "swipe" && (
         <div className="swipe-handle" style={{ left: `${split}%` }}>

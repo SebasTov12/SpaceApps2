@@ -118,6 +118,12 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
   const c = copy[lang];
   const reduce = useReducedMotion();
   const [openSector, setOpenSector] = useState<SectorKey | null>(null);
+  // el recorrido de Saru puede abrir la ficha del sector del que habla
+  useEffect(() => {
+    const onOpen = (event: Event) => setOpenSector((event as CustomEvent<SectorKey>).detail);
+    window.addEventListener("saros:open-sector", onOpen);
+    return () => window.removeEventListener("saros:open-sector", onOpen);
+  }, []);
   const a = active?.assessment;
   const x = active?.extraction ?? null;
   const advice = recommendations(zone.kind, level, colombia, lang);
@@ -142,7 +148,7 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
   return (
     <motion.div className="zone-simple zs" variants={list} initial={reduce ? false : "hidden"} animate="show">
       {/* 1 · Resumen en burbujas */}
-      <motion.section className="zs-card zs-now" variants={item} style={{ "--lvl": lvl.color } as React.CSSProperties}>
+      <motion.section className="zs-card zs-now" data-tour="now" variants={item} style={{ "--lvl": lvl.color } as React.CSSProperties}>
         <SectionHead icon={Gauge} title={c.now} sub={c.nowSub} tone={lvl.color} />
         {a ? (
           <>
@@ -189,7 +195,7 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
         const confColor = x.confidence === "alta" ? "#f43f5e" : x.confidence === "media" ? "#f59e0b" : "#94a3c4";
         const titleText = x.context.miningTitle === "fuera" ? c.titleOut : x.context.miningTitle === "parcial" ? c.titlePart : x.context.miningTitle;
         return (
-          <motion.section className="zs-card zone-watch" variants={item}>
+          <motion.section className="zs-card zone-watch" data-tour="watch" variants={item}>
             <SectionHead icon={ShieldAlert} title={c.watch} tone={confColor} />
             <div className="watch-alert" style={{ "--conf": confColor } as React.CSSProperties}>
               <b><i />{c.suspicious} · {c.conf} {x.confidence}</b>
@@ -218,7 +224,7 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
 
       {/* 3 · Sectores en fichas que se despliegan */}
       {impacts.length > 0 && (
-        <motion.section className="zs-card" variants={item}>
+        <motion.section className="zs-card" data-tour="sectors" variants={item}>
           <SectionHead icon={Sparkles} title={c.impact} sub={c.impactSub} />
           <div className="zs-sectors">
             {impacts.map((s) => {
@@ -249,14 +255,14 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
 
       {/* 4 · Qué pasó aquí */}
       {zone.event && (
-        <motion.section className="zs-card zs-event" variants={item}>
+        <motion.section className="zs-card zs-event" data-tour="event" variants={item}>
           <SectionHead icon={History} title={c.history} tone="#38bdf8" />
           <div className="zs-timeline"><span className="zs-date">{longDate(zone.event.date, lang)}</span><p>{zone.event[lang]}</p></div>
         </motion.section>
       )}
 
       {/* 5 · Qué hacer: pasos con icono */}
-      <motion.section className="zs-card" variants={item}>
+      <motion.section className="zs-card" data-tour="todo" variants={item}>
         <SectionHead icon={ListChecks} title={c.todo} sub={c.todoSub} tone="#10b981" />
         <motion.ol className="zs-steps" variants={list}>
           {steps.map((t, i) => {
@@ -270,7 +276,7 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
             );
           })}
         </motion.ol>
-        {emergency && colombia && <a className="zs-call" href="tel:123"><Phone size={15} /> {c.call}<span>UNGRD · SGC · IDEAM</span></a>}
+        {emergency && colombia && <a className="zs-call" data-tour="call" href="tel:123"><Phone size={15} /> {c.call}<span>UNGRD · SGC · IDEAM</span></a>}
       </motion.section>
 
       {noData}

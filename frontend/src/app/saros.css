@@ -3033,3 +3033,47 @@ html body .saro.in-zone .saru-caption{margin:26px 0 0;border-radius:5px 16px 16p
   .saru-text{font-size:12.5px}
 }
 @media(prefers-reduced-motion:reduce){.saru-enter,.saru-trail,.saru-hint{animation:none}}
+
+/* ---------- SARU: chat pegado debajo, recorrido punto por punto y panel guiado ---------- */
+html body .saro{flex-direction:column;align-items:flex-start;gap:8px;bottom:62px}
+html body .saro.in-zone{top:74px;bottom:auto}
+.saru-row{display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-end;gap:4px}
+html body .saro.in-zone .saru-row{align-items:flex-start}
+html body .saro .saru-ask,html body .saro .saru-ask.in-zone{position:relative;left:auto;right:auto;bottom:auto;transform:none;width:min(430px,calc(100vw - 44px));pointer-events:auto}
+@media(max-width:900px){html body .saro.in-zone{top:auto;bottom:calc(56vh + 8px)}html body .saro .saru-ask{width:calc(100vw - 20px)}}
+
+/* Saru se inclina hacia lo que señala y mira al mapa */
+.saro .saro-fig{transition:transform .5s cubic-bezier(.22,1,.36,1)}
+.saro.is-pointing .saro-fig{transform:rotate(9deg) translateX(3px)}
+.saro.is-pointing .saro-eyes{transform:translateX(2.5px)}
+.saro.is-pointing .saro-thrust{opacity:1}
+
+/* marcador activo grande, los demás atenuados */
+.sp-mark .sp-call{opacity:0;transition:opacity .35s}
+.sp-mark.is-active .sp-call{opacity:1;animation:sp-call .45s ease both}
+.sp-mark.is-active{z-index:6}
+.sp-mark .sp-core{transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .3s}
+.sp-mark.is-active .sp-core{transform:scale(1.25)}
+.sp-mark.is-dim .sp-core{opacity:.55;transform:scale(.8)}
+.sp-mark.is-dim .sp-ring{opacity:0;animation:none}
+.sp-mark:hover .sp-call{opacity:1}
+
+/* parte del panel de la que habla Saru: brillo suave que late (solo opacidad del halo) */
+[data-tour]{position:relative}
+[data-tour]::after{content:"";position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:0 0 0 2px rgba(94,240,255,.85),0 0 28px rgba(94,240,255,.35);transition:opacity .35s}
+[data-tour].is-tour::after{opacity:1;animation:tour-glow 1.6s ease-in-out infinite}
+@keyframes tour-glow{0%,100%{opacity:1}50%{opacity:.45}}
+.zone-level[data-tour]::after{border-radius:14px}
+.zs-call[data-tour]::after{border-radius:14px}
+
+/* aviso para volver al planeta */
+.sp-zoomhint{position:absolute;z-index:6;left:50%;top:18px;translate:-50% 0;padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:600;color:#e8f1ff;background:rgba(12,16,38,.7);border:1px solid rgba(94,240,255,.45);backdrop-filter:blur(8px);opacity:0;transform:translateY(-8px);transition:opacity .3s,transform .3s;pointer-events:none}
+.sp-zoomhint.is-on{opacity:1;transform:none}
+
+/* más vida, sin coste: el subtítulo respira al hablar y las fichas entran con resorte */
+.saru-caption{transition:border-color .4s}
+.saro.is-pointing .saru-caption{border-color:rgba(94,240,255,.55)}
+.zs-sector{animation:zs-pop .5s cubic-bezier(.34,1.56,.64,1) both}
+.zs-sector:nth-child(2){animation-delay:.05s}.zs-sector:nth-child(3){animation-delay:.1s}.zs-sector:nth-child(4){animation-delay:.15s}.zs-sector:nth-child(5){animation-delay:.2s}.zs-sector:nth-child(6){animation-delay:.25s}
+@keyframes zs-pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){[data-tour].is-tour::after,.zs-sector{animation:none}.saro.is-pointing .saro-fig{transform:none}}

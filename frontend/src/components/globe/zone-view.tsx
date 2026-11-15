@@ -8,7 +8,7 @@ import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import ZoneSimple from "./zone-simple";
 import { POINT_EVENT } from "./saro-guide";
-import type { LegendKind, SaroAction } from "@/lib/saro-brain";
+import { TOUR_EVENT, type LegendKind, type SaroAction, type TourKey } from "@/lib/saro-brain";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
 import { levelInfo, trendSentence } from "@/lib/insights";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
@@ -111,7 +111,7 @@ export default function ZoneView() {
   const readyHandled = useRef(false);
   const revealTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [terrain, setTerrain] = useState(false);
-  const [annotate, setAnnotate] = useState<{ nonce: number; points: { lat: number; lon: number; label: string; sub?: string }[] } | null>(null);
+  const [annotate, setAnnotate] = useState<{ nonce: number; points: { lat: number; lon: number; label: string; sub?: string }[]; active?: number } | null>(null);
   const [explain, setExplain] = useState<{ nonce: number; kind: LegendKind } | null>(null);
   const activeRef = useRef<SiteManifest | null>(null);
   const [tab, setTab] = useState<"simple" | "analysis">("simple");
@@ -261,6 +261,19 @@ export default function ZoneView() {
       if (!action) return;
       const m = activeRef.current;
       if (action.type === "legend") setExplain({ nonce: Date.now(), kind: action.kind });
+      if (action.type === "point" && m?.assessment?.hotspots.length) {
+        const unit = m.assessment.rate.unit.replace(/\/mes$/, "");
+        const showValue = m.change === "deformation" && m.extraction?.kind !== "mining";
+        setAnnotate((prev) => ({
+          nonce: prev?.nonce ?? Date.now(),
+          active: action.index,
+          points: m.assessment!.hotspots.map((h, i) => ({
+            lat: h.lat, lon: h.lon,
+            label: i === action.index ? action.label : `Punto ${i + 1}`,
+            sub: i === action.index ? action.sub : (showValue ? `${m.assessment!.rate.recent < 0 ? "−" : "+"}${Math.abs(h.value).toFixed(1)} ${unit}` : undefined),
+          })),
+        }));
+      }
       if (action.type === "hotspots" && m?.assessment?.hotspots.length) {
         const unit = m.assessment.rate.unit.replace(/\/mes$/, "");
         const showValue = m.change === "deformation";
@@ -268,7 +281,7 @@ export default function ZoneView() {
           nonce: Date.now(),
           points: m.assessment.hotspots.map((h) => ({
             lat: h.lat, lon: h.lon, label: action.label,
-            sub: showValue ? `${h.value > 0 ? "+" : "−"}${Math.abs(h.value).toFixed(1)} ${unit} recientes` : action.sub,
+            sub: showValue ? `${m.assessment!.rate.recent < 0 ? "−" : "+"}${Math.abs(h.value).toFixed(1)} ${unit} recientes` : action.sub,
           })),
         });
       }
@@ -276,6 +289,26 @@ export default function ZoneView() {
     window.addEventListener(POINT_EVENT, onPoint);
     return () => window.removeEventListener(POINT_EVENT, onPoint);
   }, []);
+  // Saru resalta la parte del panel de la que habla: la desplaza a la vista y la ilumina
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onTour = (event: Event) => {
+      const key = (event as CustomEvent<TourKey | null>).detail;
+      const panel = document.querySelector<HTMLElement>(".zone-panel");
+      panel?.querySelectorAll(".is-tour").forEach((el) => el.classList.remove("is-tour"));
+      if (!key || !panel) return;
+      const el = panel.querySelector<HTMLElement>(`[data-tour="${key}"]`);
+      if (!el) return;
+      const top = el.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - 90;
+      panel.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      el.classList.add("is-tour");
+      clearTimeout(timer);
+      timer = setTimeout(() => el.classList.remove("is-tour"), 5200);
+    };
+    window.addEventListener(TOUR_EVENT, onTour);
+    return () => { window.removeEventListener(TOUR_EVENT, onTour); clearTimeout(timer); };
+  }, []);
+
   // la tarjeta de colores se va sola
   useEffect(() => {
     if (!explain) return;
@@ -332,6 +365,7 @@ export default function ZoneView() {
               scene={sceneFor(zone.kind)}
               hotspots={assessment?.hotspots}
               annotate={annotate}
+              onZoomOut={closeZone}
               splitValue={split}
               padding={padding}
             />
@@ -388,7 +422,7 @@ export default function ZoneView() {
             <h2 className="zone-title">{zone.name[lang]}</h2>
             <p className="zone-place"><MapPin size={13} /> {zone.place[lang]} · {formatCoord(zone.lat, zone.lon)}</p>
             <TerritorialImpact key={zone.id} zoneId={zone.id} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
-            <div className="zone-level" style={{ "--level": levelInfo[level].color } as React.CSSProperties}>
+            <div className="zone-level" data-tour="level" style={{ "--level": levelInfo[level].color } as React.CSSProperties}>
               <i />{levelInfo[level].label[lang]}
               {assessment?.accelerating && <b><AlertTriangle size={12} /> {c.accel}</b>}
             </div>

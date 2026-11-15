@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import { loadManifest, type AttentionLevel, type SiteManifest } from "@/lib/sites";
-import { QUICK_QUESTIONS, allReplySentences, answer, sentences, type SaroAction } from "@/lib/saro-brain";
+import { OPEN_SECTOR_EVENT, QUICK_QUESTIONS, TOUR_EVENT, allReplySentences, answer, sentences, type SaroAction, type TourKey } from "@/lib/saro-brain";
 import { GLOBE_SELECT, focusZone } from "./globe-state";
 
 /** Evento que lanza el panel cuando se abre la ficha de un sector (Saro reacciona). */
@@ -16,16 +16,50 @@ export const SECTOR_EVENT = "saros:sector";
 /** Evento con el que Saro pide al mapa señalar puntos o explicar colores. */
 export const POINT_EVENT = "saros:point";
 
-/** Qué debe señalar el mapa mientras Saro dice una frase del recorrido. */
-function lineAction(text: string, zone: RiskZone | null, m: SiteManifest | null): SaroAction | undefined {
-  if (!zone || !m?.assessment?.hotspots.length) return undefined;
-  const mining = m.extraction?.kind === "mining";
-  if (/^Marqué|^Veo |se perdieron/.test(text)) {
-    return { type: "hotspots", label: mining ? "Posible piscina nueva" : zone.kind === "deforestation" ? "Bosque perdido reciente" : "Movimiento más rápido", sub: mining ? "cambio reciente junto al río" : "punto a vigilar" };
+/** Un paso del recorrido: lo que Saru dice, qué señala en el mapa y qué resalta en el panel. */
+type TourStep = { text: string; action?: SaroAction; tour?: TourKey; openSector?: SectorKey };
+
+/** Recorrido de una zona: punto por punto en el mapa y parte por parte en el panel. */
+function stepsFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "en"): TourStep[] {
+  const lines = scriptFor(zone, m, lang);
+  if (!zone || lang !== "es") return lines.map((text) => ({ text }));
+  const a = m?.assessment;
+  const x = m?.extraction;
+  const steps: TourStep[] = [];
+  const legend = m?.extraction?.kind === "mining" ? "mining" : m?.change === "deformation" ? "deformation" : zone.kind === "flood" ? "flood" : "forest";
+  for (const text of lines) {
+    if (/^Ojo con esta zona|está en atención|^Te muestro/.test(text)) steps.push({ text, tour: "level" });
+    else if (/^El suelo|^El cambio avanza|^Aquí se perdieron/.test(text)) steps.push({ text, tour: x ? "watch" : "now", action: { type: "legend", kind: legend } });
+    else if (/^Veo |^No sé quién/.test(text)) steps.push({ text, tour: "watch" });
+    else if (/^Marqué/.test(text) && a?.hotspots.length) {
+      const unit = (a.rate.unit || "").replace(/\/mes$/, "");
+      const mining = x?.kind === "mining";
+      const label = mining ? "Posible piscina nueva" : zone.kind === "deforestation" ? "Bosque perdido reciente" : zone.kind === "flood" ? "Agua que cambia rápido" : "Movimiento más rápido";
+      steps.push({ text: `Te muestro los ${a.hotspots.length} puntos donde el cambio reciente es más rápido, uno por uno.`, action: { type: "hotspots", label } });
+      a.hotspots.slice(0, 4).forEach((h, i) => {
+        const what = mining ? "una posible piscina nueva junto al río"
+          : zone.kind === "deforestation" ? "bosque que se perdió hace poco"
+          : zone.kind === "flood" ? "el agua cambió rápido"
+          : m?.change === "deformation" ? `el suelo ${a.rate.recent < 0 ? "bajó" : "subió"} ${fmt(h.value)} ${unit} en las últimas pasadas`
+          : "un cambio rápido del terreno";
+        steps.push({
+          text: `Punto ${i + 1}: aquí ${what}.${i === 0 ? " Es el que más cambia." : ""}`,
+          action: { type: "point", index: i, label: `Punto ${i + 1} · ${label}`, sub: m?.change === "deformation" && !mining ? `${a.rate.recent < 0 ? "−" : "+"}${fmt(h.value)} ${unit}` : "revisar en campo" },
+        });
+      });
+    } else if (/^Lo más expuesto/.test(text)) {
+      steps.push({ text, tour: "sectors" });
+      const top = sectorImpacts(zone.id, zone.kind)[0];
+      if (top) steps.push({ text: `Por ejemplo, ${sectorNames[top.sector].es.toLowerCase()}: ${lower(firstSentence(top.effect.es))}`, tour: "sectors", openSector: top.sector });
+    } else if (/^Si vives cerca/.test(text)) {
+      if (zone.event) steps.push({ text: `Y ojo, aquí ya pasó algo: ${lower(zone.event.es)}`, tour: "event" });
+      steps.push({ text, tour: "todo" });
+    } else if (/^Y si ves una emergencia/.test(text)) steps.push({ text, tour: "call" });
+    else steps.push({ text });
   }
-  if (/^El suelo|^El cambio avanza/.test(text)) return { type: "legend", kind: m.change === "deformation" ? "deformation" : "forest" };
-  return undefined;
+  return steps;
 }
+const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
 
 type Mood = "happy" | "attentive" | "worried";
 type SpeechRecognitionLike = {
@@ -184,7 +218,7 @@ export async function collectSaroLines(lang: "es" | "en" = "es") {
   for (const zone of riskZones) {
     const m = zone.siteId ? await loadManifest(zone.siteId).catch(() => null) : null;
     const mood = moodFor(m?.assessment?.level ?? (zone.siteId ? undefined : "baja"));
-    scriptFor(zone, m, lang).forEach((t) => add(t, mood));
+    stepsFor(zone, m, lang).forEach((st) => add(st.text, mood));
     sectorImpacts(zone.id, zone.kind).forEach((s) => add(asideFor(zone, s.sector, lang), mood));
   }
   return out;
@@ -215,8 +249,10 @@ export default function SaroGuide() {
   const zoneRef = useRef<string | null>(null);
   const manifestRef = useRef<SiteManifest | null>(null);
   const zone = riskZones.find((z) => z.id === zoneId) ?? null;
-  const lines = useMemo(() => scriptFor(zone, manifest, lang), [zone, manifest, lang]);
-  const lineText = lines[Math.min(step, lines.length - 1)] ?? "";
+  const steps = useMemo(() => stepsFor(zone, manifest, lang), [zone, manifest, lang]);
+  const lines = useMemo(() => steps.map((s) => s.text), [steps]);
+  const current = steps[Math.min(step, steps.length - 1)];
+  const lineText = current?.text ?? "";
   const text = reply ?? aside ?? lineText;
   const mood: Mood = zone ? moodFor(manifest?.assessment?.level ?? (zone.siteId ? undefined : "baja")) : "happy";
   const watch = zone ? watchKinds.has(zone.kind) : false;
@@ -266,12 +302,13 @@ export default function SaroGuide() {
     };
   }, [lang]);
 
-  // mientras narra, el mapa señala lo que nombra
+  // mientras narra: el mapa señala lo que nombra y el panel resalta la parte de la que habla
   useEffect(() => {
-    if (reply || aside) return;
-    const action = lineAction(lineText, zone, manifest);
-    window.dispatchEvent(new CustomEvent(POINT_EVENT, { detail: action ?? null }));
-  }, [lineText, zone, manifest, reply, aside]);
+    if (reply || aside || !current) return;
+    if (current.action) window.dispatchEvent(new CustomEvent(POINT_EVENT, { detail: current.action }));
+    window.dispatchEvent(new CustomEvent<TourKey | null>(TOUR_EVENT, { detail: current.tour ?? null }));
+    if (current.openSector) window.dispatchEvent(new CustomEvent(OPEN_SECTOR_EVENT, { detail: current.openSector }));
+  }, [current, reply, aside]);
 
   // escritura progresiva (solo cambia el texto)
   const typed = reduce ? text : text.slice(0, prog.text === text ? prog.n : 0);
@@ -368,6 +405,8 @@ export default function SaroGuide() {
   }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside]);
 
   const talking = typed.length < text.length || (voice && unlocked && speaking);
+  // mientras señala algo en el mapa, Saru se inclina hacia él
+  const pointing = !reply && !aside && (current?.action?.type === "point" || current?.action?.type === "hotspots");
 
   // ---------- preguntas ----------
   const ask = useCallback((question: string) => {
@@ -402,7 +441,8 @@ export default function SaroGuide() {
 
   return (
     <>
-      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}`}>
+      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}`}>
+        <div className="saru-row">
         <AnimatePresence initial={false}>
           {!minimized && (
             <motion.div key="caption" className="saru-caption" role="status" aria-live="polite"
@@ -430,9 +470,9 @@ export default function SaroGuide() {
           <span className="saru-trail" aria-hidden="true" />
           <SaroFigure mood={mood} talking={talking} />
         </button>
-      </div>
+        </div>
 
-      {/* Chat: barra translúcida abajo; Saru responde en su subtítulo y con su voz */}
+      {/* Chat: barra translúcida pegada a Saru; responde en su subtítulo y con su voz */}
       <AnimatePresence>
         {chatOpen && (
           <motion.div key="askbar" className={`saru-ask${zone ? " in-zone" : ""}`}
@@ -457,6 +497,7 @@ export default function SaroGuide() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </>
   );
 }

@@ -9,8 +9,16 @@ import { sectorEffects, sectorImpacts, type SectorKey } from "./sector-impacts";
 import type { SiteManifest } from "./sites";
 
 export type LegendKind = "deformation" | "forest" | "mining" | "flood" | "velocity";
+/** Partes del panel que Saru puede resaltar mientras habla. */
+export type TourKey = "level" | "now" | "watch" | "sectors" | "event" | "todo" | "call";
+/** Evento para resaltar una parte del panel (y desplazarlo hasta ella). */
+export const TOUR_EVENT = "saros:tour";
+/** Evento para abrir la ficha de un sector desde el recorrido. */
+export const OPEN_SECTOR_EVENT = "saros:open-sector";
+
 export type SaroAction =
   | { type: "hotspots"; label: string; sub?: string }
+  | { type: "point"; index: number; label: string; sub?: string }
   | { type: "legend"; kind: LegendKind }
   | { type: "open"; zoneId: string };
 export type SaroReply = { text: string; action?: SaroAction; role?: SectorKey | null };
