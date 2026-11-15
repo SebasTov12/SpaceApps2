@@ -28,6 +28,8 @@ export const globeState = {
   radarProximity: new Map<string, number>(),
   /** Visibilidad extra del haz de radar (0–1), además de la del scroll. */
   beam: 0,
+  /** Qué se ve en el planeta: todo, solo amenazas o solo vigilancia ambiental (tala y minería). */
+  mode: "all" as "all" | "risk" | "watch",
   /** Zona destacada al terminar el reconocimiento (último evento). */
   featured: null as string | null,
   /** Zona a la que el usuario pidió llevar el planeta. */

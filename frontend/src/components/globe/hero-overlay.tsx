@@ -33,6 +33,13 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
   const c = copy[lang];
   const [sites, setSites] = useState<SiteSummary[]>([]);
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"all" | "risk" | "watch">("all");
+  const changeMode = (next: "all" | "risk" | "watch") => setMode(next);
+  useEffect(() => {
+    globeState.mode = mode;
+    // en vigilancia ambiental el planeta gira hacia el Pacífico colombiano (Atrato)
+    if (mode === "watch" && globeState.zoom === 0) globeState.focus = "atrato-mineria";
+  }, [mode]);
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const input = useRef<HTMLInputElement>(null);
@@ -83,6 +90,13 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
   return (
     <div className="hero-overlay">
       <LanguageModal />
+      <div className="mode-switch" role="radiogroup" aria-label={lang === "es" ? "Qué ver en el planeta" : "What to show"}>
+        {([["all", lang === "es" ? "Todo" : "All"], ["risk", lang === "es" ? "Amenazas" : "Hazards"], ["watch", lang === "es" ? "Vigilancia ambiental" : "Environmental watch"]] as const).map(([value, label]) => (
+          <button key={value} type="button" role="radio" aria-checked={mode === value} className={mode === value ? "is-active" : undefined} onClick={() => changeMode(value)}>
+            {value === "watch" && <span className="mode-dot" />}{label}
+          </button>
+        ))}
+      </div>
       <button
         type="button"
         className="hero-search-btn"

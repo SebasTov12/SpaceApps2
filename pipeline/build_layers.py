@@ -155,7 +155,8 @@ def demo_jakobshavn(g, dates):
 
 def demo_rondonia(g, dates):
     x, y = g["x"], g["y"]
-    rng = np.random.default_rng(601)
+    # Chiribiquete usa otra semilla para que no sea una copia de Caquetá
+    rng = np.random.default_rng(601 if float(g["lon"].mean()) < -74 or float(g["lon"].mean()) > -70 else 641)
     texture = smooth_noise((g["rows"], g["cols"]), 5, 602) * 0.6
     cleared = np.zeros_like(x, dtype=bool)
     # carreteras principales y ramales en "espina de pescado"
@@ -194,6 +195,105 @@ def demo_volcano(g, dates):
     return frames, None
 
 
+def demo_mining(g, dates):
+    """
+    Minería aluvial junto a un río en selva: aparecen piscinas (agua quieta, muy oscura en HV),
+    se tala el bosque alrededor, se abre una trocha y el río se ensancha por el sedimento.
+    """
+    x, y = g["x"], g["y"]
+    seed0 = int(abs(float(g["lon"].mean())) * 100) % 1000   # cada río con su propia historia
+    rng = np.random.default_rng(901 + seed0)
+    texture = smooth_noise((g["rows"], g["cols"]), 5, 902 + seed0) * 0.7
+    # cauce que serpentea de oeste a este
+    center = 3.2 * np.sin(x / 5.5) + 1.4 * np.sin(x / 2.3 + 1.0)
+    dist = np.abs(y - center)
+    base_width = 0.35 + 0.08 * smooth_noise(x.shape, 20, 903)
+    # frentes mineros en ambas orillas; cada uno se activa en una pasada y crece
+    fronts = []
+    for i in range(14):
+        fx = rng.uniform(-20, 20)
+        side = rng.choice([-1, 1])
+        fy = 3.2 * math.sin(fx / 5.5) + 1.4 * math.sin(fx / 2.3 + 1.0) + side * rng.uniform(0.8, 2.6)
+        fronts.append((fx, fy, rng.uniform(0.12, 0.28), rng.uniform(0.09, 0.2), rng.uniform(0, 180), int(rng.integers(1, len(dates)))))
+    road = np.abs(y - (center + 4.2 + 0.6 * np.sin(x / 3))) < 0.05
+    frames = []
+    for k, d in enumerate(dates):
+        speckle = np.random.default_rng(950 + k).normal(0, 0.6, x.shape)
+        t = k / (len(dates) - 1)
+        cleared = np.zeros_like(x, dtype=bool)
+        ponds = np.zeros_like(x, dtype=bool)
+        for fx, fy, sx, sy, ang, start in fronts:
+            if k < start:
+                continue
+            grow = min(1.5, 0.7 + 0.3 * (k - start))
+            ring = gaussian(g, fx, fy, sx * grow * 1.9, sy * grow * 1.9, ang) > 0.3
+            pond = gaussian(g, fx, fy, sx * grow, sy * grow, ang) > 0.45
+            cleared |= ring
+            ponds |= pond
+        cleared |= road & (x < -22 + 44 * min(1.0, 0.25 + t))
+        river = dist < base_width * (1 + 0.3 * t)   # más ancho y turbio con el tiempo
+        hv = -11.4 + texture + speckle * 0.5
+        hv = np.where(cleared, -17.8 + speckle, hv)
+        hv = np.where(ponds, -24.5 + speckle * 0.4, hv)
+        hv = np.where(river, -25.0 + speckle * 0.4, hv)
+        frames.append(hv)
+    return frames, None
+
+
+def extraction_signals(site, frames, grid, dates):
+    """Señales de extracción para la vigilancia ambiental (sin atribuir responsables)."""
+    px_ha = grid["pixel_km2"] * 100
+    first, last = frames[0], frames[-1]
+    forest0 = first > -15.5
+    lost = forest0 & (last < -15.5) & (last > -21)
+    water0 = first < -21
+    water1 = last < -21
+    new_water = water1 & ~water0
+    n = len(frames)
+    k30 = max(0, n - 3)  # ~30 días antes (pasadas cada 12 días)
+    recent = (frames[k30] > -15.5) & (last < -15.5)
+    # confianza: cambio que se mantiene en las 3 últimas pasadas (no es ruido de una sola imagen)
+    persistent = np.logical_and.reduce([f < -15.5 for f in frames[-3:]]) & forest0
+    conf_ratio = float(np.nansum(persistent) / max(1, np.nansum(forest0 & (last < -15.5))))
+    confidence = "alta" if conf_ratio > 0.8 else "media" if conf_ratio > 0.5 else "baja"
+    # piscinas: manchas nuevas de agua quieta separadas del cauce
+    pits = 0
+    if site.get("template") == "mining":
+        from collections import deque
+        # fuera del cauce: se descarta el ensanche del propio río (franja junto al agua inicial)
+        near = water0.copy()
+        for _ in range(4):
+            near = near | np.roll(near, 1, 0) | np.roll(near, -1, 0) | np.roll(near, 1, 1) | np.roll(near, -1, 1)
+        mask = new_water & ~near
+        seen = np.zeros_like(mask)
+        rows, cols = mask.shape
+        for r in range(rows):
+            for c in range(cols):
+                if mask[r, c] and not seen[r, c]:
+                    size, q = 0, deque([(r, c)])
+                    seen[r, c] = True
+                    while q:
+                        a, b = q.popleft(); size += 1
+                        for da, db in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                            na, nb = a + da, b + db
+                            if 0 <= na < rows and 0 <= nb < cols and mask[na, nb] and not seen[na, nb]:
+                                seen[na, nb] = True; q.append((na, nb))
+                    if size >= 2:
+                        pits += 1
+    w0, w1 = float(np.nansum(water0)), float(np.nansum(water1))
+    return {
+        "forestLostHa": round(float(np.nansum(lost)) * px_ha),
+        "recentHa": round(float(np.nansum(recent)) * px_ha),
+        "newWaterHa": round(float(np.nansum(new_water)) * px_ha),
+        "pits": pits,
+        "waterChangePct": round((w1 - w0) / max(1.0, w0) * 100) if site.get("template") == "mining" else None,
+        "confidence": confidence,
+        "persistence": round(conf_ratio, 2),
+        "context": site.get("context", {}),
+        "kind": site.get("template"),
+    }
+
+
 DEMO = {
     "colombia-ladera": demo_colombia,
     "cdmx-subsidencia": demo_cdmx,
@@ -205,6 +305,7 @@ DEMO = {
     "flood": demo_sylhet,
     "deforestation": demo_rondonia,
     "volcano": demo_volcano,
+    "mining": demo_mining,
 }
 
 # ---------------------------------------------------------------------------
@@ -474,7 +575,7 @@ def assess(site, frames, grid, dates):
         return (series[i1] - series[i0]) / dt * 30
 
     if site["change"] == "backscatter":
-        thr = -15 if site["id"] not in ("rondonia-deforestacion", "caqueta-deforestacion") else -15.5
+        thr = -15 if site["id"] not in ("rondonia-deforestacion", "caqueta-deforestacion") and not site.get("watch") else -15.5
         series = np.array([np.nansum(f < thr) * grid["pixel_km2"] for f in frames])
         unit = "km²"
     elif site["change"] == "velocity":
@@ -498,6 +599,9 @@ def assess(site, frames, grid, dates):
         high, medium = 50, 15
         # agua que crece = atención alta; agua en retroceso = suelos saturados, atención moderada
         mag = recent if recent > 0 else abs(recent) * 0.06
+    elif site.get("template") == "mining":
+        high, medium = 0.6, 0.2   # km² al mes: la minería aluvial avanza en parches pequeños
+        mag = recent
     elif site["change"] == "backscatter":
         high, medium = 10, 3   # km² de bosque perdido al mes
         mag = recent
@@ -586,6 +690,7 @@ def build_site(site, mode, global_dates):
 
     stats = compute_stats(site, frames, grid)
     assessment = assess(site, frames, grid, dates)
+    extraction = extraction_signals(site, frames, grid, dates) if site.get("watch") else None
     manifest = {
         **{k: site[k] for k in ("id", "name", "place", "lat", "lon", "bbox", "change", "changeLabel", "product", "metric", "unit", "range", "colormap", "story")},
         "en": {**site.get("en", {}), "unit": "m/day" if site["unit"] == "m/día" else site["unit"]},
@@ -598,6 +703,7 @@ def build_site(site, mode, global_dates):
         "changeLegend": {"colors": COLORMAPS["change"], "range": [cmin, cmax], "diverging": True},
         "stats": stats,
         "assessment": assessment,
+        "extraction": extraction,
         "source": {
             "mode": source_mode,
             "product": f"NISAR L2 {site['product']}",
@@ -612,7 +718,8 @@ def build_site(site, mode, global_dates):
     (out_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"  {site['id']:<24} {source_mode:<5} {len(dates)} fechas  {cols}x{rows}px")
     return {k: manifest[k] for k in ("id", "name", "place", "lat", "lon", "bbox", "change", "changeLabel", "product", "unit", "story", "pilot", "en")} | {
-        "mode": source_mode, "headline": stats[0], "level": assessment["level"], "accelerating": assessment["accelerating"]}
+        "mode": source_mode, "headline": stats[0], "level": assessment["level"], "accelerating": assessment["accelerating"],
+        "watch": bool(site.get("watch")), "extraction": extraction}
 
 
 def main():

@@ -206,6 +206,13 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     return window.matchMedia("(max-width: 760px)").matches || memory <= 4 ? "compact" : "full";
   });
   const showScene = useCallback(() => { setReady(true); onReady(); }, [onReady]);
+  // con el mapa de una zona a pantalla completa el planeta queda oculto: no se dibuja (ahorra GPU y batería)
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    const onView = (event: Event) => setHidden(Boolean((event as CustomEvent<boolean>).detail));
+    window.addEventListener("saros:mapview", onView);
+    return () => window.removeEventListener("saros:mapview", onView);
+  }, []);
 
   // Girar el planeta arrastrando. Se escucha en window para no robar los clics de R3F.
   const startDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
@@ -241,7 +248,7 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
       <SceneBoundary onFailure={showScene}>
         <Canvas style={{ position: "absolute", inset: "-35%", width: "170%", height: "170%" }}
           camera={{ position: [0, 0, 3.5], fov: 58 }} dpr={quality === "compact" ? [1, 1.2] : [1, 1.6]}
-          frameloop={playing ? "always" : "demand"}
+          frameloop={playing && !hidden ? "always" : "demand"}
           fallback={<NoWebGL onReady={showScene} />}
           resize={{ offsetSize: true }}
           gl={{ antialias: quality === "full", alpha: true, powerPreference: "high-performance" }}>

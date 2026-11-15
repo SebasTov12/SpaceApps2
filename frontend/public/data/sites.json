@@ -37,7 +37,9 @@
         "noteEn": "Moving away from the satellite"
       },
       "level": "alta",
-      "accelerating": true
+      "accelerating": true,
+      "watch": false,
+      "extraction": null
     },
     {
       "id": "cdmx-subsidencia",
@@ -76,7 +78,9 @@
         "noteEn": "Moving away from the satellite"
       },
       "level": "alta",
-      "accelerating": false
+      "accelerating": false,
+      "watch": false,
+      "extraction": null
     },
     {
       "id": "sylhet-inundacion",
@@ -115,7 +119,9 @@
         "noteEn": "2026-08-02"
       },
       "level": "moderada",
-      "accelerating": false
+      "accelerating": false,
+      "watch": false,
+      "extraction": null
     },
     {
       "id": "jakobshavn-glaciar",
@@ -154,7 +160,9 @@
         "noteEn": "2026-08-02"
       },
       "level": "moderada",
-      "accelerating": false
+      "accelerating": false,
+      "watch": false,
+      "extraction": null
     },
     {
       "id": "rondonia-deforestacion",
@@ -193,7 +201,9 @@
         "noteEn": "2026-08-02"
       },
       "level": "alta",
-      "accelerating": false
+      "accelerating": false,
+      "watch": false,
+      "extraction": null
     },
     {
       "id": "bogota-subsidencia",
@@ -232,7 +242,9 @@
         "noteEn": "Moving away from the satellite"
       },
       "level": "alta",
-      "accelerating": false
+      "accelerating": false,
+      "watch": false,
+      "extraction": null
     },
     {
       "id": "la-mojana-inundacion",
@@ -271,7 +283,9 @@
         "noteEn": "2026-08-02"
       },
       "level": "moderada",
-      "accelerating": false
+      "accelerating": false,
+      "watch": false,
+      "extraction": null
     },
     {
       "id": "caqueta-deforestacion",
@@ -310,7 +324,23 @@
         "noteEn": "2026-08-02"
       },
       "level": "alta",
-      "accelerating": false
+      "accelerating": false,
+      "watch": true,
+      "extraction": {
+        "forestLostHa": 9934,
+        "recentHa": 1262,
+        "newWaterHa": 7,
+        "pits": 0,
+        "waterChangePct": null,
+        "confidence": "alta",
+        "persistence": 0.87,
+        "context": {
+          "miningTitle": "no aplica",
+          "protected": "no",
+          "territory": "Piedemonte amazónico con fincas y comunidades campesinas"
+        },
+        "kind": "deforestation"
+      }
     },
     {
       "id": "nevado-ruiz",
@@ -349,7 +379,176 @@
         "noteEn": "Uplift (toward the satellite)"
       },
       "level": "moderada",
-      "accelerating": false
+      "accelerating": false,
+      "watch": false,
+      "extraction": null
+    },
+    {
+      "id": "atrato-mineria",
+      "name": "Minería en el río Atrato",
+      "place": "Chocó, Colombia",
+      "lat": 5.55,
+      "lon": -76.62,
+      "bbox": [
+        -76.82,
+        5.4,
+        -76.42,
+        5.7
+      ],
+      "change": "backscatter",
+      "changeLabel": "Minería aluvial",
+      "product": "GCOV",
+      "unit": "dB",
+      "story": "En el Atrato, la minería aluvial abre piscinas junto al río y deja el agua turbia. El radar ve las piscinas (muy oscuras) y el bosque que desaparece, incluso bajo las nubes del Pacífico.",
+      "pilot": false,
+      "en": {
+        "name": "Mining on the Atrato River",
+        "place": "Chocó, Colombia",
+        "changeLabel": "Alluvial mining",
+        "metric": "HV backscatter",
+        "story": "On the Atrato, alluvial mining opens ponds next to the river. Radar sees the ponds (very dark) and the vanishing forest, even under Pacific clouds.",
+        "unit": "dB"
+      },
+      "mode": "demo",
+      "headline": {
+        "label": "Área sin bosque al inicio",
+        "labelEn": "Cleared area at start",
+        "value": "35",
+        "unit": "km²",
+        "unitEn": "km²",
+        "note": "2026-08-02",
+        "noteEn": "2026-08-02"
+      },
+      "level": "alta",
+      "accelerating": true,
+      "watch": true,
+      "extraction": {
+        "forestLostHa": 1875,
+        "recentHa": 1078,
+        "newWaterHa": 1406,
+        "pits": 13,
+        "waterChangePct": 42,
+        "confidence": "media",
+        "persistence": 0.67,
+        "context": {
+          "miningTitle": "fuera",
+          "protected": "no",
+          "territory": "Territorio colectivo de comunidades negras",
+          "river": "Río Atrato · sujeto de derechos (Sentencia T-622 de 2016)"
+        },
+        "kind": "mining"
+      }
+    },
+    {
+      "id": "bajo-cauca-mineria",
+      "name": "Minería en el Bajo Cauca",
+      "place": "Antioquia, Colombia",
+      "lat": 7.62,
+      "lon": -74.8,
+      "bbox": [
+        -75.0,
+        7.47,
+        -74.6,
+        7.77
+      ],
+      "change": "backscatter",
+      "changeLabel": "Minería aluvial",
+      "product": "GCOV",
+      "unit": "dB",
+      "story": "En el Bajo Cauca antioqueño la minería aluvial transforma las orillas de los ríos. SAROS marca las piscinas nuevas y el bosque perdido para que la autoridad lo verifique.",
+      "pilot": false,
+      "en": {
+        "name": "Mining in Bajo Cauca",
+        "place": "Antioquia, Colombia",
+        "changeLabel": "Alluvial mining",
+        "metric": "HV backscatter",
+        "story": "In Bajo Cauca, alluvial mining reshapes riverbanks. SAROS flags new ponds and lost forest for authorities to verify.",
+        "unit": "dB"
+      },
+      "mode": "demo",
+      "headline": {
+        "label": "Área sin bosque al inicio",
+        "labelEn": "Cleared area at start",
+        "value": "34",
+        "unit": "km²",
+        "unitEn": "km²",
+        "note": "2026-08-02",
+        "noteEn": "2026-08-02"
+      },
+      "level": "alta",
+      "accelerating": true,
+      "watch": true,
+      "extraction": {
+        "forestLostHa": 1496,
+        "recentHa": 968,
+        "newWaterHa": 1298,
+        "pits": 12,
+        "waterChangePct": 39,
+        "confidence": "media",
+        "persistence": 0.65,
+        "context": {
+          "miningTitle": "parcial",
+          "protected": "no",
+          "territory": "Zona rural con comunidades campesinas",
+          "river": "Ríos Nechí y Cauca"
+        },
+        "kind": "mining"
+      }
+    },
+    {
+      "id": "chiribiquete-borde",
+      "name": "Borde norte de Chiribiquete",
+      "place": "Guaviare, Colombia",
+      "lat": 1.95,
+      "lon": -73.1,
+      "bbox": [
+        -73.35,
+        1.75,
+        -72.85,
+        2.15
+      ],
+      "change": "backscatter",
+      "changeLabel": "Deforestación",
+      "product": "GCOV",
+      "unit": "dB",
+      "story": "La tala avanza por trochas hacia el Parque Nacional Chiribiquete. El radar sigue el avance mes a mes aunque haya nubes.",
+      "pilot": false,
+      "en": {
+        "name": "Northern edge of Chiribiquete",
+        "place": "Guaviare, Colombia",
+        "changeLabel": "Deforestation",
+        "metric": "HV backscatter",
+        "story": "Logging advances along tracks toward Chiribiquete National Park. Radar tracks it month by month despite clouds.",
+        "unit": "dB"
+      },
+      "mode": "demo",
+      "headline": {
+        "label": "Área sin bosque al inicio",
+        "labelEn": "Cleared area at start",
+        "value": "309",
+        "unit": "km²",
+        "unitEn": "km²",
+        "note": "2026-08-02",
+        "noteEn": "2026-08-02"
+      },
+      "level": "alta",
+      "accelerating": false,
+      "watch": true,
+      "extraction": {
+        "forestLostHa": 12562,
+        "recentHa": 2877,
+        "newWaterHa": 7,
+        "pits": 0,
+        "waterChangePct": null,
+        "confidence": "media",
+        "persistence": 0.77,
+        "context": {
+          "miningTitle": "no aplica",
+          "protected": "Zona de influencia del PNN Chiribiquete",
+          "territory": "Cercano a resguardos indígenas"
+        },
+        "kind": "deforestation"
+      }
     }
   ]
 }

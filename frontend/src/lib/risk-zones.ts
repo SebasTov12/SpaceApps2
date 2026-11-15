@@ -3,7 +3,10 @@
  * indicado; solo las que tienen `siteId` tienen capas en el explorador (las demás son ilustrativas).
  */
 
-export type RiskKind = "landslide" | "subsidence" | "flood" | "glacier" | "deforestation" | "volcano" | "earthquake" | "wildfire";
+export type RiskKind = "landslide" | "subsidence" | "flood" | "glacier" | "deforestation" | "volcano" | "earthquake" | "wildfire" | "mining";
+
+/** Tipos que entran en la vigilancia ambiental (huellas de extracción: tala y minería). */
+export const watchKinds: ReadonlySet<RiskKind> = new Set<RiskKind>(["deforestation", "mining"]);
 
 export type RiskZone = {
   id: string;
@@ -29,6 +32,7 @@ export const riskKinds: Record<RiskKind, { color: string; es: string; en: string
   volcano: { color: "#ff7a5c", es: "Volcán", en: "Volcano" },
   earthquake: { color: "#c9a2ff", es: "Sismo", en: "Earthquake" },
   wildfire: { color: "#ffb04a", es: "Incendio", en: "Wildfire" },
+  mining: { color: "#e0b341", es: "Minería", en: "Mining" },
 };
 
 export const riskZones: RiskZone[] = [
@@ -50,6 +54,13 @@ export const riskZones: RiskZone[] = [
     name: { es: "La Mojana inundada", en: "Flooded La Mojana" }, place: { es: "Sucre y Bolívar, Colombia", en: "Sucre & Bolívar, Colombia" } },
   { id: "caqueta-deforestacion", kind: "deforestation", lat: 1.35, lon: -74.85, siteId: "caqueta-deforestacion", country: "CO",
     name: { es: "Arco de deforestación", en: "Deforestation arc" }, place: { es: "Caquetá, Colombia", en: "Caquetá, Colombia" } },
+  // ---- Vigilancia ambiental: huellas de extracción ----
+  { id: "atrato-mineria", kind: "mining", lat: 5.55, lon: -76.62, siteId: "atrato-mineria", country: "CO",
+    name: { es: "Minería en el río Atrato", en: "Mining on the Atrato River" }, place: { es: "Chocó, Colombia", en: "Chocó, Colombia" } },
+  { id: "bajo-cauca-mineria", kind: "mining", lat: 7.62, lon: -74.8, siteId: "bajo-cauca-mineria", country: "CO",
+    name: { es: "Minería en el Bajo Cauca", en: "Mining in Bajo Cauca" }, place: { es: "Antioquia, Colombia", en: "Antioquia, Colombia" } },
+  { id: "chiribiquete-borde", kind: "deforestation", lat: 1.95, lon: -73.1, siteId: "chiribiquete-borde", country: "CO",
+    name: { es: "Borde norte de Chiribiquete", en: "Northern edge of Chiribiquete" }, place: { es: "Guaviare, Colombia", en: "Guaviare, Colombia" } },
   { id: "nevado-ruiz", kind: "volcano", lat: 4.892, lon: -75.324, siteId: "nevado-ruiz", country: "CO",
     event: { date: "2023-03-30", es: "El SGC elevó la alerta a naranja por aumento de la actividad sísmica.", en: "SGC raised the alert to orange due to increased seismic activity." },
     name: { es: "Volcán Nevado del Ruiz", en: "Nevado del Ruiz volcano" }, place: { es: "Caldas y Tolima, Colombia", en: "Caldas & Tolima, Colombia" } },
@@ -111,4 +122,5 @@ export const riskKindInfo: Record<RiskKind, { es: string; en: string }> = {
   volcano: { es: "La inflación del suelo antes de una erupción aparece como franjas en el interferograma.", en: "Ground inflation before an eruption shows up as interferogram fringes." },
   earthquake: { es: "El interferograma muestra cuánto se desplazó el terreno a cada lado de la falla.", en: "Interferograms show how far the ground moved on each side of the fault." },
   wildfire: { es: "Los cambios de retrodispersión delimitan las cicatrices de incendio.", en: "Backscatter change outlines burn scars." },
+  mining: { es: "Las piscinas de minería son agua quieta: el radar las ve muy oscuras, junto al bosque que desaparece, aunque haya nubes.", en: "Mining ponds are still water: radar sees them very dark, next to vanishing forest, even under clouds." },
 };

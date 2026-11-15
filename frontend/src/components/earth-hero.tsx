@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
 import ZoneView from "@/components/globe/zone-view";
 import HeroOverlay from "@/components/globe/hero-overlay";
+import SaroGuide from "@/components/globe/saro-guide";
 import SpaceDepth, { OrbitRings } from "@/components/space-depth";
 import SarosHeroChrome, { SarosWordmark } from "@/components/saros-hero-chrome";
 
@@ -74,6 +75,8 @@ export default function EarthHero() {
         </motion.div>
         {/* Zona elegida: acercamiento y panel con su información */}
         <ZoneView />
+        {/* Saro: guía animado que explica cada zona */}
+        <SaroGuide />
         {/* Último evento, cifras y buscador de zonas */}
         <HeroOverlay progress={progress} />
         {/* Cintillo de titulares (arriba → abajo con el scroll) */}

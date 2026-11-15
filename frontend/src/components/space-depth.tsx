@@ -13,7 +13,7 @@ function rng(seed: number) {
 }
 
 const rand = rng(7);
-const TWINKLES = Array.from({ length: 70 }, (_, i) => ({
+const TWINKLES = Array.from({ length: 34 }, (_, i) => ({
   id: i,
   x: rand() * 100,
   y: rand() * 100,
@@ -35,12 +35,11 @@ export default function SpaceDepth() {
       {GALAXIES.map((g, i) => (
         <span key={i} className="space-galaxy" style={{ left: `${g.x}%`, top: `${g.y}%`, width: `${g.w}vw`, height: `${g.h}vw`, rotate: `${g.rot}deg`, opacity: g.o }} />
       ))}
-      <svg className="space-twinkles" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <div className="space-twinkles">
         {TWINKLES.map((s) => (
-          <circle key={s.id} cx={s.x} cy={s.y} r={s.r / 10} fill={s.hue}
-            style={{ animationDelay: `${s.delay.toFixed(2)}s`, animationDuration: `${s.dur.toFixed(2)}s` }} />
+          <i key={s.id} style={{ left: `${s.x.toFixed(2)}%`, top: `${s.y.toFixed(2)}%`, width: `${(s.r * 2).toFixed(1)}px`, height: `${(s.r * 2).toFixed(1)}px`, background: s.hue, animationDelay: `${s.delay.toFixed(2)}s`, animationDuration: `${s.dur.toFixed(2)}s` }} />
         ))}
-      </svg>
+      </div>
       <i className="space-meteor" style={{ top: "14%", left: "62%", animationDelay: "3s" }} />
       <i className="space-meteor" style={{ top: "34%", left: "18%", animationDelay: "11s" }} />
       <i className="space-meteor" style={{ top: "8%", left: "36%", animationDelay: "19s" }} />
