@@ -108,8 +108,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
       </div>
       {hazards && hazards.located > 0 && (
         <div className="hz-legend" title={hazards.note}>
-          <i />
-          <span><b>{hazards.located.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</b> {lang === "es" ? "registros reales en el mapa" : "real records on the map"}</span>
+          <span><b>{hazards.located.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</b> {lang === "es" ? "Registros totales" : "Total records"}</span>
           <small>{lang === "es" ? "Emergencias e inventarios · UNGRD · SGC" : "Emergencies & inventories · UNGRD · SGC"}</small>
         </div>
       )}
