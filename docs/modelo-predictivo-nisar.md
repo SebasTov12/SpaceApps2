@@ -17,6 +17,15 @@ Resultados ASF/CMR observados durante el inventario:
 
 El núcleo contiene dos stacks provisionales de 9 pares. Ascendente 047/frame 003 y descendente 083/frame 087, ambos modo 2000 SH. Cada uno conecta 10 fechas entre junio y octubre de 2026. Aún no hay rásteres procesados ni pronósticos calculados.
 
+La consulta repetida desde el servidor con `asf_search 10.3.0` confirmó 18
+granules de la colección `NISAR_L2_GUNW_PROVISIONAL_V1`: 9 ascendentes y 9
+descendentes. Un dry-run del descargador selecciona los dos pares D/083/087
+consecutivos del 19 de junio al 13 de julio de 2026, misma CRID P05023, por
+4.555 GB decimales; no los descargó. Cada granule mide aproximadamente
+2.278 GB. El encadenamiento incluye una brecha de 24 días entre 25 de julio y
+18 de agosto, consistente con el hueco de adquisición oficial del 27 de julio
+al 10 de agosto ([hueco de datos NISAR](https://nisar-docs.asf.alaska.edu/availability-overview/)).
+
 Actualización del 14 de noviembre de 2026: desde el servidor se consultó por
 `shortName=NISAR_L2_GUNW_V1`, la colección VALIDATED. CMR devolvió 140 granules
 globales, 64 para América y cero que intersequen la caja núcleo de Neiva. El

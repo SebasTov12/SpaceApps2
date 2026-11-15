@@ -110,10 +110,14 @@ livianos y documentación de procedencia.
   del entrenamiento/almacenamiento científico.
 - La prueba de consulta con `NISAR_DATA_MATURITY=VALIDATED` encontró que ASF
   `asf_search` no admite `dataMaturity` como argumento. Se corrigió el filtro
-  para traducir la madurez al `shortName` documentado de la colección y se
-  acotó el requisito a `asf_search>=10,<11`, igual que el procesador. La
+  para traducir la madurez al `shortName` documentado y retirar el argumento
+  no admitido. La imagen del servidor usa `asf_search 10.3.0`; el requisito se
+  acotó a `>=10,<11` y debe seguirse revisando contra el Cookbook ASF. La
   colección `NISAR_L2_GUNW_V1` devolvió 140 granules globales, 64 de América y
-  ninguno en la caja núcleo de Neiva.
+  ninguno en la caja núcleo. La consulta PROVISIONAL devolvió 18 granules: dos
+  stacks de 9 pares, 10 fechas por stack y desde el 17/19 de junio al
+  15/17 de octubre de 2026. El dry-run seleccionó dos pares D/083/087 de la
+  CRID P05023 por 4.555 GB; no hubo transferencia.
 - También se corrigió el modo `build_layers.py --real`: ya no cae a demo si
   faltan datos; ahora lee la ventana espacial del ráster, rechaza capas
   ambiguas o sin EPSG, separa configuraciones/CRID, valida cadenas GUNW y
