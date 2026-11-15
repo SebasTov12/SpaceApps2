@@ -1,7 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useTransform, type MotionValue } from "framer-motion";
-import { ArrowRight, Search, X, Globe2, TriangleAlert, Leaf } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Globe2, Leaf, Search, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { levelInfo } from "@/lib/insights";
 import { useI18n } from "@/lib/i18n";
@@ -14,13 +14,11 @@ const copy = {
   es: {
     search: "Buscar zona", placeholder: "Busca un lugar o tipo de riesgo (p. ej. Mocoa, volcán, Bogotá)…", none: "Sin resultados",
     latest: "Último evento detectado", accel: "Movimiento acelerado", view: "Ver zona",
-    stats: (total: number, co: number, high: number) => `${total} zonas vigiladas · ${co} en Colombia · ${high} en atención alta`,
     hint: "Toca un punto del planeta o búscalo", colombia: "Colombia", world: "Resto del mundo",
   },
   en: {
     search: "Search zone", placeholder: "Search a place or risk type (e.g. Mocoa, volcano, Bogotá)…", none: "No results",
     latest: "Latest detected event", accel: "Accelerating movement", view: "Open zone",
-    stats: (total: number, co: number, high: number) => `${total} zones watched · ${co} in Colombia · ${high} at high attention`,
     hint: "Tap a point on the planet or search it", colombia: "Colombia", world: "Rest of the world",
   },
 };
@@ -28,7 +26,7 @@ const copy = {
 const fold = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Capa ligera sobre el planeta: último evento, cifras y buscador de zonas. */
-export default function HeroOverlay({ progress: _progress }: { progress: MotionValue<number> }) {
+export default function HeroOverlay() {
   const { lang, globalLang } = useI18n();
   const c = copy[lang];
   const [sites, setSites] = useState<SiteSummary[]>([]);
@@ -55,12 +53,7 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadSites().then((list) => {
-      setSites(list);
-      // el último evento: Colombia primero, con aceleración o atención alta
-      const pick = list.find((s) => s.country === "CO" && s.accelerating) ?? list.find((s) => s.country === "CO" && s.level === "alta") ?? list[0];
-      if (pick) globeState.featured = pick.id;
-    }).catch(() => setSites([]));
+    loadSites().then(setSites).catch(() => setSites([]));
   }, []);
 
   // atajos: "/" o Ctrl+K abren el buscador
@@ -78,11 +71,6 @@ export default function HeroOverlay({ progress: _progress }: { progress: MotionV
   useEffect(() => {
     if (open) setTimeout(() => input.current?.focus(), 50);
   }, [open]);
-
-  const featured = sites.find((s) => s.id === globeState.featured) ?? null;
-  const featuredZone = riskZones.find((z) => z.id === featured?.id);
-  const high = sites.filter((s) => s.level === "alta").length;
-  const colombia = riskZones.filter((z) => z.country === "CO").length;
 
   const results = useMemo(() => {
     const q = fold(query.trim());
