@@ -62,9 +62,11 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #9ce2
 .nisar-spacecraft{display:block;width:100%;height:auto;overflow:visible}
 @keyframes nisar-orbit{from{transform:rotate(41deg)}to{transform:rotate(401deg)}}
 .scroll-cue{position:absolute;z-index:5;bottom:31px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;color:#9cadb1;font-size:8px;letter-spacing:.19em}.scroll-cue svg{color:var(--cyan);animation:nudge 1.8s ease-in-out infinite}@keyframes nudge{50%{transform:translateY(5px)}}
-.mobile-globe-cue{display:none;position:absolute;z-index:12;left:50%;bottom:max(22px,env(safe-area-inset-bottom));translate:-50% 0;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:52px;padding:8px 16px;border:0;background:transparent;color:#c3a5ef;font-size:9px;font-weight:500;letter-spacing:.2em;white-space:nowrap;cursor:pointer}
-.mobile-globe-cue span{animation:globe-cue-shimmer 3.6s ease-in-out infinite;text-shadow:0 1px 8px #090515}
-@keyframes globe-cue-shimmer{0%,100%{opacity:.58}50%{opacity:1;text-shadow:0 0 12px #b98beb80}}
+.mobile-globe-cue{display:none;position:absolute;z-index:12;left:50%;bottom:max(22px,env(safe-area-inset-bottom));translate:-50% 0;width:70px;height:70px;align-items:center;justify-content:center;padding:0;border:0;background:transparent;color:#d5b6ff;cursor:pointer;filter:drop-shadow(0 0 8px #8e4bff80);animation:cue-float 2.2s ease-in-out infinite}
+.mobile-cue-chevron{width:38px;height:38px;overflow:visible;fill:none;stroke:url(#cue-gradient);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px #c37aff)}
+.mobile-globe-cue:before{content:"";position:absolute;inset:8px;border-radius:50%;background:radial-gradient(circle,rgba(177,112,255,.22),rgba(123,65,205,.08) 48%,transparent 72%);opacity:.7;transition:opacity .2s}
+.mobile-globe-cue:hover:before,.mobile-globe-cue:focus-visible:before{opacity:1}
+@keyframes cue-float{0%,100%{transform:translateY(-3px);opacity:.72}50%{transform:translateY(5px);opacity:1}}
 .mobile-globe-cue svg{color:#aa7aff;animation:globe-cue-nudge 1.8s ease-in-out infinite}
 .mobile-globe-cue:hover{color:#e1ceff}
 .mobile-globe-cue:focus-visible{outline:2px solid #bd9aff;outline-offset:4px}
@@ -114,7 +116,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #9ce2
   html.mobile-globe-page body{position:fixed;inset:0;width:100%}
   .earth-scroll,.earth-stage{height:100dvh}
   .earth-stage{position:relative}
-  .hero-wordmark{top:64%}
-  .wordmark-title{font-size:clamp(48px,16vw,112px);gap:.14em}
+  .hero-wordmark{top:60%}
+  .wordmark-title{font-size:clamp(62px,17vw,104px);gap:.14em}
 }
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.scroll-cue svg,.mobile-globe-cue svg,.mobile-globe-cue span,.space-stars,.space-dust,.route-state-orbit,.state-progress i,.scene-loading-ring{animation:none}.dashboard-main{opacity:1!important;transform:none!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.scroll-cue svg,.mobile-globe-cue,.mobile-globe-cue svg,.space-stars,.space-dust,.route-state-orbit,.state-progress i,.scene-loading-ring{animation:none}.dashboard-main{opacity:1!important;transform:none!important}}

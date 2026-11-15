@@ -2998,7 +2998,7 @@ html body .saro.in-zone .saru-caption{margin:26px 0 0;border-radius:5px 16px 16p
 .saru-btn:hover{background:rgba(167,139,250,.24)}
 .saru-btn.on{color:#5ef0ff}
 .saru-btn-text{width:auto;padding:0 9px;font-size:11.5px;font-weight:600;color:#c9b7ff}
-.saru-hint{margin:7px 0 0;font-size:11px;color:#fcd34d;animation:saro-tip 1.8s ease-in-out infinite}
+.saru-hint{margin:7px 0 0;font-size:11px;color:#bd8cff;animation:saro-tip 1.8s ease-in-out infinite;text-shadow:0 0 10px rgba(164,103,255,.28)}
 
 /* entrada: llega volando, gira, rebota y saluda */
 .saru-enter{animation:saru-in 1.35s cubic-bezier(.22,1.3,.36,1) both}
@@ -3038,7 +3038,11 @@ html body .saro.in-zone .saru-caption{margin:26px 0 0;border-radius:5px 16px 16p
 /* ---------- SARU: chat pegado debajo, recorrido punto por punto y panel guiado ---------- */
 html body .saro{flex-direction:column;align-items:flex-start;gap:8px;bottom:62px}
 html body .saro.in-zone{top:74px;bottom:auto}
-.saru-row{display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-end;gap:4px}
+.saru-row{position:relative;display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-end;gap:4px}
+.saru-avatar-anchor{flex:none;position:relative;line-height:0}
+.saru-chat-reveal{overflow:hidden;max-width:100%;pointer-events:auto;padding:1px}
+.saru-chat-pending{margin:4px 8px 10px;color:#c7a5f4;font-size:12px}
+.saro-avatar:focus-visible{outline:2px solid #bd8cff;outline-offset:4px;border-radius:16px}
 html body .saro.in-zone .saru-row{align-items:flex-start}
 html body .saro .saru-ask,html body .saro .saru-ask.in-zone{position:relative;left:auto;right:auto;bottom:auto;transform:none;width:min(430px,calc(100vw - 44px));pointer-events:auto}
 @media(max-width:900px){html body .saro.in-zone{top:auto;bottom:calc(56vh + 8px)}html body .saro .saru-ask{width:calc(100vw - 20px)}}
@@ -3168,3 +3172,21 @@ html body .zs-sos .zs-call-n.is-long{font-size:15px}
 html body .zs-sos-more a,html body .zs-sos-more b{white-space:nowrap}
 /* frases de Saru para el traductor automático: en la página pero fuera de la vista */
 html body .saru-pool{position:fixed;left:0;top:0;width:320px;height:1px;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none;z-index:-1}
+
+/* Mobile: controls share the top row; Saru stays above the news ticker. */
+@media(max-width:720px){
+  html body .mode-switch{top:46px;bottom:auto;left:58px;right:58px;translate:none;min-width:0;min-height:44px;padding:3px;gap:2px;display:grid;grid-template-columns:.7fr 1fr 1.6fr;border-radius:20px}
+  html body .mode-switch button{min-width:0;min-height:38px;padding:4px 3px;justify-content:center;font-size:clamp(9px,2.4vw,11.5px);line-height:1.15;gap:2px;text-align:center}
+  html body .mode-switch .mode-label{overflow-wrap:anywhere}
+  html body .mode-switch .mode-dot{display:none}
+  html body .hero-lang-btn,html body .hero-search-btn{width:40px;height:44px;min-height:44px;top:46px}
+  html body .hero-lang-btn{left:8px}
+  html body .hero-search-btn{right:8px}
+  html body .saro:not(.in-zone){left:10px;right:10px;bottom:calc(50px + env(safe-area-inset-bottom));gap:4px}
+  html body .saro:not(.in-zone) .saru-row{width:100%;gap:6px}
+  html body .saro:not(.in-zone) .saru-caption{width:auto;flex:1;min-width:0;margin:0 0 8px;padding:10px 11px 8px}
+  html body .saro:not(.in-zone) .saru-text{max-height:min(18dvh,120px);font-size:12px;line-height:1.5}
+  html body .saro .saru-ask{width:calc(100vw - 22px);max-width:100%}
+  .saru-history{max-height:min(24dvh,180px);overscroll-behavior:contain}
+  .saru-input input{font-size:16px}
+}

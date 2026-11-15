@@ -45,8 +45,6 @@ export default function HeroOverlay() {
   const changeMode = (next: "all" | "risk" | "watch") => setMode(next);
   useEffect(() => {
     globeState.mode = mode;
-    // en vigilancia ambiental el planeta gira hacia el Pacífico colombiano (Atrato)
-    if (mode === "watch" && globeState.zoom === 0) globeState.focus = "atrato-mineria";
   }, [mode]);
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);

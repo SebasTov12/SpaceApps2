@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { History, MessageCircle, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "lucide-react";
+import { History, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emergencyFor } from "@/lib/emergency";
 import { recommendations } from "@/lib/insights";
@@ -281,8 +281,10 @@ export default function SaroGuide() {
     };
     window.addEventListener(UI_REVEAL, onReveal);
     const frame = requestAnimationFrame(() => {
-      arrivedRef.current = globeState.uiRevealed;
-      setArrived(globeState.uiRevealed);
+      const on = globeState.uiRevealed;
+      if (on && !arrivedRef.current) setArrivals((n) => n + 1);
+      arrivedRef.current = on;
+      setArrived(on);
     });
     return () => {
       cancelAnimationFrame(frame);
@@ -492,9 +494,9 @@ export default function SaroGuide() {
     if (aside) { setAside(null); return; }           // tras reaccionar a un sector, sigue el recorrido
     setStep((s) => (s < lines.length - 1 ? s + 1 : s));
   }, [aside, lines.length]);
-  const autoNext = playing && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
+  const autoNext = playing && !chatOpen && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
   useEffect(() => {
-    if (away || minimized || thinking || (!playing && !reply && !aside)) { stopAll(); return; }   // fuera, en pausa o pensando: calla
+    if (away || minimized || thinking || (chatOpen && !reply) || (!playing && !reply && !aside)) { stopAll(); return; }   // fuera, en pausa o pensando: calla
     const canSpeak = voice && unlocked;
     if (canSpeak) {
       speak(text, () => { if (autoNext) window.setTimeout(advance, 650); });
@@ -507,7 +509,7 @@ export default function SaroGuide() {
     const wait = Math.max(2600, text.length * 55);
     const id = window.setTimeout(advance, wait);
     return () => window.clearTimeout(id);
-  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away]);
+  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away, chatOpen]);
 
   const talking = hydrated && (typed.length < text.length || (voice && unlocked && speaking));
   // mientras señala algo en el mapa, Saru se inclina hacia él
@@ -522,6 +524,7 @@ export default function SaroGuide() {
     const local = answer(q, { zone: z, manifest: manifestRef.current, role });
     if (local.role) setRole(local.role);
     const past = historyRef.current;
+    setShowHistory(true);
     setHistory((list) => [...list, { from: "user" as const, text: q }].slice(-12));
     setInput("");
     setAside(null);
@@ -569,6 +572,17 @@ export default function SaroGuide() {
     rec.start();
   };
   const resumeTour = () => { setReply(null); setAside(null); setPlaying(true); };
+  const chatTransition = { duration: reduce ? 0 : 0.8, ease: [0.22, 1, 0.36, 1] as const };
+  const closeChat = () => {
+    setChatOpen(false);
+    setMinimized(false);
+    requestAnimationFrame(() => avatarRef.current?.focus({ preventScroll: true }));
+  };
+  const toggleChat = () => {
+    if (chatOpen) closeChat();
+    else { setMinimized(false); setShowHistory(true); setChatOpen(true); }
+  };
+  const avatarRef = useRef<HTMLButtonElement>(null);
 
   return (
     <>
@@ -578,12 +592,12 @@ export default function SaroGuide() {
         </div>
       )}
       <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}`} aria-hidden={away || undefined}>
-        <div className="saru-row">
-        <AnimatePresence initial={false}>
-          {!minimized && (
-            <motion.div key="caption" className="saru-caption" role="status" aria-live="polite"
-              initial={{ opacity: 0, x: -12, scale: 0.95 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -10, scale: 0.95 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}>
+        <motion.div layout="position" transition={chatTransition} className="saru-row">
+        <AnimatePresence initial={false} mode="popLayout">
+          {!minimized && !chatOpen && (
+            <motion.div layout="position" key="caption" className="saru-caption" role="status" aria-live="polite"
+              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
+              transition={chatTransition}>
               <p className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{auto ? shownText : typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
               <div className="saru-bar">
                 <span className="saru-name">Saru</span>
@@ -593,7 +607,6 @@ export default function SaroGuide() {
                 {reply
                   ? <button type="button" className="saru-btn saru-btn-text" onClick={resumeTour}>{es ? "Seguir el recorrido" : "Resume tour"}</button>
                   : <button type="button" className="saru-btn" onClick={() => setPlaying((p) => !p)} aria-label={playing ? (es ? "Pausar" : "Pause") : (es ? "Reanudar" : "Resume")}>{playing ? <Pause size={13} /> : <Play size={13} />}</button>}
-                <button type="button" className={`saru-btn${chatOpen ? " on" : ""}`} onClick={() => setChatOpen((o) => !o)} aria-label={es ? "Preguntarle a Saru" : "Ask Saru"}><MessageCircle size={13} /></button>
                 <button type="button" className={`saru-btn${voice ? " on" : ""}`} onClick={() => setVoice((v) => !v)} aria-pressed={voice} aria-label={es ? "Voz" : "Voice"}>{voice ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>
                 <button type="button" className="saru-btn" onClick={() => setMinimized(true)} aria-label={es ? "Ocultar a Saru" : "Hide Saru"}><Minus size={13} /></button>
               </div>
@@ -601,8 +614,10 @@ export default function SaroGuide() {
             </motion.div>
           )}
         </AnimatePresence>
-        <button type="button" className="saro-avatar saru-enter" key={`${zoneId ?? "home"}-${arrivals}`} onClick={() => (minimized ? setMinimized(false) : setPlaying((p) => !p))}
-          aria-label={minimized ? (es ? "Mostrar a Saru" : "Show Saru") : (es ? "Pausar o seguir" : "Pause or continue")}>
+        <motion.div layout="position" transition={chatTransition} className="saru-avatar-anchor">
+        <button ref={avatarRef} type="button" className="saro-avatar saru-enter" key={`${zoneId ?? "home"}-${arrivals}`} onClick={toggleChat}
+          aria-expanded={chatOpen} aria-controls={chatOpen ? "saru-chat" : undefined}
+          aria-label={chatOpen ? (es ? "Cerrar chat de Saru y mostrar diálogo" : "Close Saru chat and show dialogue") : (es ? "Conversar con Saru" : "Chat with Saru")}>
           <span className="saru-trail" aria-hidden="true" />
           {/* aterrizaje: anillo de impacto y nubes de humo que se abren a los lados */}
           <span className="saru-land" aria-hidden="true">
@@ -612,13 +627,15 @@ export default function SaroGuide() {
           </span>
           <SaroFigure mood={mood} talking={talking} />
         </button>
-        </div>
+        </motion.div>
+        </motion.div>
 
       {/* Chat: barra translúcida pegada a Saru; responde en su subtítulo y con su voz */}
       <AnimatePresence>
         {chatOpen && (
-          <motion.div key="askbar" className={`saru-ask${zone ? " in-zone" : ""}`}
-            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+          <motion.div key="askbar" className="saru-chat-reveal"
+            initial={{ height: 0, opacity: 0, y: 28 }} animate={{ height: "auto", opacity: 1, y: 0 }} exit={{ height: 0, opacity: 0, y: 28 }} transition={chatTransition}>
+          <div id="saru-chat" className={`saru-ask${zone ? " in-zone" : ""}`} role="region" aria-label={es ? "Chat con Saru" : "Chat with Saru"} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeChat(); } }}>
             <AnimatePresence>
               {showHistory && history.length > 0 && (
                 <motion.div className="saru-history" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
@@ -626,6 +643,7 @@ export default function SaroGuide() {
                 </motion.div>
               )}
             </AnimatePresence>
+            {thinking && <p className="saru-chat-pending" role="status">{es ? "Revisando los datos…" : "Checking the data…"}</p>}
             <div className="saru-chips">
               {QUICK_QUESTIONS.map((q) => <button key={q} type="button" onClick={() => ask(q)}>{q}</button>)}
             </div>
@@ -634,8 +652,9 @@ export default function SaroGuide() {
               <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={es ? "Pregúntale a Saru…" : "Ask Saru…"} aria-label={es ? "Pregunta para Saru" : "Question for Saru"} />
               <button type="button" className={`saru-ib${listening ? " rec" : ""}`} onClick={listen} aria-label={es ? "Hablarle a Saru" : "Talk to Saru"}><Mic size={15} /></button>
               <button type="submit" className="saru-ib send" aria-label={es ? "Enviar" : "Send"}><Send size={15} /></button>
-              <button type="button" className="saru-ib" onClick={() => setChatOpen(false)} aria-label={es ? "Cerrar" : "Close"}><X size={15} /></button>
+              <button type="button" className="saru-ib" onClick={closeChat} aria-label={es ? "Cerrar" : "Close"}><X size={15} /></button>
             </form>
+          </div>
           </motion.div>
         )}
       </AnimatePresence>

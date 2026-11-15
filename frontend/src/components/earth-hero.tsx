@@ -3,7 +3,6 @@
 import { animate, motion, useInView, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "framer-motion";
 import { UI_REVEAL, globeState } from "@/components/globe/globe-state";
 import dynamic from "next/dynamic";
-import { ArrowDown } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
 import ZoneView from "@/components/globe/zone-view";
@@ -90,8 +89,8 @@ export default function EarthHero() {
     setExploreLocked(true);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     entranceAnimation.current = animate(mobileProgress, 0.8, {
-      duration: reducedMotion ? 0 : 1.8,
-      ease: [0.22, 1, 0.36, 1],
+      duration: reducedMotion ? 0 : 2.4,
+      ease: [0.45, 0, 0.16, 1],
     });
   }, [exploreLocked, mobileMode, mobileProgress, sceneReady]);
   const { scrollYProgress } = useScroll({
@@ -176,8 +175,10 @@ export default function EarthHero() {
           onClick={continueToGlobe}
           aria-label={lang === "en" ? "Tap to discover the planet" : "Toca para descubrir el planeta"}
         >
-          <span>{lang === "en" ? "TAP TO DISCOVER" : "TOCA PARA DESCUBRIR"}</span>
-          <ArrowDown size={19} strokeWidth={1.4} aria-hidden="true" />
+          <svg className="mobile-cue-chevron" viewBox="0 0 48 44" aria-hidden="true">
+            <defs><linearGradient id="cue-gradient" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#b68cff" /><stop offset="1" stopColor="#7425df" /></linearGradient></defs>
+            <path d="M8 7 24 21 40 7M8 23 24 37 40 23" />
+          </svg>
         </button>}
       </div>
     </section>
