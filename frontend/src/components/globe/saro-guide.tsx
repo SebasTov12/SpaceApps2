@@ -5,7 +5,7 @@ import { History, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "luc
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emergencyFor } from "@/lib/emergency";
 import { recommendations } from "@/lib/insights";
-import { isAutoLang, useI18n, type Lang } from "@/lib/i18n";
+import { isAutoLang, ProtectedTerms, useI18n, type Lang } from "@/lib/i18n";
 import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import { loadManifest, type AttentionLevel, type SiteManifest } from "@/lib/sites";
@@ -326,21 +326,23 @@ export default function SaroGuide() {
   const poolRef = useRef<HTMLDivElement | null>(null);
   const pool = useMemo(() => (auto ? Array.from(new Set([...lines, aside, reply].filter((t): t is string => !!t))) : []), [auto, lines, aside, reply]);
   const translatedOf = useCallback((t: string) => {
+    if (poolRef.current?.dataset.language !== globalLang) return null;
     const el = poolRef.current?.querySelector(`[data-k="${voiceKey(t)}"]`) as HTMLElement | null;
     return el?.querySelector("font") ? el.innerText.trim() : null;
-  }, []);
+  }, [globalLang]);
   const [translated, setTranslated] = useState<Record<string, string>>({});
+  const translationKey = `${globalLang}:${text}`;
   useEffect(() => {
-    if (!auto || !text || translated[text]) return;
+    if (!auto || !text || translated[translationKey]) return;
     const started = Date.now();
     const id = window.setInterval(() => {
       const value = translatedOf(text);
-      if (value) setTranslated((map) => ({ ...map, [text]: value }));
+      if (value) setTranslated((map) => ({ ...map, [translationKey]: value }));
       if (value || Date.now() - started > 9000) window.clearInterval(id);
     }, 300);
     return () => window.clearInterval(id);
-  }, [auto, text, translated, translatedOf]);
-  const shownText = auto ? translated[text] ?? text : text;
+  }, [auto, text, translated, translatedOf, translationKey]);
+  const shownText = auto ? translated[translationKey] ?? text : text;
   const mood: Mood = zone ? moodFor(manifest?.assessment?.level ?? (zone.siteId ? undefined : "baja")) : "happy";
   const watch = zone ? watchKinds.has(zone.kind) : false;
 
@@ -482,7 +484,8 @@ export default function SaroGuide() {
         const said = ready ?? t;
         // Comparte con el subtítulo la misma traducción que encontró la voz. Así no
         // puede ocurrir que Saru hable traducido mientras el texto conserve el original.
-        if (ready) setTranslated((map) => map[t] === ready ? map : { ...map, [t]: ready });
+        const key = `${globalLang}:${t}`;
+        if (ready) setTranslated((map) => map[key] === ready ? map : { ...map, [key]: ready });
         if (!voiceFor) {
           // sin voz para ese idioma: no se lee en otro idioma; se da tiempo de lectura y sigue
           setSpeaking(true);
@@ -603,8 +606,8 @@ export default function SaroGuide() {
   return (
     <>
       {auto && (
-        <div className="saru-pool" ref={poolRef} aria-hidden="true">
-          {pool.map((t) => <p key={voiceKey(t)} data-k={voiceKey(t)}>{t}</p>)}
+        <div key={globalLang} className="saru-pool" ref={poolRef} data-language={globalLang} aria-hidden="true">
+          {pool.map((t) => <p key={voiceKey(t)} data-k={voiceKey(t)}><ProtectedTerms text={t} /></p>)}
         </div>
       )}
       <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}`} aria-hidden={away || undefined}>
@@ -616,7 +619,7 @@ export default function SaroGuide() {
               transition={chatTransition}>
               <p className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{auto ? shownText : typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
               <div className="saru-bar">
-                <span className="saru-name">Saru</span>
+                <span className="saru-name notranslate" translate="no">Saru</span>
                 {!reply && lines.length > 1 && (
                   <span className="saru-dots">{lines.map((_, i) => <button key={i} type="button" className={i === step ? "on" : i < step ? "seen" : undefined} onClick={() => { setAside(null); setStep(i); }} aria-label={`${es ? "Frase" : "Line"} ${i + 1}`} />)}</span>
                 )}
@@ -626,7 +629,7 @@ export default function SaroGuide() {
                 <button type="button" className={`saru-btn${voice ? " on" : ""}`} onClick={() => setVoice((v) => !v)} aria-pressed={voice} aria-label={es ? "Voz" : "Voice"}>{voice ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>
                 <button type="button" className="saru-btn" onClick={() => setMinimized(true)} aria-label={es ? "Ocultar a Saru" : "Hide Saru"}><Minus size={13} /></button>
               </div>
-              {voice && !unlocked && <p className="saru-hint">{es ? "🔊 Toca cualquier parte para oír a Saru" : "🔊 Tap anywhere to hear Saru"}</p>}
+              {voice && !unlocked && <p className="saru-hint"><ProtectedTerms text={es ? "🔊 Toca cualquier parte para oír a Saru" : "🔊 Tap anywhere to hear Saru"} /></p>}
             </motion.div>
           )}
         </AnimatePresence>

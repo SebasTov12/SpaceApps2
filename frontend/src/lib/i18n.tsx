@@ -1,6 +1,7 @@
 "use client";
 
 import { takeChanged } from "./translate-guard";
+import { clearTranslationCookies, translationSession } from "./translation-session";
 import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
 type GoogleTranslateOptions = { pageLanguage: string; includedLanguages: string; autoDisplay: boolean };
@@ -8,19 +9,6 @@ type GoogleTranslateWindow = Window & {
   googleTranslateElementInit?: () => void;
   google?: { translate?: { TranslateElement?: new (options: GoogleTranslateOptions, elementId: string) => unknown } };
 };
-
-function applyGoogleLanguage(langCode: string, retries = 8) {
-  if (typeof document === "undefined") return;
-  const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-  if (!select) {
-    if (retries > 0) window.setTimeout(() => applyGoogleLanguage(langCode, retries - 1), 250);
-    return;
-  }
-  const googleCode = langCode === "he" ? "iw" : langCode;
-  const hasCode = Array.from(select.options).some((option) => option.value.toLowerCase() === googleCode.toLowerCase());
-  select.value = langCode === "es" && !hasCode ? "" : googleCode;
-  select.dispatchEvent(new Event("change"));
-}
 
 export type Lang = "es" | "en";
 
@@ -209,22 +197,10 @@ const GLOBAL_STORAGE_KEY = "saros-global-lang";
 const CHANGE_EVENT = "saros-lang-change";
 
 // El idioma vive en localStorage; useSyncExternalStore lo lee sin desajustes de hidratación.
-function readLang(): Lang {
-  try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    // Los idiomas automáticos parten siempre del contenido español, que es
-    // el idioma de origen configurado en el traductor externo.
-    const global = window.localStorage.getItem(GLOBAL_STORAGE_KEY);
-    return (global ? global === "en" : saved === "en") ? "en" : "es";
-  } catch {
-    return "es";
-  }
-}
-
 function readGlobalLang(): string {
   try {
     const saved = window.localStorage.getItem(GLOBAL_STORAGE_KEY);
-    if (saved) return saved;
+    if (AVAILABLE_LANGUAGES.some((option) => option.code === saved)) return saved!;
     const base = window.localStorage.getItem(STORAGE_KEY);
     return base === "en" ? "en" : "es";
   } catch {
@@ -233,20 +209,31 @@ function readGlobalLang(): string {
 }
 
 function subscribe(onChange: () => void) {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== null && event.key !== GLOBAL_STORAGE_KEY && event.key !== STORAGE_KEY) return;
+    // Otra pestaña también puede cambiar el idioma de un DOM ya traducido.
+    if (document.getElementById("google-translate-script") || isAutoLang(readGlobalLang())) {
+      window.location.reload();
+      return;
+    }
+    onChange();
+  };
   window.addEventListener(CHANGE_EVENT, onChange);
-  window.addEventListener("storage", onChange);
+  window.addEventListener("storage", onStorage);
   return () => {
     window.removeEventListener(CHANGE_EVENT, onChange);
-    window.removeEventListener("storage", onChange);
+    window.removeEventListener("storage", onStorage);
   };
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const lang = useSyncExternalStore(subscribe, readLang, () => "es" as Lang);
   const globalLang = useSyncExternalStore(subscribe, readGlobalLang, () => "es");
+  const lang: Lang = globalLang === "en" ? "en" : "es";
 
   useEffect(() => {
     document.documentElement.lang = globalLang || lang;
+    // Los idiomas nativos ya tienen textos propios; evitar una segunda traducción del navegador.
+    document.documentElement.translate = isAutoLang(globalLang);
   }, [globalLang, lang]);
 
   // Forzar que Google Translate nunca mueva el body ni muestre el banner superior
@@ -291,16 +278,31 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, []);
 
-  const applyToCombo = useCallback((langCode: string, retries = 8) => applyGoogleLanguage(langCode, retries), []);
-
-  // Inicializar script de Google Translate para traducción global
+  // Español e inglés pertenecen a React: nunca cargar el traductor en esos idiomas.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    // Esperar al idioma persistido tras la hidratación del HTML español.
+    if (readGlobalLang() !== globalLang) return;
+    clearTranslationCookies(document, window.location.hostname, window.location.pathname);
+    if (!isAutoLang(globalLang)) return;
+    const googleCode = globalLang === "he" ? "iw" : globalLang;
+    document.cookie = `googtrans=/es/${googleCode}; path=/; SameSite=Lax`;
+    const session = translationSession(globalLang, readGlobalLang);
+    const apply = (retries = 10) => {
+      if (!session.active()) return;
+      const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+      if (!select || !Array.from(select.options).some((option) => option.value === googleCode)) {
+        if (retries > 0) session.schedule(() => apply(retries - 1), 250);
+        return;
+      }
+      select.value = googleCode;
+      select.dispatchEvent(new Event("change"));
+    };
     const translateWindow = window as GoogleTranslateWindow;
-    translateWindow.googleTranslateElementInit = () => {
+    const initialize = () => {
+      if (!session.active()) return;
       try {
         const TranslateElement = translateWindow.google?.translate?.TranslateElement;
-        if (TranslateElement) {
+        if (TranslateElement && !document.querySelector(".goog-te-combo")) {
           new TranslateElement(
             {
               pageLanguage: "es",
@@ -309,32 +311,37 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             },
             "google_translate_element"
           );
-          const current = readGlobalLang();
-          if (current && current !== "es" && current !== "en") {
-            applyToCombo(current, 10);
-          }
         }
+        apply();
       } catch {
         // silenciar si falla la inicialización externa
       }
     };
+    translateWindow.googleTranslateElementInit = initialize;
 
-    if (!document.getElementById("google-translate-script")) {
+    if (translateWindow.google?.translate?.TranslateElement) {
+      initialize();
+    } else if (!document.getElementById("google-translate-script")) {
       const script = document.createElement("script");
       script.id = "google-translate-script";
       script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
       script.async = true;
       document.body.appendChild(script);
     }
-  }, [applyToCombo]);
+    return () => {
+      session.dispose();
+      if (translateWindow.googleTranslateElementInit === initialize) delete translateWindow.googleTranslateElementInit;
+    };
+  }, [globalLang]);
 
   // El traductor solo traduce lo que había al cargar. Cada 2 s se revisa si la página muestra texto
   // nuevo sin traducir (abrir una zona, paneles, Saru) y, si lo hay, se le pide traducir otra vez.
   useEffect(() => {
     if (typeof window === "undefined" || !isAutoLang(globalLang)) return;
     const SKIP = "font, script, style, svg, textarea, .notranslate, [translate='no'], .skiptranslate";
-    // textos que ya se le pidieron al traductor: si no los traduce, no se insiste con ellos
-    const asked = new WeakSet<Node>();
+    const session = translationSession(globalLang, readGlobalLang);
+    // Reintentar texto pendiente, sin usar un <font> ajeno como prueba de éxito.
+    const attempts = new WeakMap<Node, number>();
     const fresh = () => {
       const found: Node[] = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -342,47 +349,39 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         const text = node.nodeValue;
         if (!text || !/\p{L}{2,}/u.test(text) || node.parentElement?.closest(SKIP)) continue;
         // un texto que React cambió después de traducirse vuelve marcado como nuevo (translate-guard)
-        if (!asked.has(node) || takeChanged(node)) found.push(node);
+        if (takeChanged(node)) attempts.delete(node);
+        if ((attempts.get(node) ?? 0) < 3) found.push(node);
       }
       return found;
     };
     let busyUntil = 0;
     const check = () => {
-      if (document.hidden || Date.now() < busyUntil) return;
+      if (!session.active() || document.hidden || Date.now() < busyUntil) return;
       const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
       if (!select || select.options.length < 2) return;
       const found = fresh();
       if (!found.length) return;
-      found.forEach((node) => asked.add(node));
-      busyUntil = Date.now() + 3500;
+      found.forEach((node) => attempts.set(node, (attempts.get(node) ?? 0) + 1));
+      busyUntil = Date.now() + 6000;
       // repetir el mismo idioma no hace nada: se vuelve un instante al original y otra vez al elegido
       const source = Array.from(select.options).some((o) => o.value === "es") ? "es" : "";
       const target = globalLang === "he" ? "iw" : globalLang;
       const pick = (value: string) => {
+        if (!session.active()) return;
         select.value = value;
         select.dispatchEvent(new Event("change"));
       };
       // tras volver al original el traductor ignora el primer cambio de idioma: se envía dos veces
       pick(source);
-      window.setTimeout(() => pick(target), 250);
-      window.setTimeout(() => pick(target), 500);
-      // si el traductor no tomó el cambio, la página quedaría en español: se insiste hasta 3 veces
-      let again = 0;
-      const verify = () => {
-        if (document.querySelector("font") || again >= 3) return;
-        again += 1;
-        pick(target);
-        window.setTimeout(verify, 1500);
-      };
-      window.setTimeout(verify, 2600);
+      session.schedule(() => pick(target), 250);
+      session.schedule(() => pick(target), 500);
     };
     const id = window.setInterval(check, 2000);
-    return () => window.clearInterval(id);
+    return () => { window.clearInterval(id); session.dispose(); };
   }, [globalLang]);
 
   const setGlobalLang = useCallback((code: string) => {
     if (!AVAILABLE_LANGUAGES.some((option) => option.code === code)) return;
-    if (readGlobalLang() === code) return;
     const base: Lang = code === "en" ? "en" : "es";
     const previous = readGlobalLang();
     try {
@@ -395,21 +394,21 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof document !== "undefined") {
       try {
         const gtCode = code === "he" ? "iw" : code;
-        document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-        if (window.location.hostname.includes(".")) {
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}; path=/`;
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=.${window.location.hostname}; path=/`;
-        }
+        clearTranslationCookies(document, window.location.hostname, window.location.pathname);
         if (code !== "es" && code !== "en") document.cookie = `googtrans=/es/${gtCode}; path=/; SameSite=Lax`;
       } catch {
         // silenciar errores de cookies
       }
     }
 
-    window.dispatchEvent(new Event(CHANGE_EVENT));
     // Restaurar un DOM limpio al entrar o salir de traducción automática evita
     // que el traductor y React modifiquen simultáneamente los mismos nodos.
-    if ((previous !== "es" && previous !== "en") || (code !== "es" && code !== "en")) window.location.reload();
+    const translatedDOM = !!document.getElementById("google-translate-script") || !!document.querySelector(".goog-te-combo");
+    if (isAutoLang(previous) || isAutoLang(code) || translatedDOM) {
+      window.location.reload();
+      return;
+    }
+    window.dispatchEvent(new Event(CHANGE_EVENT));
   }, []);
 
   const setLang = useCallback((next: Lang) => setGlobalLang(next), [setGlobalLang]);
@@ -431,8 +430,10 @@ export const useI18n = () => useContext(I18nContext);
 
 /** Conserva siglas y nombres propios al aplicar traducción automática. */
 export function ProtectedTerms({ text }: { text: string }) {
-  return <>{text.split(/\b(NASA|NISAR|SAROS|InSAR|ASF|DAAC)\b/g).map((part, index) =>
-    /^(NASA|NISAR|SAROS|InSAR|ASF|DAAC)$/.test(part)
+  // Conservar también los espacios: Google los recorta en los fragmentos vecinos,
+  // y al leer el subtítulo o la voz no deben aparecer palabras como «soySaru».
+  return <>{text.split(/(\s*\b(?:NASA|NISAR|SAROS|Saru|InSAR|ASF|DAAC)\b\s*)/g).map((part, index) =>
+    /^(NASA|NISAR|SAROS|Saru|InSAR|ASF|DAAC)$/.test(part.trim())
       ? <span key={index} translate="no" className="notranslate">{part}</span>
       : part
   )}</>;
