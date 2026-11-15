@@ -50,14 +50,14 @@ export function SarosWordmark({ progress, ready = true }: { progress: MotionValu
   if (!ready) return null;
 
   return (
-    <motion.div className="hero-wordmark" style={{ y, scale, opacity, filter }} aria-hidden="true">
-      <div className="wordmark-premiere">
-        <p className="wordmark-title">
+    <motion.div className="hero-wordmark notranslate" translate="no" style={{ y, scale, opacity, filter }} aria-hidden="true">
+      <div className="wordmark-premiere notranslate" translate="no">
+        <p className="wordmark-title notranslate" translate="no">
           {Array.from("SAROS").map((letter, index) => (
-            <span key={index} style={{ "--letter-index": index } as React.CSSProperties}>{letter}</span>
+            <span key={index} className="notranslate" translate="no" style={{ "--letter-index": index } as React.CSSProperties}>{letter}</span>
           ))}
         </p>
-        <span className="wordmark-horizon" />
+        <span className="wordmark-horizon notranslate" translate="no" />
       </div>
     </motion.div>
   );

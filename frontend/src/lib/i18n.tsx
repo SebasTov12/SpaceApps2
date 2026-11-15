@@ -223,6 +223,61 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = globalLang || lang;
   }, [globalLang, lang]);
 
+  // Forzar que Google Translate nunca mueva el body ni muestre el banner superior
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const cleanGoogleBanners = () => {
+      if (document.body.style.top && document.body.style.top !== "0px") {
+        document.body.style.top = "0px";
+      }
+      if (document.documentElement.style.top && document.documentElement.style.top !== "0px") {
+        document.documentElement.style.top = "0px";
+      }
+      const banners = document.querySelectorAll<HTMLElement>(
+        "iframe.goog-te-banner-frame, .goog-te-banner-frame, body > .skiptranslate, iframe.skiptranslate"
+      );
+      banners.forEach((el) => {
+        el.style.setProperty("display", "none", "important");
+        el.style.setProperty("visibility", "hidden", "important");
+        el.style.setProperty("height", "0", "important");
+        el.style.setProperty("opacity", "0", "important");
+        el.style.setProperty("pointer-events", "none", "important");
+      });
+    };
+
+    const observer = new MutationObserver(() => {
+      cleanGoogleBanners();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["style", "class"],
+      childList: true,
+    });
+
+    cleanGoogleBanners();
+    return () => observer.disconnect();
+  }, []);
+
+  // Función auxiliar para aplicar el idioma al selector interno de Google Translate con reintentos
+  const applyToCombo = useCallback((langCode: string, retries = 8) => {
+    if (typeof document === "undefined") return;
+    const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
+    const target = langCode === "es" ? "" : langCode === "he" ? "iw" : langCode;
+    if (select) {
+      select.value = target;
+      select.dispatchEvent(new Event("change"));
+    } else if (retries > 0) {
+      setTimeout(() => applyToCombo(langCode, retries - 1), 250);
+    }
+  }, []);
+
   // Inicializar script de Google Translate para traducción global
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -232,11 +287,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
           new (window as any).google.translate.TranslateElement(
             {
               pageLanguage: "es",
-              includedLanguages: AVAILABLE_LANGUAGES.map((l) => l.code).join(","),
+              includedLanguages: AVAILABLE_LANGUAGES.map((l) => (l.code === "he" ? "iw" : l.code)).join(","),
               autoDisplay: false,
             },
             "google_translate_element"
           );
+          const current = readGlobalLang();
+          if (current && current !== "es") {
+            applyToCombo(current, 10);
+          }
         }
       } catch {
         // silenciar si falla la inicialización externa
@@ -250,7 +309,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       script.async = true;
       document.body.appendChild(script);
     }
-  }, []);
+  }, [applyToCombo]);
 
   const setLang = useCallback((next: Lang) => {
     try {
@@ -273,26 +332,25 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     if (typeof document !== "undefined") {
       try {
+        const gtCode = code === "he" ? "iw" : code;
         if (code === "es") {
           document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${window.location.hostname}; path=/;`;
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=.${window.location.hostname}; path=/;`;
         } else {
-          const cookieVal = `/auto/${code}`;
+          const cookieVal = `/auto/${gtCode}`;
           document.cookie = `googtrans=${cookieVal}; path=/;`;
           document.cookie = `googtrans=${cookieVal}; domain=${window.location.hostname}; path=/;`;
+          document.cookie = `googtrans=${cookieVal}; domain=.${window.location.hostname}; path=/;`;
         }
-        const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
-        if (select) {
-          select.value = code;
-          select.dispatchEvent(new Event("change"));
-        }
+        applyToCombo(code, 8);
       } catch {
         // silenciar errores de cookies
       }
     }
 
     window.dispatchEvent(new Event(CHANGE_EVENT));
-  }, []);
+  }, [applyToCombo]);
 
   const value = useMemo(
     () => ({ lang, globalLang, setLang, setGlobalLang, t: dictionary[lang] }),

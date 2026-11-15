@@ -36,11 +36,11 @@ export function SarosEmblem({ size = 34 }: { size?: number }) {
 /** Logo completo: emblema + "SAROS" */
 export default function SarosLogo({ href = "#inicio", tagline = false, size = 34 }: { href?: string; tagline?: boolean; size?: number }) {
   return (
-    <a className="saros-logo" href={href} aria-label="SAROS, inicio">
+    <a className="saros-logo notranslate" translate="no" href={href} aria-label="SAROS, inicio">
       <SarosEmblem size={size} />
-      <span className="saros-word">
-        <b>SAROS</b>
-        {tagline && <small>OBSERVA · ANALIZA · PREVIENE</small>}
+      <span className="saros-word notranslate" translate="no">
+        <b className="notranslate" translate="no">SAROS</b>
+        {tagline && <small className="notranslate" translate="no">OBSERVA · ANALIZA · PREVIENE</small>}
       </span>
     </a>
   );

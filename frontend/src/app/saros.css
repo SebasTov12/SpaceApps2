@@ -2060,27 +2060,48 @@ html body .space-stars {
 }
 
 /* Ocultar elementos invasivos de Google Translate */
-.goog-te-banner-frame,
-.goog-te-banner-frame.skiptranslate,
-iframe.goog-te-banner-frame,
-.goog-te-menu-value,
-.goog-te-gadget,
-#goog-gt-tt,
-.goog-tooltip,
-.goog-tooltip:hover {
-  display: none !important;
-  visibility: hidden !important
+html {
+  top: 0px !important;
 }
 
 body {
   top: 0px !important;
-  position: static !important
+  position: static !important;
 }
 
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+iframe.skiptranslate,
+body > .skiptranslate,
+.goog-te-menu-value,
+.goog-te-gadget,
+#goog-gt-tt,
+#goog-gt-vt,
+.goog-te-balloon-frame,
+.goog-tooltip,
+.goog-tooltip:hover,
 .VIpgJd-ZVi9dl-ORHb-OEVmcd,
-.VIpgJd-ZVi9dl-aZ2wEe-wOHMyf {
+.VIpgJd-ZVi9dl-aZ2wEe-wOHMyf,
+.VIpgJd-y6EKJ-TFbFfc-wsGQec,
+div[id*="goog-gt-"],
+iframe[id*=":1.container"],
+iframe[id*=":2.container"] {
   display: none !important;
-  visibility: hidden !important
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  z-index: -9999 !important;
+}
+
+font {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .hero-latest {

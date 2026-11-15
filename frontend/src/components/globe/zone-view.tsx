@@ -476,7 +476,7 @@ export default function ZoneView() {
                         <footer className="zone-source">
                           <span><Radar size={12} /> {active.source.product} · {(en && active.source.noteEn) || active.source.note}</span>
                           {real && real.total > 0 && <span className="zone-asf"><Database size={12} /> {c.asf}: {real.maturities.map((m) => `${m.count} ${m.maturity}`).join(" · ")}</span>}
-                          <span className={`zone-flag-inline ${isDemo ? "" : "is-real"}`}>{isDemo ? c.demo : c.real}</span>
+                          <span className={`zone-flag-inline notranslate ${isDemo ? "" : "is-real"}`} translate="no">{isDemo ? c.demo : c.real}</span>
                         </footer>
                       </>
                     )}

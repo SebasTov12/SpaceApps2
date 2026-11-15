@@ -41,7 +41,7 @@ export default function TerritorialImpact({ zoneId, assessment, observation }: {
   const format = (value: number) => Math.round(value).toLocaleString(en ? "en-US" : "es-CO");
   return (
     <details className="zone-explain territorial-impact">
-      <summary>{en ? "Territory & livelihoods" : "Territorio y medios de vida"}<span className="territorial-badge">{data?.mode === "demo" ? "DEMO" : "SAROS"}</span></summary>
+      <summary>{en ? "Territory & livelihoods" : "Territorio y medios de vida"}<span className="territorial-badge notranslate" translate="no">{data?.mode === "demo" ? "DEMO" : "SAROS"}</span></summary>
       {loading ? <p role="status">{en ? "Loading territorial assessment…" : "Cargando evaluación territorial…"}</p> : failed ? <div role="alert"><p>{en ? "The assessment could not be loaded. No current assessment is available." : "No se pudo cargar la evaluación. No hay una evaluación vigente disponible."}</p><button className="territorial-retry" onClick={() => { setResult(null); setRetry((n) => n + 1); }}>{en ? "Retry" : "Reintentar"}</button></div> : !data ? <p>{en ? "No socioeconomic assessment available for this region." : "Esta región aún no dispone de una evaluación socioeconómica."}</p> : <>
         <p>{en ? "SAROS connects surface observations with territorial exposure and preventive review." : "SAROS relaciona cambios de la superficie con exposición territorial y revisión preventiva."}</p>
         <strong>{en ? "1. Surface observation" : "1. Observación de la superficie"}</strong>

@@ -39,14 +39,15 @@ export default function LanguageModal() {
     <>
       <button
         type="button"
-        className="hero-lang-btn"
+        className="hero-lang-btn notranslate"
+        translate="no"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label={`Idioma / Language: ${active.native}`}
         title={`Idioma / Language: ${active.native}`}
       >
         <Languages size={17} />
-        <span className="hero-lang-badge">{active.code.slice(0, 2).toUpperCase()}</span>
+        <span className="hero-lang-badge notranslate" translate="no">{active.code.slice(0, 2).toUpperCase()}</span>
       </button>
 
       <AnimatePresence>
@@ -59,7 +60,8 @@ export default function LanguageModal() {
             onClick={() => setOpen(false)}
           >
             <motion.div
-              className="lang-panel"
+              className="lang-panel notranslate"
+              translate="no"
               role="dialog"
               aria-label="Seleccionar idioma / Select language"
               initial={{ opacity: 0, y: -16, scale: 0.98 }}
@@ -123,8 +125,8 @@ export default function LanguageModal() {
                 })}
               </div>
 
-              <footer className="lang-footer">
-                <small>SAROS · Monitoreo Satelital Global Multilingüe</small>
+              <footer className="lang-footer notranslate" translate="no">
+                <small className="notranslate" translate="no">SAROS · Monitoreo Satelital Global Multilingüe</small>
               </footer>
             </motion.div>
           </motion.div>

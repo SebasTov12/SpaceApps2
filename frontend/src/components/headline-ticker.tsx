@@ -39,8 +39,8 @@ export default function HeadlineTicker({ className }: { className?: string }) {
       <b className={`ticker-sev sev-${item.severity}`}>{l.severity[item.severity]}</b>
       <span className="ticker-title">{item.title[lang]}</span>
       {item.place && <em>· {item.place[lang]}</em>}
-      <small>{item.source}</small>
-      <i className={item.demo ? "ticker-flag is-demo" : "ticker-flag"}>{item.demo ? l.demo : l.real}</i>
+      <small className="notranslate" translate="no">{item.source}</small>
+      <i className={item.demo ? "ticker-flag is-demo notranslate" : "ticker-flag notranslate"} translate="no">{item.demo ? l.demo : l.real}</i>
       <SarosStar size={10} className="ticker-sep" />
     </button>
   );
