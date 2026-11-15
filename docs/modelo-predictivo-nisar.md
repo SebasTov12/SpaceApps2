@@ -33,8 +33,9 @@ Actualización del 14 de noviembre de 2026: desde el servidor se consultó por
 globales, 64 para América y cero que intersequen la caja núcleo de Neiva. El
 catálogo oficial indica que VALIDATED se publicó el 6 de noviembre y cubre
 adquisiciones desde el 21 de octubre; por ahora no prolonga la serie local de
-Neiva. Los productos PROVISIONAL y VALIDATED usan diferentes CRID/procesamiento
-y deben permanecer separados en la evaluación hasta que haya una estrategia
+Neiva. La misma colección devolvió cero productos en la caja amplia del Huila.
+Los productos PROVISIONAL y VALIDATED usan diferentes CRID/procesamiento y
+deben permanecer separados en la evaluación hasta que haya una estrategia
 explícita de armonización ([disponibilidad y madurez NISAR](https://nisar-docs.asf.alaska.edu/availability-overview/),
 [cambios de productos VALIDATED](https://hyp3-docs.asf.alaska.edu/nisar-docs/release-notes/)).
 

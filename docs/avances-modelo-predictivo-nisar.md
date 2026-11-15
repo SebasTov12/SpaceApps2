@@ -126,6 +126,6 @@ livianos y documentación de procedencia.
   referencia estable, que deben verificarse sobre el HDF5 Neiva real.
 - La búsqueda VALIDATED en la caja amplia del Huila también devolvió cero
   granules GUNW. Se amplió `download_nisar_colombia.py` para elegir madurez
-  explícita y separar por CRID; por defecto conserva PROVISIONAL. Falta
-  validar el nuevo selector con el dry-run sobre el manifiesto real del
-  servidor.
+  explícita y separar por CRID; por defecto conserva PROVISIONAL. El nuevo
+  selector pasó el dry-run sobre el manifiesto real: dos pares D/083/087,
+  PROVISIONAL/P05023, 4.555 GB, sin descarga.
