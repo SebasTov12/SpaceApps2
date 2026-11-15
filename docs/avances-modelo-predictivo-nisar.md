@@ -217,3 +217,9 @@ livianos y documentación de procedencia.
   campos de evaluación, versión 1.2 y salud `healthy`. El checkpoint sigue en
   cero porque no hay credenciales/datos reales; por tanto este despliegue
   corrige la evaluación, pero aún no aporta MAE/RMSE científicos.
+- Repetí desde Orivia la consulta metadata-only con `asf_search 10.3.0` y el
+  AOI núcleo exacto de Neiva. El catálogo devolvió 18 GUNW PROVISIONAL (9
+  ascendentes y 9 descendentes, CRID P05023), cero VALIDATED y cero BETA. El
+  par más reciente de ese stack sigue siendo 5–17 de octubre de 2026; no hay
+  adquisición posterior utilizable de esas colecciones para Neiva en esta
+  consulta. No se descargaron archivos.
