@@ -1,9 +1,9 @@
 "use client";
 
-import { motion, useInView, useMotionValueEvent, useScroll, useSpring, useTransform } from "framer-motion";
-import { GLOBE_SELECT, UI_REVEAL, globeState } from "@/components/globe/globe-state";
+import { animate, motion, useInView, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "framer-motion";
+import { UI_REVEAL, globeState } from "@/components/globe/globe-state";
 import dynamic from "next/dynamic";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/space-backdrop";
 import ZoneView from "@/components/globe/zone-view";
@@ -26,6 +26,9 @@ export default function EarthHero() {
   const [visible, setVisible] = useState(true);
   const [sceneReady, setSceneReady] = useState(false);
   const [exploreLocked, setExploreLocked] = useState(false);
+  const mobileMode = useMotionValue(false);
+  const mobileProgress = useMotionValue(0);
+  const entranceAnimation = useRef<ReturnType<typeof animate> | null>(null);
   const revealScene = useCallback(() => setSceneReady(true), []);
   const inView = useInView(section, { amount: 0 });
   const playing = visible && inView;
@@ -36,9 +39,24 @@ export default function EarthHero() {
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
   useLayoutEffect(() => {
+    const media = window.matchMedia("(max-width: 720px)");
+    const updateMobile = () => {
+      mobileMode.set(media.matches);
+      document.documentElement.classList.toggle("mobile-globe-page", media.matches);
+      if (media.matches) window.scrollTo({ top: 0, behavior: "instant" });
+    };
+    updateMobile();
+    media.addEventListener("change", updateMobile);
+    return () => {
+      media.removeEventListener("change", updateMobile);
+      document.documentElement.classList.remove("mobile-globe-page");
+      entranceAnimation.current?.stop();
+    };
+  }, [mobileMode]);
+  useLayoutEffect(() => {
     const previousRestoration = window.history.scrollRestoration;
     window.history.scrollRestoration = "manual";
-    if (!window.location.hash) {
+    if (!mobileMode.get() && !window.location.hash) {
       try {
         const saved = Number(window.sessionStorage.getItem(SCROLL_POSITION_KEY));
         if (Number.isFinite(saved) && saved > 0) window.scrollTo({ top: saved, behavior: "instant" });
@@ -50,6 +68,7 @@ export default function EarthHero() {
     let saveTimer = 0;
     const savePosition = () => {
       window.clearTimeout(saveTimer);
+      if (mobileMode.get()) return;
       try { window.sessionStorage.setItem(SCROLL_POSITION_KEY, String(window.scrollY)); } catch { /* storage is optional */ }
     };
     const onScroll = () => {
@@ -64,55 +83,25 @@ export default function EarthHero() {
       window.removeEventListener("pagehide", savePosition);
       window.history.scrollRestoration = previousRestoration;
     };
-  }, []);
-  useEffect(() => {
-    if (!exploreLocked) return;
-    const stopWheel = (event: WheelEvent) => event.preventDefault();
-    const stopScrollKeys = (event: KeyboardEvent) => {
-      if (event.key === " " && (event.target as HTMLElement).closest("button, a, input, textarea, select, [contenteditable='true']")) return;
-      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) event.preventDefault();
-    };
-    const unlockForZone = () => setExploreLocked(false);
-    window.addEventListener("wheel", stopWheel, { passive: false });
-    window.addEventListener("keydown", stopScrollKeys);
-    window.addEventListener(GLOBE_SELECT, unlockForZone);
-    return () => {
-      window.removeEventListener("wheel", stopWheel);
-      window.removeEventListener("keydown", stopScrollKeys);
-      window.removeEventListener(GLOBE_SELECT, unlockForZone);
-    };
-  }, [exploreLocked]);
+  }, [mobileMode]);
 
   const continueToGlobe = useCallback(() => {
-    if (exploreLocked) {
-      setExploreLocked(false);
-      return;
-    }
-    const element = section.current;
-    if (!element) return;
-    const travel = Math.max(0, element.offsetHeight - window.innerHeight);
-    const target = element.getBoundingClientRect().top + window.scrollY + travel * 0.8;
+    if (exploreLocked || !mobileMode.get() || !sceneReady) return;
+    setExploreLocked(true);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: target, behavior: reducedMotion ? "instant" : "smooth" });
-
-    const startedAt = performance.now();
-    const waitForPosition = (now: number) => {
-      const distance = Math.abs(window.scrollY - target);
-      if (distance <= 3 || now - startedAt >= 2200) {
-        if (distance <= 48) {
-          setExploreLocked(true);
-        }
-        return;
-      }
-      requestAnimationFrame(waitForPosition);
-    };
-    requestAnimationFrame(waitForPosition);
-  }, [exploreLocked]);
+    entranceAnimation.current = animate(mobileProgress, 0.8, {
+      duration: reducedMotion ? 0 : 1.8,
+      ease: [0.22, 1, 0.36, 1],
+    });
+  }, [exploreLocked, mobileMode, mobileProgress, sceneReady]);
   const { scrollYProgress } = useScroll({
     target: section,
     offset: ["start start", "end end"],
   });
-  const progress = useSpring(scrollYProgress, { stiffness: 85, damping: 28, mass: 0.5 });
+  const revealProgress = useTransform(() => mobileMode.get() ? mobileProgress.get() : scrollYProgress.get());
+  const desktopProgress = useSpring(scrollYProgress, { stiffness: 85, damping: 28, mass: 0.5 });
+  // Mobile uses a one-way animation, independent of page scroll and scroll restoration.
+  const progress = useTransform(() => mobileMode.get() ? mobileProgress.get() : desktopProgress.get());
   // arriba del todo solo el planeta, el título y el cintillo; al bajar aparecen puntos, barra de modos y Saru
   const setReveal = useCallback((value: number) => {
     const next = globeState.uiRevealed ? value > 0.12 : value > 0.3;
@@ -120,21 +109,22 @@ export default function EarthHero() {
     globeState.uiRevealed = next;
     window.dispatchEvent(new CustomEvent(UI_REVEAL, { detail: next }));
   }, []);
-  useMotionValueEvent(scrollYProgress, "change", setReveal);
+  useMotionValueEvent(revealProgress, "change", setReveal);
   useEffect(() => {
     let secondFrame = 0;
     const firstFrame = requestAnimationFrame(() => {
-      setReveal(scrollYProgress.get());
-      secondFrame = requestAnimationFrame(() => setReveal(scrollYProgress.get()));
+      setReveal(revealProgress.get());
+      secondFrame = requestAnimationFrame(() => setReveal(revealProgress.get()));
     });
     return () => {
       cancelAnimationFrame(firstFrame);
       cancelAnimationFrame(secondFrame);
     };
-  }, [scrollYProgress, setReveal]);
-  const { scrollYProgress: departure } = useScroll({
+  }, [revealProgress, setReveal]);
+  const { scrollYProgress: scrollDeparture } = useScroll({
     target: section, offset: ["end end", "end start"],
   });
+  const departure = useTransform(() => mobileMode.get() ? 0 : scrollDeparture.get());
   const y = useTransform(progress, [0, 0.8, 1], ["48vh", "0vh", "0vh"]);
   const revealScale = useTransform(progress, [0, 0.8, 1], [1.48, 0.94, 0.94]);
   const scale = useTransform(() => revealScale.get() * (1 + departure.get() * 0.16));
@@ -180,23 +170,15 @@ export default function EarthHero() {
         <HeroOverlay />
         {/* Cintillo de titulares (arriba → abajo con el scroll) */}
         <SarosHeroChrome progress={progress} departure={departure} />
-        <button
+        {sceneReady && !exploreLocked && <button
           type="button"
           className="mobile-globe-cue"
           onClick={continueToGlobe}
-          aria-pressed={exploreLocked}
-          aria-label={exploreLocked
-            ? (lang === "en" ? "Resume page scrolling" : "Reanudar desplazamiento de la página")
-            : (lang === "en" ? "Go to the globe and hold the view" : "Ir al planeta y fijar la vista")}
-          title={exploreLocked
-            ? (lang === "en" ? "Resume scrolling" : "Reanudar desplazamiento")
-            : (lang === "en" ? "Tap to continue" : "Pulsa aquí para continuar")}
+          aria-label={lang === "en" ? "Tap to discover the planet" : "Toca para descubrir el planeta"}
         >
-          <span>{exploreLocked
-            ? (lang === "en" ? "Resume scrolling" : "Reanudar desplazamiento")
-            : (lang === "en" ? "Tap to continue" : "Pulsa aquí para continuar")}</span>
-          {exploreLocked ? <ArrowUp size={16} aria-hidden="true" /> : <ArrowDown size={16} aria-hidden="true" />}
-        </button>
+          <span>{lang === "en" ? "TAP TO DISCOVER" : "TOCA PARA DESCUBRIR"}</span>
+          <ArrowDown size={19} strokeWidth={1.4} aria-hidden="true" />
+        </button>}
       </div>
     </section>
   );
