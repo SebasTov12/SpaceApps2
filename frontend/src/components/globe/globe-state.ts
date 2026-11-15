@@ -42,6 +42,8 @@ export const globeState = {
   country: null as string | null,
   /** Acercamiento de la cámara a un país (0 = planeta completo, 1 = país en primer plano). */
   countryZoom: 0,
+  /** Distancia de la cámara para el país abierto (según su tamaño: los grandes se ven desde más lejos). */
+  countryDistance: 1.9,
   /** Tipos ocultos con el filtro del panel derecho (amenazas y zonas comparten las claves de tipo). */
   hiddenKinds: new Set<string>(),
   /** Cambia cada vez que cambia el filtro (la malla de puntos se recalcula). */

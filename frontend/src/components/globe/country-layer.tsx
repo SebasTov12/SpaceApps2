@@ -15,7 +15,7 @@ import { COUNTRY_EVENT, GLOBE_SELECT, RELIEF, globeState, openCountry } from "./
 import { spherePosition } from "./risk-markers";
 
 /** Croquis del país: contorno, límites internos y caja (generado por scripts/build_country_outline.py). */
-type CountryShape = { country: string; name: string; center: [number, number]; outline: [number, number][][]; departments: { code: string; name: string; rings: [number, number][][] }[] };
+type CountryShape = { country: string; name: string; center: [number, number]; bbox?: [number, number, number, number]; fill?: boolean; outline: [number, number][][]; departments: { code: string; name: string; rings: [number, number][][] }[] };
 
 type Pin = { code: string; lat: number; lon: number; zones: number; records: number };
 
@@ -53,11 +53,24 @@ function buildShape(shape: CountryShape) {
       const p = v3(ring[i][1], ring[i][0], SURFACE + 0.012), q = v3(ring[(i + 1) % n][1], ring[(i + 1) % n][0], SURFACE + 0.012);
       line.push(p.x, p.y, p.z, q.x, q.y, q.z);
     }
-    // relleno suave del país
-    const contour = ring.map(([lon, lat]) => new Vector2(lon, lat));
-    const fbase = fill.length / 3;
-    ring.forEach(([lon, lat]) => { const p = v3(lat, lon, SURFACE + 0.006); fill.push(p.x, p.y, p.z); });
-    for (const tri of ShapeUtils.triangulateShape(contour, [])) fillIndex.push(fbase + tri[0], fbase + tri[1], fbase + tri[2]);
+    // relleno suave del país; los triángulos largos se parten para que sigan la curvatura del planeta
+    if (shape.fill !== false) {
+      const contour = ring.map(([lon, lat]) => new Vector2(lon, lat));
+      const push = (a: Vector2, b: Vector2, c: Vector2, depth: number) => {
+        const ab = a.distanceTo(b), bc = b.distanceTo(c), ca = c.distanceTo(a);
+        const longest = Math.max(ab, bc, ca);
+        if (longest > 3.5 && depth < 9) {
+          if (longest === ab) { const m = a.clone().lerp(b, 0.5); push(a, m, c, depth + 1); push(m, b, c, depth + 1); }
+          else if (longest === bc) { const m = b.clone().lerp(c, 0.5); push(a, b, m, depth + 1); push(a, m, c, depth + 1); }
+          else { const m = c.clone().lerp(a, 0.5); push(a, b, m, depth + 1); push(m, b, c, depth + 1); }
+          return;
+        }
+        for (const q of [a, b, c]) { const p = v3(q.y, q.x, SURFACE + 0.006); fill.push(p.x, p.y, p.z); }
+        const n = fill.length / 3;
+        fillIndex.push(n - 3, n - 2, n - 1);
+      };
+      for (const tri of ShapeUtils.triangulateShape(contour, [])) push(contour[tri[0]], contour[tri[1]], contour[tri[2]], 0);
+    }
   }
   const wallGeo = new BufferGeometry();
   wallGeo.setAttribute("position", new BufferAttribute(new Float32Array(wall), 3));
@@ -133,6 +146,7 @@ export default function CountryLayer() {
   // croquis del país abierto, si existe
   useEffect(() => {
     if (!country) return;
+    globeState.countryDistance = 1.9; // hasta que llegue el croquis con su tamaño
     let alive = true;
     fetch(`/data/countries/${country}.json`).then((r) => (r.ok ? r.json() : null)).then((d: CountryShape | null) => {
       if (alive) setShape(d && d.country === country ? d : null);
@@ -140,6 +154,13 @@ export default function CountryLayer() {
     return () => { alive = false; };
   }, [country]);
   const geo = useMemo(() => (shape ? buildShape(shape) : null), [shape]);
+  useEffect(() => {
+    if (!shape?.bbox) return;
+    const [w, s0, e, n] = shape.bbox;
+    const lat = (s0 + n) / 2;
+    const span = Math.max((e - w) * Math.cos((lat * Math.PI) / 180), n - s0);
+    globeState.countryDistance = Math.min(2.9, Math.max(1.5, 1 + span * 0.042));
+  }, [shape]);
   useEffect(() => () => { if (geo) Object.values(geo).forEach((g) => g.dispose()); }, [geo]);
   const mats = useMemo(() => ({
     wall: wallMaterial(),
@@ -168,12 +189,15 @@ export default function CountryLayer() {
     });
   }, [records]);
 
-  useFrame(({ clock, camera }) => {
+  const ordered = useMemo(() => [...pins].sort((a, b) => b.records + b.zones * 50 - (a.records + a.zones * 50)), [pins]);
+  useFrame(({ clock, camera, size }) => {
     const t = clock.getElapsedTime();
     const open = globeState.country;
     const planetView = globeState.uiRevealed && open === null && globeState.zoom === 0;
     // puntos de país (solo en la vista de planeta, en la cara visible)
-    for (const pin of pins) {
+    // etiquetas sin encimarse: primero los países con más datos; las que chocan se ocultan (el punto queda)
+    const boxes: { x: number; y: number; w: number; h: number }[] = [];
+    for (const pin of ordered) {
       const node = pinsRef.current.get(pin.code);
       const label = labelsRef.current.get(pin.code);
       if (!node) continue;
@@ -181,7 +205,15 @@ export default function CountryLayer() {
       const facing = tmp.a.clone().normalize().dot(tmp.b.copy(camera.position).sub(tmp.a).normalize()) > 0.15;
       const show = planetView && facing;
       node.visible = show;
-      if (label) label.style.opacity = show ? "1" : "0";
+      let labelOn = show;
+      if (show && label) {
+        if (!label.dataset.w || label.dataset.w === "0") { label.dataset.w = String(label.offsetWidth); label.dataset.h = String(label.offsetHeight); }
+        tmp.b.copy(tmp.a).project(camera);
+        const box = { x: ((tmp.b.x + 1) / 2) * size.width, y: ((1 - tmp.b.y) / 2) * size.height - 34, w: Number(label.dataset.w) + 6, h: Number(label.dataset.h) + 4 };
+        labelOn = !boxes.some((o) => Math.abs(o.x - box.x) * 2 < o.w + box.w && Math.abs(o.y - box.y) * 2 < o.h + box.h);
+        if (labelOn) boxes.push(box);
+      }
+      if (label && label.dataset.on !== (labelOn ? "1" : "0")) { label.dataset.on = labelOn ? "1" : "0"; label.style.opacity = labelOn ? "1" : "0"; }
       if (show) {
         const ring = node.children[1];
         const phase = (t * 0.7 + pin.lat) % 1;
@@ -203,6 +235,7 @@ export default function CountryLayer() {
         user.velocity = 0;
       }
     }
+    if (globeState.orbit) globeState.orbit.visible = globeState.countryZoom < 0.5;
     // croquis: aparece con el acercamiento
     const target = open && shape && shape.country === open ? 1 : 0;
     fade.current += (target - fade.current) * 0.06;
