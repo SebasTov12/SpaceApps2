@@ -172,6 +172,11 @@ livianos y documentación de procedencia.
   La última revisión de Tailscale muestra `orivia` offline. El checkout remoto
   y la API todavía no incorporan este commit; al recuperar conectividad habrá
   que actualizar la API y verificar su salud antes de seguir con datos.
+- El modo `pipeline/build_layers.py --real` ahora rechaza productos GUNW porque
+  el lector existente aún no aplica máscaras y referencia estable; así evita
+  generar mapas de desplazamiento o tendencias con una medición no validada.
+  La ruta de procesamiento científico sigue pendiente de implementar sobre
+  HDF5 real inspeccionado.
 - El catálogo actual tiene 10 fechas por stack. Para el horizonte de 24 días,
   cinco observaciones de entrenamiento y tolerancia de 8 días, la secuencia
   permite como máximo cuatro fechas objetivo distintas en el backtest. El

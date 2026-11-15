@@ -300,6 +300,13 @@ def _sample(h5, dataset_path, grid):
 
 def read_real(site, grid, files):
     """Devuelve (fechas, cuadros, granulos) a partir de los HDF5 de un sitio."""
+    if site["product"] == "GUNW":
+        raise ValueError(
+            "El lector GUNW actual no está validado para generar desplazamientos LOS: "
+            "no aplica máscaras de validez/coherencia/componentes ni referencia estable "
+            "por interferograma. Inspecciona el HDF5 real y usa un procesador científico "
+            "validado antes de publicar mapas o tendencias."
+        )
     import h5py
 
     product = site["product"]

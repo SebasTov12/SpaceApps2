@@ -80,6 +80,12 @@ corresponde a otra capa y no debe combinarse a ciegas. Véanse la
 [especificación GUNW](https://nisar-docs.asf.alaska.edu/gunw/) y la guía de
 [fase y coherencia](https://nisar-docs.asf.alaska.edu/phase/).
 
+Por este motivo, `pipeline/build_layers.py --real` ahora rechaza GUNW. Esa
+ruta generaba mapas y una tendencia sin controles científicos completos; se
+mantiene desactivada hasta integrar y verificar el procesador real. Los modos
+de demostración no se usan para alimentar el esquema, las observaciones ni el
+pronosticador NISAR.
+
 La colección PROVISIONAL usada en el inventario es CRID P05023. ASF documenta
 que los productos VALIDATED mejoran máscaras, coregistro y desenvolvimiento,
 pero todavía mantiene avisos sobre artefactos de fase GUNW y errores de
