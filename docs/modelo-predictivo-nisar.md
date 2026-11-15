@@ -141,6 +141,13 @@ demostración de fiabilidad. El error principal se expresa en milímetros,
 porque el porcentaje de error se vuelve inestable si el LOS real está cerca de
 cero.
 
+Las métricas principales del backtest puntúan cada fecha objetivo una sola
+vez: eligen el origen cuyo horizonte queda más cerca del solicitado y, en caso
+de empate, el origen más antiguo. El resultado conserva MAE/RMSE ponderados
+por origen como diagnóstico separado, junto con la regla y los orígenes que
+formaron la métrica principal. Así, el valor `n` de las métricas comparables
+corresponde a fechas futuras distintas.
+
 Implicación para el inventario actual: cada stack Neiva tiene 10 fechas de
 adquisición. Con cinco observaciones iniciales de entrenamiento y un horizonte
 de 24 días con tolerancia de 8 días, el máximo es cuatro fechas objetivo

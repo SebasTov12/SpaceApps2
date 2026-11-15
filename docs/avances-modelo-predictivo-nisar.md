@@ -183,3 +183,51 @@ livianos y documentación de procedencia.
   piloto actual no puede alcanzar el cribado mínimo de seis; habrá que esperar
   adquisiciones posteriores y conservar solo las que pasen controles de
   calidad.
+
+## Actualización tras recuperar Orivia (15 de noviembre de 2026)
+
+- Tailscale/SSH volvió a estar disponible. El checkout limpio del servidor se
+  actualizó por fast-forward a `e35dc1b`, coincidente con `origin/main`; se
+  inspeccionaron los seis commits entrantes, todos de interfaz.
+- Se reconstruyeron las imágenes `spaceapps2-api` y
+  `spaceapps2-nisar-processor`. Solo se recreó la API; quedó `healthy`. El
+  checkpoint autenticado continúa informando cero observaciones y ninguna
+  fecha procesada. Dentro de la imagen API confirmé el filtro por seis fechas
+  objetivo distintas y la versión 1.1 del pronosticador.
+- La imagen del procesador se comprobó sin datos de entrada: su lector rechaza
+  GUNW en el modo real hasta aplicar máscaras y referencia estable. PostgreSQL
+  no se reinició ni se modificó; conteo de `nisar.observations` en modo real:
+  cero.
+- Las variables `EARTHDATA_USERNAME` y `EARTHDATA_PASSWORD` continúan vacías
+  en el `.env` privado; no hay HDF5 que inspeccionar. No se descargó ni generó
+  ningún dato y todavía no hay RMSE/MAE reales.
+- La web actual sigue saludable, pero usa una imagen de unas cinco horas que
+  precede a los últimos cambios de interfaz. No la reconstruí en el host: en
+  la verificación quedaba aproximadamente 1 GB de RAM disponible y el intento
+  anterior de build pesado terminó con la desconexión de Orivia. Los cambios
+  de interfaz sí están en el checkout sincronizado; el runtime web requiere
+  una compilación con más memoria o un build externo.
+- El contenedor separado `spaceapps2-model` del detector ONNX sigue
+  `unhealthy`; no es el servicio de pronóstico temporal LOS, que corre dentro
+  de la API saludable.
+- En `7f8fb24` el pronosticador pasó a versión 1.2: las métricas principales
+  ahora puntúan una vez cada adquisición objetivo distinta y el resultado
+  conserva como diagnóstico separado los errores ponderados por origen. Se
+  publicó y desplegó la nueva imagen de API; confirmé en el contenedor los
+  campos de evaluación, versión 1.2 y salud `healthy`. El checkpoint sigue en
+  cero porque no hay credenciales/datos reales; por tanto este despliegue
+  corrige la evaluación, pero aún no aporta MAE/RMSE científicos.
+- Repetí desde Orivia la consulta metadata-only con `asf_search 10.3.0` y el
+  AOI núcleo exacto de Neiva. El catálogo devolvió 18 GUNW PROVISIONAL (9
+  ascendentes y 9 descendentes, CRID P05023), cero VALIDATED y cero BETA. El
+  par más reciente de ese stack sigue siendo 5–17 de octubre de 2026; no hay
+  adquisición posterior utilizable de esas colecciones para Neiva en esta
+  consulta. No se descargaron archivos.
+- En la caja ampliada de Huila, la misma consulta devolvió 34 GUNW PROVISIONAL
+  y cero VALIDATED. Se agrupan en cuatro stacks separados: A-047-003-2000-SH
+  (9 pares, 17-jun a 15-oct), D-083-087-2000-SH (9, 19-jun a 17-oct),
+  A-148-003-4000-SH (8, 24-jun a 10-oct) y D-011-087-4000-SH (8, 26-jun a
+  12-oct), todos CRID P05023. Los dos stacks 4000 amplían la cobertura
+  espacial del AOI amplio, pero son órbitas/modos diferentes y no se mezclan
+  con los stacks del núcleo ni entre sí para aumentar artificialmente el
+  tamaño de la serie. Consulta metadata-only, sin descarga.
