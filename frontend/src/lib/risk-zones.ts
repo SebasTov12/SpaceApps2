@@ -31,6 +31,11 @@ export const riskKinds: Record<RiskKind, { color: string; es: string; en: string
   wildfire: { color: "#ffb04a", es: "Incendio", en: "Wildfire" },
 };
 
+/** Evita la traducción de subsidencia como subsidio en portugués. */
+export function riskKindLabel(kind: RiskKind, lang: "es" | "en", globalLang: string) {
+  return kind === "subsidence" && globalLang === "pt" ? "Subsidência" : riskKinds[kind][lang];
+}
+
 export const riskZones: RiskZone[] = [
   { id: "colombia-ladera", kind: "landslide", lat: 7.88, lon: -72.5, siteId: "colombia-ladera", country: "CO",
     name: { es: "Ladera andina", en: "Andean hillside" }, place: { es: "Norte de Santander, Colombia", en: "Norte de Santander, Colombia" } },

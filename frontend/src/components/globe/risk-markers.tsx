@@ -1,8 +1,8 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AdditiveBlending, Color, DoubleSide, type Group, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial, type ShaderMaterial } from "three";
+import { AdditiveBlending, Color, DoubleSide, Vector3, type Group, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial, type ShaderMaterial } from "three";
 import { riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { GLOBE_SELECT, RELIEF, focusZone, globeState } from "./globe-state";
 
@@ -66,48 +66,54 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
   const body = useRef<Group>(null);
   const pillar = useRef<Group>(null);
   const pillarMaterial = useRef<ShaderMaterial>(null);
-  const ringGroup = useRef<Group>(null);
   const orbMaterial = useRef<MeshStandardMaterial>(null);
-  const ringMaterial = useRef<MeshStandardMaterial>(null);
   const haloMesh = useRef<Mesh>(null);
   const pulse = useRef<Mesh>(null);
   const burst = useRef<Mesh>(null);
   const base = useRef<Mesh>(null);
   const revealAt = useRef<number | null>(null);
-  const pointerDownPos = useRef<{ x: number; y: number; time: number } | null>(null);
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  const facingCamera = useRef(false);
+  const cameraLocal = useMemo(() => new Vector3(), []);
   const [hover, setHover] = useState(false);
 
   const color = riskKinds[zone.kind].color;
   const position = useMemo(() => spherePosition(zone.lat, zone.lon, 1.002 + RELIEF * terrain), [zone.lat, zone.lon, terrain]);
   
-  // Baliza 3D elevada: esfera y anillo orbital suspendidos sobre el terreno
-  const size = zone.siteId ? 0.0135 : 0.0105;
-  const stemHeight = zone.siteId ? 0.056 : 0.044;
+  // Orbe apoyado sobre el terreno; toda la baliza comparte la rotación de la superficie.
+  const size = 0.0115;
+  const stemHeight = size * 1.05;
+  const normal = useMemo(() => new Vector3(...position).normalize(), [position]);
   const uniforms = useMemo(() => ({ uColor: { value: new Color(color) }, uOpacity: { value: 0.6 } }), [color]);
 
   useEffect(() => {
     const node = group.current;
     if (!node) return;
-    node.lookAt(position[0] * 2, position[1] * 2, position[2] * 2); // +Z perpendicular hacia afuera de la Tierra
+    // Orientación LOCAL: lookAt interpreta su destino en coordenadas globales.
+    node.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), normal);
     globeState.markers.set(zone.id, node);
     return () => {
       globeState.markers.delete(zone.id);
     };
-  }, [position, zone.id]);
+  }, [normal, zone.id]);
 
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock, camera }) => {
     const t = clock.elapsedTime;
     const node = body.current;
     if (!node) return;
-    if (!globeState.revealed.has(zone.id)) {
+    const anchor = group.current;
+    if (!anchor?.parent) return;
+    camera.getWorldPosition(cameraLocal);
+    anchor.parent.worldToLocal(cameraLocal);
+    cameraLocal.sub(anchor.position);
+    facingCamera.current = cameraLocal.dot(normal) > 0.03;
+    if (!globeState.revealed.has(zone.id) || !facingCamera.current) {
       node.visible = false;
       return;
     }
     node.visible = true;
     if (revealAt.current === null) revealAt.current = t;
     const appear = clamp01((t - revealAt.current) / 0.8);
-    const featured = globeState.featured === zone.id;
-    const emphasis = (hover ? 1.35 : 1) * (selected || featured ? 1.25 : 1);
 
     // 1. Detección en tiempo real por el satélite NISAR (proximidad y pasada suave)
     const prox = globeState.radarProximity.get(zone.id) ?? 0;
@@ -119,28 +125,21 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     const detectorGlow = Math.min(1.2, prox * 0.75 + flashBoost * 0.7);
 
     // Escala general sutil y sin parpadeo
-    node.scale.setScalar(Math.max(0.001, easeOutBack(appear)) * emphasis * (1 + detectorGlow * 0.05));
+    node.scale.setScalar(Math.max(0.001, easeOutBack(appear)));
 
     // Iluminación reactiva del orbe 3D y su anillo holográfico
-    const baseEmissive = selected ? 1.6 : hover ? 1.3 : 0.7;
-    const emissiveIntensity = baseEmissive + detectorGlow * 0.55;
+    const baseEmissive = selected ? 0.85 : hover ? 0.7 : 0.35;
+    const emissiveIntensity = baseEmissive + detectorGlow * 0.25;
     if (orbMaterial.current) orbMaterial.current.emissiveIntensity = emissiveIntensity;
-    if (ringMaterial.current) ringMaterial.current.emissiveIntensity = emissiveIntensity * 0.95;
 
     // Halo atmosférico alrededor de la esfera
     if (haloMesh.current) {
-      (haloMesh.current.material as MeshBasicMaterial).opacity = 0.2 + detectorGlow * 0.18 + (hover || selected ? 0.25 : 0);
-    }
-
-    // Rotación orbital del anillo holográfico alrededor de la esfera (aceleración sutil)
-    if (ringGroup.current) {
-      ringGroup.current.rotation.z += delta * (0.65 + detectorGlow * 0.35);
-      ringGroup.current.rotation.x = 0.42 + Math.sin(t * 1.5 + index) * 0.1;
+      (haloMesh.current.material as MeshBasicMaterial).opacity = 0.05 + detectorGlow * 0.08 + (hover || selected ? 0.08 : 0);
     }
 
     // Columna de luz: se estira y resplandece suavemente al recibir el detector del satélite
     if (pillar.current) {
-      pillar.current.scale.set(1, 1, Math.max(0.001, appear * (1 + detectorGlow * 0.22 + (selected ? 0.2 : 0))));
+      pillar.current.scale.set(1, 1, Math.max(0.001, appear));
     }
     if (pillarMaterial.current) {
       pillarMaterial.current.uniforms.uOpacity.value = 0.45 + detectorGlow * 0.28 + (selected ? 0.2 : 0);
@@ -149,17 +148,17 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     // Pulso constante y sereno en la superficie: velocidad constante para evitar saltos o parpadeos bruscos
     if (pulse.current) {
       const p = (t * 0.38 + index * 0.18) % 1;
-      pulse.current.scale.setScalar(1 + p * 1.8);
+      pulse.current.scale.setScalar(1 + p * 0.5);
       // Desvanecimiento suave en campana: aparece y desaparece sin cortes
       const fade = Math.sin(p * Math.PI);
-      (pulse.current.material as MeshBasicMaterial).opacity = (0.2 + detectorGlow * 0.22) * fade * appear;
+      (pulse.current.material as MeshBasicMaterial).opacity = (0.1 + detectorGlow * 0.1) * fade * appear;
     }
 
     // Onda de choque sutil y difusa cuando el satélite detecta directamente el punto
     if (burst.current) {
       burst.current.visible = flashing;
       if (flashing) {
-        burst.current.scale.setScalar(1 + f * 2.6);
+        burst.current.scale.setScalar(1 + f * 0.8);
         const burstFade = Math.sin(f * Math.PI);
         (burst.current.material as MeshBasicMaterial).opacity = 0.32 * burstFade * (1 - f * 0.5);
       }
@@ -172,12 +171,14 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     focusZone(zone.id);
   };
 
-  const handlePointerDown = (event: any) => {
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    if (!facingCamera.current || !body.current?.visible) return;
     event.stopPropagation();
-    pointerDownPos.current = { x: event.clientX, y: event.clientY, time: performance.now() };
+    pointerDownPos.current = { x: event.clientX, y: event.clientY };
   };
 
-  const handleClick = (event: any) => {
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    if (!facingCamera.current || !body.current?.visible) return;
     event.stopPropagation();
     if (!pointerDownPos.current) {
       triggerSelect();
@@ -186,9 +187,9 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     const dx = event.clientX - pointerDownPos.current.x;
     const dy = event.clientY - pointerDownPos.current.y;
     const dist = Math.hypot(dx, dy);
-    const dt = performance.now() - pointerDownPos.current.time;
-    // Si el arrastre fue menor a 18px o el toque fue rápido, es un clic claro en la baliza
-    if (dist < 18 || globeState.user.moved < 18 || dt < 320) {
+    pointerDownPos.current = null;
+    // Un arrastre rápido también es un arrastre: no abre una zona por accidente.
+    if (dist < 8) {
       triggerSelect();
     }
   };
@@ -230,35 +231,26 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
         </mesh>
 
         {/* Brillo interior del orbe */}
-        <mesh position={[0, 0, stemHeight]} scale={0.52}>
+        <mesh position={[0, 0, stemHeight]} scale={0.3}>
           <sphereGeometry args={[size * 1.05, 16, 12]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.7} toneMapped={false} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.35} toneMapped={false} />
         </mesh>
 
         {/* Halo atmosférico luminoso alrededor de la esfera */}
-        <mesh ref={haloMesh} position={[0, 0, stemHeight]} scale={1.45}>
+        <mesh ref={haloMesh} position={[0, 0, stemHeight]} scale={1.2}>
           <sphereGeometry args={[size * 1.05, 18, 14]} />
           <meshBasicMaterial color={color} transparent opacity={0.25} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
         </mesh>
 
-        {/* 6. Anillo orbital holográfico alrededor de la esfera (diseño 3D táctico) */}
-        <group ref={ringGroup} position={[0, 0, stemHeight]} rotation={[0.42, 0.22, 0]}>
-          <mesh>
-            <torusGeometry args={[size * 1.75, size * 0.12, 12, 36]} />
-            <meshStandardMaterial ref={ringMaterial} color={selected ? "#ffffff" : color} emissive={color} emissiveIntensity={0.85} roughness={0.3} toneMapped={false} />
-          </mesh>
-        </group>
-
         {/* 7. Volumen de interacción amplio: abarca toda la baliza en 3D para una pulsación cómoda e inmediata */}
         <mesh
-          position={[0, 0, stemHeight * 0.55]}
-          rotation={[Math.PI / 2, 0, 0]}
+          position={[0, 0, stemHeight]}
           onPointerDown={handlePointerDown}
           onClick={handleClick}
-          onPointerOver={(event) => { event.stopPropagation(); setHover(true); document.body.style.cursor = "pointer"; }}
+          onPointerOver={(event) => { if (!facingCamera.current || !body.current?.visible) return; event.stopPropagation(); setHover(true); document.body.style.cursor = "pointer"; }}
           onPointerOut={() => { setHover(false); document.body.style.cursor = ""; }}
         >
-          <cylinderGeometry args={[size * 5.2, size * 5.2, stemHeight * 1.8, 16]} />
+          <sphereGeometry args={[size * 2.6, 16, 12]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
         </mesh>
       </group>

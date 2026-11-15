@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useI18n } from "@/lib/i18n";
+import { ProtectedTerms, useI18n } from "@/lib/i18n";
 import { exposureScenarios, type TerritorialAssessment } from "@/lib/socioeconomic";
 import { loadAssessment } from "@/lib/territorial-api";
 
@@ -43,7 +43,7 @@ export default function TerritorialImpact({ zoneId, assessment, observation }: {
     <details className="zone-explain territorial-impact">
       <summary>{en ? "Territory & livelihoods" : "Territorio y medios de vida"}<span className="territorial-badge notranslate" translate="no">{data?.mode === "demo" ? "DEMO" : "SAROS"}</span></summary>
       {loading ? <p role="status">{en ? "Loading territorial assessment…" : "Cargando evaluación territorial…"}</p> : failed ? <div role="alert"><p>{en ? "The assessment could not be loaded. No current assessment is available." : "No se pudo cargar la evaluación. No hay una evaluación vigente disponible."}</p><button className="territorial-retry" onClick={() => { setResult(null); setRetry((n) => n + 1); }}>{en ? "Retry" : "Reintentar"}</button></div> : !data ? <p>{en ? "No socioeconomic assessment available for this region." : "Esta región aún no dispone de una evaluación socioeconómica."}</p> : <>
-        <p>{en ? "SAROS connects surface observations with territorial exposure and preventive review." : "SAROS relaciona cambios de la superficie con exposición territorial y revisión preventiva."}</p>
+        <p><ProtectedTerms text={en ? "SAROS connects surface observations with territorial exposure and preventive review." : "SAROS relaciona cambios de la superficie con exposición territorial y revisión preventiva."} /></p>
         <strong>{en ? "1. Surface observation" : "1. Observación de la superficie"}</strong>
         <p>{observation ? `${observation.date} · ${observation.value == null ? "—" : observation.value.toFixed(1)} ${observation.unit}${observation.demo ? " · DEMO" : ""}` : (en ? "Observation unavailable" : "Observación no disponible")}</p>
         <p>{en ? "Use the existing map timeline and chart to review the selected point. Exposure assumptions are independent of this measurement." : "Usa la línea de tiempo y la gráfica del mapa para revisar el punto seleccionado. Los supuestos de exposición son independientes de esta medición."}</p>
@@ -81,7 +81,7 @@ export default function TerritorialImpact({ zoneId, assessment, observation }: {
             <p>{alert.message[lang]}</p><p>{alert.action[lang]}</p><small>{alert.source} · {alert.issuedAt} → {alert.expiresAt}</small>
           </article>) : <p>{en ? "No current notices received. This does not establish safe conditions." : "Sin avisos vigentes recibidos. Esto no determina condiciones seguras."}</p>}
         </details>
-        <p className="territorial-provenance">{data.assessedAt ? `${en ? "Assessment date" : "Fecha de evaluación"}: ${data.assessedAt}` : (en ? "Illustrative assessment without validation date." : "Evaluación ilustrativa sin fecha de validación.")} {en ? "SAROS does not predict earthquakes. Decisions require local expert review." : "SAROS no predice terremotos. Las decisiones requieren revisión técnica local."}</p>
+        <p className="territorial-provenance">{data.assessedAt ? `${en ? "Assessment date" : "Fecha de evaluación"}: ${data.assessedAt}` : (en ? "Illustrative assessment without validation date." : "Evaluación ilustrativa sin fecha de validación.")} <ProtectedTerms text={en ? "SAROS does not predict earthquakes. Decisions require local expert review." : "SAROS no predice terremotos. Las decisiones requieren revisión técnica local."} /></p>
       </>}
     </details>
   );

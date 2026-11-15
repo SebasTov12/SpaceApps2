@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { SITE_EVENT } from "@/components/globe/globe-state";
 import { SarosStar } from "@/components/saros-logo";
 import { loadHeadlines, type Headline } from "@/lib/headlines";
-import { useI18n } from "@/lib/i18n";
+import { ProtectedTerms, useI18n } from "@/lib/i18n";
 
 const LIVE_BY_LANG: Record<string, string> = {
   es: "ÚLTIMA HORA",
@@ -44,8 +44,7 @@ const label = {
 export default function HeadlineTicker({ className }: { className?: string }) {
   const { lang, globalLang } = useI18n();
   const currentCode = globalLang || lang || "es";
-  const isEs = currentCode === "es";
-  const activeLang = isEs ? "es" : "en";
+  const activeLang = lang;
   const l = label[activeLang];
   const liveLabel = LIVE_BY_LANG[currentCode] || LIVE_BY_LANG[currentCode.split("-")[0]] || "ÚLTIMA HORA";
   const [items, setItems] = useState<Headline[]>([]);
@@ -68,7 +67,7 @@ export default function HeadlineTicker({ className }: { className?: string }) {
     <button key={`${item.id}-${copy ? "b" : "a"}-${currentCode}`} type="button" className="ticker-item" onClick={() => open(item.siteId)}
       tabIndex={copy ? -1 : undefined} aria-hidden={copy || undefined}>
       <b className={`ticker-sev sev-${item.severity}`}>{l.severity[item.severity]}</b>
-      <span className="ticker-title">{item.title[activeLang]}</span>
+      <span className="ticker-title"><ProtectedTerms text={item.title[activeLang]} /></span>
       {item.place && <em>· {item.place[activeLang]}</em>}
       <small className="notranslate" translate="no">{item.source}</small>
       <i className={item.demo ? "ticker-flag is-demo notranslate" : "ticker-flag notranslate"} translate="no">{item.demo ? l.demo : l.real}</i>

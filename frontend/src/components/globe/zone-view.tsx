@@ -8,8 +8,8 @@ import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
 import { adviceNote, levelInfo, recommendations, trendSentence } from "@/lib/insights";
-import { useI18n } from "@/lib/i18n";
-import { riskKindInfo, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
+import { ProtectedTerms, useI18n } from "@/lib/i18n";
+import { riskKindInfo, riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { exposureNames, sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import {
   formatCoord, loadAvailability, loadManifest, loadTimeSeries, longDate, radarExplainer, seriesAt, shortDate, strongestChange,
@@ -78,7 +78,7 @@ function zoneBbox(zone: RiskZone): Bbox {
 
 /** Vista de una zona: el planeta se acerca y da paso al mapa satelital de la zona, con el panel de información. */
 export default function ZoneView() {
-  const { lang, t } = useI18n();
+  const { lang, globalLang, t } = useI18n();
   const c = copy[lang];
   const en = lang === "en";
   const wrapper = useRef<HTMLDivElement>(null);
@@ -236,7 +236,7 @@ export default function ZoneView() {
         <p>{c.zonesHint}</p>
         <ul>
           {riskZones.map((z) => (
-            <li key={z.id}><button type="button" onClick={() => focusZone(z.id)}>{z.place[lang]} · {riskKinds[z.kind][lang]}</button></li>
+            <li key={z.id}><button type="button" onClick={() => focusZone(z.id)}>{z.place[lang]} · <span translate={z.kind === "subsidence" && globalLang === "pt" ? "no" : undefined}>{riskKindLabel(z.kind, lang, globalLang)}</span></button></li>
           ))}
         </ul>
       </nav>
@@ -311,7 +311,7 @@ export default function ZoneView() {
           >
             <span className="zone-grab" aria-hidden="true" />
             <header className="zone-head">
-              <span className="zone-kind" style={{ color: riskKinds[zone.kind].color }}>{riskKinds[zone.kind][lang]}</span>
+              <span className="zone-kind" translate={zone.kind === "subsidence" && globalLang === "pt" ? "no" : undefined} style={{ color: riskKinds[zone.kind].color }}>{riskKindLabel(zone.kind, lang, globalLang)}</span>
               <div className="zone-head-actions">
                 <button type="button" className="zone-close" onClick={closeZone} aria-label={c.back} title={c.back}><ArrowLeft size={18} /></button>
               </div>
@@ -358,7 +358,7 @@ export default function ZoneView() {
                             );
                           })}
                         </ul>
-                        <p className="zone-muted">{c.impactNote}</p>
+                        <p className="zone-muted"><ProtectedTerms text={c.impactNote} /></p>
                       </section>
                     )}
                     {zone.event && (
@@ -384,7 +384,7 @@ export default function ZoneView() {
                     )}
                     {!siteId && (
                       <>
-                        <p className="zone-nodata">{c.noData}</p>
+                        <p className="zone-nodata"><ProtectedTerms text={c.noData} /></p>
                         <p className="zone-sub">{c.withData}</p>
                         <div className="zone-chips">
                           {riskZones.filter((z) => z.siteId && z.country === "CO").map((z) => (

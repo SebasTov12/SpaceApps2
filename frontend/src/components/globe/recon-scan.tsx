@@ -5,11 +5,9 @@ import { useMemo, useRef } from "react";
 import { AdditiveBlending, Vector3, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
 import { riskZones } from "@/lib/risk-zones";
-import { FOOTPRINT_LOCAL, OVER_RELIEF, GLOBE_DETECT, GLOBE_RECON, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
+import { FOOTPRINT_LOCAL, OVER_RELIEF, GLOBE_DETECT, GLOBE_RECON, SCAN_INTERVAL, SCAN_DURATION, SCAN_FADE, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
 
 const SCAN_DELAY = 3.6;      // esperar a que termine la entrada cinematográfica
-const SCAN_INTERVAL = 30;   // segundos entre inicios de barridos
-const SCAN_DURATION = 5.2;   // s que tarda el frente en cubrir el planeta
 const PASS_DISTANCE = 0.35;  // distancia huella–zona para contar una pasada del haz
 const PASS_COOLDOWN = 10;    // s mínimos entre dos detecciones de la misma zona
 
@@ -92,9 +90,9 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     const angle = scan.progress * Math.PI * 1.04;
     u.uAngle.value = angle;
     u.uActive.value = smooth(0, 0.04, scan.progress) * (1 - smooth(0.92, 1, scan.progress));
-    u.uTrail.value = smooth(0, 0.1, scan.progress) * (1 - smooth(scan.startedAt + SCAN_DURATION + 0.2, scan.startedAt + SCAN_DURATION + 1.6, now));
+    u.uTrail.value = smooth(0, 0.1, scan.progress) * (1 - smooth(scan.startedAt + SCAN_DURATION + 0.2, scan.startedAt + SCAN_DURATION + SCAN_FADE, now));
     globeState.beam = smooth(scan.startedAt - 0.4, scan.startedAt + 0.5, now)
-      * (1 - smooth(scan.startedAt + SCAN_DURATION, scan.startedAt + SCAN_DURATION + 1.6, now));
+      * (1 - smooth(scan.startedAt + SCAN_DURATION, scan.startedAt + SCAN_DURATION + SCAN_FADE, now));
 
     // 2. El frente descubre las zonas que alcanza
     if (scan.progress > 0 && globeState.revealed.size < riskZones.length) {

@@ -8,6 +8,7 @@ import ZoneView from "@/components/globe/zone-view";
 import HeroOverlay from "@/components/globe/hero-overlay";
 import SpaceDepth, { OrbitRings } from "@/components/space-depth";
 import SarosHeroChrome, { SarosWordmark } from "@/components/saros-hero-chrome";
+import { useI18n } from "@/lib/i18n";
 
 const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
   ssr: false,
@@ -15,6 +16,7 @@ const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
 });
 
 export default function EarthHero() {
+  const { lang } = useI18n();
   const section = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
   const [sceneReady, setSceneReady] = useState(false);
@@ -44,7 +46,7 @@ export default function EarthHero() {
   const starsY = useTransform(progress, [0, 1], ["0%", "-8%"]);
 
   return (
-    <section ref={section} id="inicio" className="earth-scroll" aria-label="SAROS: la Tierra y la órbita de NISAR">
+    <section ref={section} id="inicio" className="earth-scroll" aria-label={lang === "en" ? "SAROS: Earth and NISAR's orbit" : "SAROS: la Tierra y la órbita de NISAR"}>
       <div className="earth-stage" data-playing={playing} data-scene-ready={sceneReady}>
         <motion.div className="space-backdrop" aria-hidden="true" style={{ y: starsY }}>
           <SpaceBackdrop />
@@ -55,7 +57,7 @@ export default function EarthHero() {
           <div className="scene-prelude" role="status">
             <div className="scene-loader-orb" aria-hidden="true" />
             <i aria-hidden="true" />
-            <small>Preparando la Tierra 3D</small>
+            <small>{lang === "en" ? "Preparing 3D Earth" : "Preparando la Tierra 3D"}</small>
           </div>
         )}
         {/* Logotipo SAROS detrás del planeta: aparece exactamente junto con el planeta al estar cargado */}

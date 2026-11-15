@@ -189,7 +189,10 @@ const CHANGE_EVENT = "saros-lang-change";
 function readLang(): Lang {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved === "en" ? "en" : "es";
+    // Los idiomas automáticos parten siempre del contenido español, que es
+    // el idioma de origen configurado en el traductor externo.
+    const global = window.localStorage.getItem(GLOBAL_STORAGE_KEY);
+    return (global ? global === "en" : saved === "en") ? "en" : "es";
   } catch {
     return "es";
   }
@@ -304,7 +307,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             "google_translate_element"
           );
           const current = readGlobalLang();
-          if (current && current !== "es") {
+          if (current && current !== "es" && current !== "en") {
             applyToCombo(current, 10);
           }
         }
@@ -322,18 +325,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [applyToCombo]);
 
-  const setLang = useCallback((next: Lang) => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-      window.localStorage.setItem(GLOBAL_STORAGE_KEY, next);
-    } catch {
-      // sin almacenamiento
-    }
-    window.dispatchEvent(new Event(CHANGE_EVENT));
-  }, []);
-
   const setGlobalLang = useCallback((code: string) => {
-    const base: Lang = code === "es" ? "es" : "en";
+    if (!AVAILABLE_LANGUAGES.some((option) => option.code === code)) return;
+    if (readGlobalLang() === code) return;
+    const base: Lang = code === "en" ? "en" : "es";
+    const previous = readGlobalLang();
     try {
       window.localStorage.setItem(STORAGE_KEY, base);
       window.localStorage.setItem(GLOBAL_STORAGE_KEY, code);
@@ -344,27 +340,24 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof document !== "undefined") {
       try {
         const gtCode = code === "he" ? "iw" : code;
-        if (code === "es") {
-          document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${window.location.hostname}; path=/;`;
-          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=.${window.location.hostname}; path=/;`;
-          document.cookie = "googtrans=/auto/es; path=/;";
-          document.cookie = `googtrans=/auto/es; domain=${window.location.hostname}; path=/;`;
-          document.cookie = `googtrans=/auto/es; domain=.${window.location.hostname}; path=/;`;
-        } else {
-          const cookieVal = `/auto/${gtCode}`;
-          document.cookie = `googtrans=${cookieVal}; path=/;`;
-          document.cookie = `googtrans=${cookieVal}; domain=${window.location.hostname}; path=/;`;
-          document.cookie = `googtrans=${cookieVal}; domain=.${window.location.hostname}; path=/;`;
+        document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+        if (window.location.hostname.includes(".")) {
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}; path=/`;
+          document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=.${window.location.hostname}; path=/`;
         }
-        applyToCombo(code, 8);
+        if (code !== "es" && code !== "en") document.cookie = `googtrans=/es/${gtCode}; path=/; SameSite=Lax`;
       } catch {
         // silenciar errores de cookies
       }
     }
 
     window.dispatchEvent(new Event(CHANGE_EVENT));
-  }, [applyToCombo]);
+    // Restaurar un DOM limpio al entrar o salir de traducción automática evita
+    // que el traductor y React modifiquen simultáneamente los mismos nodos.
+    if ((previous !== "es" && previous !== "en") || (code !== "es" && code !== "en")) window.location.reload();
+  }, []);
+
+  const setLang = useCallback((next: Lang) => setGlobalLang(next), [setGlobalLang]);
 
   const value = useMemo(
     () => ({ lang, globalLang, setLang, setGlobalLang, t: dictionary[lang] }),
@@ -380,6 +373,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 }
 
 export const useI18n = () => useContext(I18nContext);
+
+/** Conserva siglas y nombres propios al aplicar traducción automática. */
+export function ProtectedTerms({ text }: { text: string }) {
+  return <>{text.split(/\b(NASA|NISAR|SAROS|InSAR|ASF|DAAC)\b/g).map((part, index) =>
+    /^(NASA|NISAR|SAROS|InSAR|ASF|DAAC)$/.test(part)
+      ? <span key={index} translate="no" className="notranslate">{part}</span>
+      : part
+  )}</>;
+}
 
 /** Botón ES | EN heredado para compatibilidad si fuera requerido. */
 export function LanguageToggle({ className }: { className?: string }) {

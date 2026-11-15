@@ -28,6 +28,17 @@ const GALAXIES = [
   { x: 78, y: 14, w: 3.4, h: 1.1, rot: -8, o: 0.32 },
 ];
 
+/** Tres trayectorias espaciadas: siempre detrás del planeta y sin controles. */
+function SpaceComets() {
+  return (
+    <div className="space-comets" aria-hidden="true">
+      <span className="space-comet space-comet-a" />
+      <span className="space-comet space-comet-b" />
+      <span className="space-comet space-comet-c" />
+    </div>
+  );
+}
+
 export default function SpaceDepth() {
   return (
     <div className="space-depth" aria-hidden="true">
@@ -41,9 +52,7 @@ export default function SpaceDepth() {
             style={{ animationDelay: `${s.delay.toFixed(2)}s`, animationDuration: `${s.dur.toFixed(2)}s` }} />
         ))}
       </svg>
-      <i className="space-meteor" style={{ top: "14%", left: "62%", animationDelay: "3s" }} />
-      <i className="space-meteor" style={{ top: "34%", left: "18%", animationDelay: "11s" }} />
-      <i className="space-meteor" style={{ top: "8%", left: "36%", animationDelay: "19s" }} />
+      <SpaceComets />
     </div>
   );
 }

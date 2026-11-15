@@ -91,11 +91,11 @@ export default function LanguageModal() {
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder="Buscar idioma / Search language..."
-                  aria-label="Buscar idioma"
+                  aria-label={lang === "en" ? "Search language" : "Buscar idioma"}
                   autoFocus
                 />
                 {filter && (
-                  <button type="button" onClick={() => setFilter("")} aria-label="Limpiar">
+                  <button type="button" onClick={() => setFilter("")} aria-label={lang === "en" ? "Clear" : "Limpiar"}>
                     <X size={14} />
                   </button>
                 )}

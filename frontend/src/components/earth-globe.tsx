@@ -10,6 +10,7 @@ import ReconScan from "@/components/globe/recon-scan";
 import CompanionSats from "@/components/globe/companion-sats";
 import { RELIEF, globeState } from "@/components/globe/globe-state";
 import CameraRig from "@/components/globe/camera-rig";
+import { useI18n } from "@/lib/i18n";
 import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight, type DirectionalLight, type Group } from "three";
 
 type SceneQuality = "compact" | "full";
@@ -200,6 +201,7 @@ function NoWebGL({ onReady }: { onReady: () => void }) {
 }
 
 export default function EarthGlobe({ progress, playing, onReady }: { progress: MotionValue<number>; playing: boolean; onReady: () => void }) {
+  const { lang } = useI18n();
   const [ready, setReady] = useState(false);
   const [quality] = useState<SceneQuality>(() => {
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
@@ -237,7 +239,7 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     window.addEventListener("pointercancel", end);
   }, []);
   return (
-    <div className="earth-render is-draggable" onPointerDown={startDrag} role="group" aria-label="Globo interactivo: arrastra para girar la Tierra; NISAR orbita y su radar ilustrativo detecta zonas de riesgo. La lista de zonas está en el panel de reconocimiento.">
+    <div className="earth-render is-draggable" onPointerDown={startDrag} role="group" aria-label={lang === "en" ? "Interactive globe: drag to rotate Earth; NISAR orbits and its illustrative radar detects risk zones. The zone list is in the recognition panel." : "Globo interactivo: arrastra para girar la Tierra; NISAR orbita y su radar ilustrativo detecta zonas de riesgo. La lista de zonas está en el panel de reconocimiento."}>
       <SceneBoundary onFailure={showScene}>
         <Canvas style={{ position: "absolute", inset: "-35%", width: "170%", height: "170%" }}
           camera={{ position: [0, 0, 3.5], fov: 58 }} dpr={quality === "compact" ? [1, 1.2] : [1, 1.6]}

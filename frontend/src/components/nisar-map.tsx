@@ -130,7 +130,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
 }
 
 export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE }: NisarMapProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -424,7 +424,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
         </div>
       )}
       {failed && <div className="map-fallback">{t.mapFailed}</div>}
-      <div className="map-distance-scale" style={{ width: distanceScale.width }} aria-label={`Escala terrestre: ${distanceScale.label}`}>
+      <div className="map-distance-scale" style={{ width: distanceScale.width }} aria-label={`${lang === "en" ? "Map scale" : "Escala terrestre"}: ${distanceScale.label}`}>
         <span>{distanceScale.label}</span>
       </div>
     </div>

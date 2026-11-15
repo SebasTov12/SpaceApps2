@@ -4,6 +4,10 @@ import { Vector3, type Object3D } from "three";
 export const RELIEF = 0.04;
 /** Radio de las capas que van sobre el relieve (franja del radar, barrido). */
 export const OVER_RELIEF = 1 + RELIEF + 0.006;
+/** Tiempos compartidos para coordinar los haces ilustrativos. */
+export const SCAN_INTERVAL = 30;
+export const SCAN_DURATION = 5.2;
+export const SCAN_FADE = 1.6;
 
 /**
  * Estado compartido entre la escena 3D (useFrame) y la interfaz HTML del globo.
