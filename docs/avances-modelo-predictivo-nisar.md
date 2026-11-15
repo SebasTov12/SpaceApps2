@@ -155,7 +155,7 @@ livianos y documentación de procedencia.
   ICMP. La API y el procesador estaban sanos antes de esa reconstrucción. El
   resultado del build web y la salud actual del host quedan pendientes de
   reconexión; no se afirma que el despliegue completo haya terminado.
-- Se endureció localmente el criterio de fiabilidad del backtest: ahora cuenta
+- Se endureció el criterio de fiabilidad del backtest: ahora cuenta
   fechas objetivo distintas y expone cuántas veces se reutilizó cada una. Los
   orígenes que comparten una observación futura se reconocen como dependientes;
   seis fechas objetivo distintas siguen siendo solo una condición mínima de
@@ -166,3 +166,9 @@ livianos y documentación de procedencia.
   externas no se aplican automáticamente. También se registran las limitaciones
   vigentes de fase/desenvolvimiento; no se debe construir una observación LOS
   con solo convertir y acumular la capa de fase.
+- La mejora del backtest y estas precisiones quedaron publicadas en
+  `origin/main` como `06d0dec`; el módulo pasó `py_compile` y `git diff
+  --check`. No se usaron datos sintéticos ni se calcularon métricas del modelo.
+  La última revisión de Tailscale muestra `orivia` offline. El checkout remoto
+  y la API todavía no incorporan este commit; al recuperar conectividad habrá
+  que actualizar la API y verificar su salud antes de seguir con datos.
