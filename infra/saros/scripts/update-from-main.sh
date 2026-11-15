@@ -123,13 +123,6 @@ if [[ ! -s "$deploy_repo/models/nisar-change/composite_model.json" ]]; then
   fail_before_restart "model artifact validation"
 fi
 
-available_memory_kb="$(awk '/MemAvailable:/ { print $2; exit }' /proc/meminfo)"
-if [[ -z "$available_memory_kb" ]] || (( available_memory_kb < 900000 )); then
-  log "Skipping ${target_commit:0:12}: only ${available_memory_kb:-unknown} KiB RAM is available; current containers remain untouched."
-  git -C "$deploy_repo" reset --hard "$current_commit"
-  exit 0
-fi
-
 load_1m="$(awk '{ print $1; exit }' /proc/loadavg)"
 if awk -v load="$load_1m" 'BEGIN { exit !(load >= 1.25) }'; then
   log "Skipping ${target_commit:0:12}: 1-minute load average is $load_1m; current containers remain untouched."
