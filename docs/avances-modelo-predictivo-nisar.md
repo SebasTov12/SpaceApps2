@@ -183,3 +183,30 @@ livianos y documentación de procedencia.
   piloto actual no puede alcanzar el cribado mínimo de seis; habrá que esperar
   adquisiciones posteriores y conservar solo las que pasen controles de
   calidad.
+
+## Actualización tras recuperar Orivia (15 de noviembre de 2026)
+
+- Tailscale/SSH volvió a estar disponible. El checkout limpio del servidor se
+  actualizó por fast-forward a `e35dc1b`, coincidente con `origin/main`; se
+  inspeccionaron los seis commits entrantes, todos de interfaz.
+- Se reconstruyeron las imágenes `spaceapps2-api` y
+  `spaceapps2-nisar-processor`. Solo se recreó la API; quedó `healthy`. El
+  checkpoint autenticado continúa informando cero observaciones y ninguna
+  fecha procesada. Dentro de la imagen API confirmé el filtro por seis fechas
+  objetivo distintas y la versión 1.1 del pronosticador.
+- La imagen del procesador se comprobó sin datos de entrada: su lector rechaza
+  GUNW en el modo real hasta aplicar máscaras y referencia estable. PostgreSQL
+  no se reinició ni se modificó; conteo de `nisar.observations` en modo real:
+  cero.
+- Las variables `EARTHDATA_USERNAME` y `EARTHDATA_PASSWORD` continúan vacías
+  en el `.env` privado; no hay HDF5 que inspeccionar. No se descargó ni generó
+  ningún dato y todavía no hay RMSE/MAE reales.
+- La web actual sigue saludable, pero usa una imagen de unas cinco horas que
+  precede a los últimos cambios de interfaz. No la reconstruí en el host: en
+  la verificación quedaba aproximadamente 1 GB de RAM disponible y el intento
+  anterior de build pesado terminó con la desconexión de Orivia. Los cambios
+  de interfaz sí están en el checkout sincronizado; el runtime web requiere
+  una compilación con más memoria o un build externo.
+- El contenedor separado `spaceapps2-model` del detector ONNX sigue
+  `unhealthy`; no es el servicio de pronóstico temporal LOS, que corre dentro
+  de la API saludable.
