@@ -163,21 +163,21 @@ function scriptFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "
   const es = lang === "es";
   if (!zone) {
     return es
-      ? ["👋 Soy Saru. Toca un punto para ver sus datos y el análisis disponible."]
-      : ["👋 I'm Saru. Tap a point to see its data and available analysis."];
+      ? ["Soy Saru. Toca un punto para ver sus datos y el análisis disponible."]
+      : ["I'm Saru. Tap a point to see its data and available analysis."];
   }
   const name = zone.name[lang];
   const a = m?.assessment;
   if (m?.source.mode === "demo") return [es
-    ? `📍 ${name}: esta capa es DEMO y no mide movimiento real. Abre la ficha para ver fuentes y límites.`
-    : `📍 ${name}: this layer is DEMO and does not measure real movement. Open its details for sources and limits.`];
+    ? `${name}: esta capa es DEMO y no mide movimiento real. Abre la ficha para ver fuentes y límites.`
+    : `${name}: this layer is DEMO and does not measure real movement. Open its details for sources and limits.`];
   if (a && m) return [es
-    ? `📡 ${name}: la serie muestra ${fmt(a.rate.recent)} ${a.rate.unit}; es una medición de la capa, no un pronóstico.`
-    : `📡 ${name}: the series shows ${fmt(a.rate.recent)} ${a.rate.unitEn}; this is a layer measurement, not a forecast.`,
-  es ? "🤖 Revisa Análisis para ver si SAROS tiene una evaluación guardada." : "🤖 Check Analysis for a saved SAROS assessment."];
+    ? `${name}: la serie muestra ${fmt(a.rate.recent)} ${a.rate.unit}; es una medición de la capa, no un pronóstico.`
+    : `${name}: the series shows ${fmt(a.rate.recent)} ${a.rate.unitEn}; this is a layer measurement, not a forecast.`,
+  es ? "Revisa Análisis para ver si SAROS tiene una evaluación guardada." : "Check Analysis for a saved SAROS assessment."];
   return [es
-    ? `📍 ${name}: aún no hay una escena NISAR procesada ni una evaluación del modelo para mostrar.`
-    : `📍 ${name}: no processed NISAR scene or model assessment is available yet.`];
+    ? `${name}: aún no hay una escena NISAR procesada ni una evaluación del modelo para mostrar.`
+    : `${name}: no processed NISAR scene or model assessment is available yet.`];
 }
 
 /** Frase de reacción al abrir la ficha de un sector. */
@@ -589,7 +589,7 @@ export default function SaroGuide() {
                 <button type="button" className={`saru-btn${voice ? " on" : ""}`} onClick={() => setVoice((v) => !v)} aria-pressed={voice} aria-label={es ? "Voz" : "Voice"}>{voice ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>
                 <button type="button" className="saru-btn" onClick={() => setMinimized(true)} aria-label={es ? "Ocultar a Saru" : "Hide Saru"}><Minus size={13} /></button>
               </div>
-              {voice && !unlocked && <p className="saru-hint"><ProtectedTerms text={es ? "🔊 Toca cualquier parte para oír a Saru" : "🔊 Tap anywhere to hear Saru"} /></p>}
+              {voice && !unlocked && <p className="saru-hint"><ProtectedTerms text={es ? "Toca cualquier parte para oír a Saru" : "Tap anywhere to hear Saru"} /></p>}
             </motion.div>
           )}
         </AnimatePresence>
