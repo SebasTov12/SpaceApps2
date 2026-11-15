@@ -1,4 +1,17 @@
-# Filtro de catálogo NISAR
+# Ingesta DIAN y catálogo NISAR
+
+## Serie mensual real DIAN
+
+`import_dian_monthly.py` descarga la hoja oficial de recaudo mensual, guarda el total y las columnas tributarias reportadas en un CSV con el hash SHA-256 de la fuente, el periodo y la marca de preliminaridad. No necesita `pandas` ni `openpyxl`.
+
+```powershell
+python scripts/import_dian_monthly.py --output-csv data/processed/dian/monthly.csv
+python -m ml.dian_forecast.forecast --observations data/processed/dian/monthly.csv --output-json artifacts/dian/forecast.json --output-sql artifacts/dian/store_forecast.sql
+```
+
+La serie se conserva en millones de pesos corrientes. El modelo prueba una regresión log-lineal por mes calendario contra el baseline de repetir el mismo mes del año anterior, con backtest rodante de los últimos 60 objetivos. La salida sigue siendo exploratoria y no está ajustada por inflación. La tabla de destino es `dian.monthly_observations`; la migración está en `pipeline/sql/005_dian_real_observations.sql`.
+
+## Filtro de catálogo NISAR
 
 Este script consulta las huellas del catálogo ASF que distribuye los productos NISAR disponibles en Earthdata y aplica tres filtros consecutivos:
 

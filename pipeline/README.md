@@ -52,13 +52,24 @@ El explorador muestra el badge **Demo** o **NISAR** según `source.mode`.
 - En modo real solo se usan escenas de la misma geometría (track, dirección y frame); el resto se descarta y se avisa.
 - No mezclar madureces (BETA, PROVISIONAL, VALIDATED) sin documentarlo (ver `docs/arquitectura/04`).
 
-## Predicciones sintéticas DIAN + NASA y síntesis para LLM
+## Predicciones DIAN reales y demostración sintética NISAR
 
-La primera carga usa escenarios sintéticos de recaudo nacional DIAN y desplazamiento LOS NISAR para Norte de Santander. No son datos oficiales ni observaciones satelitales. Se guardan en la base dedicada `spaceapps2`, en `dian.predictions` y `nasa.predictions`, con el origen y las limitaciones dentro de `payload`.
+La base conserva seis observaciones sintéticas por fuente y un pronóstico sintético por fuente solo como demostración del formato; todas llevan `synthetic=true`. No son datos oficiales ni observaciones satelitales.
 
-La migración agrega claves idempotentes y las tablas de análisis. `analysis.train_colombia_synthetic_models()` ajusta dos regresiones lineales por mínimos cuadrados, una para cada serie sintética, registra coeficientes y métricas (R² y MAE) y genera la predicción del siguiente mes. Después crea el paquete JSON de síntesis en `analysis.llm_briefs`. El ámbito DIAN del ejemplo es nacional y el de NISAR es el AOI, por lo que el paquete mantiene ambas señales separadas. No crea puntaje conjunto ni alerta.
+La serie oficial mensual DIAN ya está en `dian.monthly_observations`: 321 periodos entre enero de 2000 y septiembre de 2026, recaudo total y columnas de tributos según el archivo oficial. Los importes se conservan en millones de pesos corrientes y los nueve meses de 2026 se marcan preliminares. El modelo por mes calendario genera el pronóstico de octubre de 2026 y se compara con un baseline estacional mediante 60 objetivos rodantes fuera de muestra. Es exploratorio, nominal y aún requiere validación externa.
 
-Desde PowerShell en la raíz del repositorio, aplica la migración y carga seis meses sintéticos:
+La migración `pipeline/sql/005_dian_real_observations.sql` crea la tabla real. `scripts/import_dian_monthly.py` descarga y convierte el Excel oficial sin dependencias adicionales; `ml.dian_forecast.forecast` entrena y genera el SQL para guardar la ejecución y el pronóstico real en `analysis.model_training_runs` y `dian.predictions`.
+
+NISAR sigue pendiente en modo real: el catálogo ofrece metadatos, pero `nisar.observations` tiene cero filas. En el servidor, las credenciales Earthdata están vacías; además, el procesador debe inspeccionar y validar máscaras, componentes y referencia estable antes de derivar LOS. Por eso `analysis.llm_briefs` todavía contiene únicamente paquetes de demostración sintética; no se crea un resumen conjunto con una señal NISAR inventada.
+
+Para reproducir la extracción DIAN y generar un pronóstico local:
+
+```powershell
+python scripts/import_dian_monthly.py --output-csv data/processed/dian/monthly.csv
+python -m ml.dian_forecast.forecast --observations data/processed/dian/monthly.csv --output-json artifacts/dian/forecast.json --output-sql artifacts/dian/store_forecast.sql
+```
+
+Desde PowerShell en la raíz del repositorio, aplica las migraciones y carga el conjunto sintético de demostración:
 
 ```powershell
 Get-Content -Raw pipeline/sql/001_prediction_synthesis.sql | ssh -i "$env:USERPROFILE\.ssh\id_ed25519" admin@100.104.169.58 "docker exec -i spaceapps2-postgres psql -v ON_ERROR_STOP=1 -U spaceapps2_admin -d spaceapps2"
