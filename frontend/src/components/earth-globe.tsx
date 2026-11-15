@@ -220,6 +220,8 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
   // Girar el planeta arrastrando. Se escucha en window para no robar los clics de R3F.
   const startDrag = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (!event.isPrimary || globeState.user.dragging) return;
+    const pointerId = event.pointerId;
     const user = globeState.user;
     let lastX = event.clientX;
     let lastY = event.clientY;
@@ -227,6 +229,7 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     user.moved = 0;
     user.velocity = 0;
     const move = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return;
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       lastX = e.clientX;
@@ -236,7 +239,8 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
       user.targetPitch = Math.max(-1.2, Math.min(1.2, user.targetPitch + dy * 0.004));
       user.velocity = dx * 0.003;
     };
-    const end = () => {
+    const end = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return;
       user.dragging = false;
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", end);

@@ -3108,6 +3108,8 @@ html body .hero-overlay.ui-shown .hero-search-btn{opacity:1;transform:none;point
 /* Saru: fuera de escena arriba del todo; al bajar llega volando desde lejos */
 html body .saro{transition:opacity .4s ease,visibility 0s}
 html body .saro.is-away{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .35s ease,visibility 0s .35s}
+/* Los diálogos cubren toda la escena y ocultan a Saru mientras están abiertos. */
+.earth-stage:has(.search-backdrop, .lang-backdrop) .saro{visibility:hidden;opacity:0;pointer-events:none}
 html body .saru-enter{animation:saru-fly 1.6s cubic-bezier(.22,1.2,.36,1) both}
 @keyframes saru-fly{
   0%{opacity:0;transform:translate(-280px,240px) rotate(-38deg) scale(.35)}
@@ -3175,11 +3177,13 @@ html body .saru-pool{position:fixed;left:0;top:0;width:320px;height:1px;overflow
 
 /* Mobile: controls share the top row; Saru stays above the news ticker. */
 @media(max-width:720px){
-  html body .mode-switch{top:46px;bottom:auto;left:58px;right:58px;translate:none;min-width:0;min-height:44px;padding:3px;gap:2px;display:grid;grid-template-columns:.7fr 1fr 1.6fr;border-radius:20px}
+  .earth-render.is-draggable{touch-action:none}
+  html body .mode-switch{top:max(12px,env(safe-area-inset-top));bottom:auto;left:58px;right:58px;translate:none;min-width:0;min-height:44px;padding:3px;gap:2px;display:grid;grid-template-columns:.7fr 1fr 1.6fr;border-radius:20px}
   html body .mode-switch button{min-width:0;min-height:38px;padding:4px 3px;justify-content:center;font-size:clamp(9px,2.4vw,11.5px);line-height:1.15;gap:2px;text-align:center}
   html body .mode-switch .mode-label{overflow-wrap:anywhere}
   html body .mode-switch .mode-dot{display:none}
-  html body .hero-lang-btn,html body .hero-search-btn{width:40px;height:44px;min-height:44px;top:46px}
+  html body .hero-lang-btn,html body .hero-search-btn{width:40px;height:44px;min-height:44px;top:max(12px,env(safe-area-inset-top))}
+  html body .earth-orbit{top:46%}
   html body .hero-lang-btn{left:8px}
   html body .hero-search-btn{right:8px}
   html body .saro:not(.in-zone){left:10px;right:10px;bottom:calc(50px + env(safe-area-inset-bottom));gap:4px}
