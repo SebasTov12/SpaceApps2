@@ -1,8 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useTransform } from "framer-motion";
 import { Globe2, Leaf, Search, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { MotionValue } from "framer-motion";
 import { levelInfo } from "@/lib/insights";
 import { useI18n } from "@/lib/i18n";
 import { riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
@@ -26,7 +27,7 @@ const copy = {
 const fold = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Capa ligera sobre el planeta: último evento, cifras y buscador de zonas. */
-export default function HeroOverlay() {
+export default function HeroOverlay({ progress, mobileMode }: { progress: MotionValue<number>; mobileMode: MotionValue<boolean> }) {
   const { lang, globalLang } = useI18n();
   const c = copy[lang];
   const [sites, setSites] = useState<SiteSummary[]>([]);
@@ -49,6 +50,9 @@ export default function HeroOverlay() {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const searchButtonY = useTransform(() => mobileMode.get()
+    ? 0
+    : -42 * Math.max(0, Math.min(1, progress.get() / 0.2)));
 
   useEffect(() => {
     loadSites().then(setSites).catch(() => setSites([]));
@@ -85,26 +89,26 @@ export default function HeroOverlay() {
 
   return (
     <div className={`hero-overlay${shown ? " ui-shown" : ""}`}>
-      <LanguageModal />
+      <LanguageModal progress={progress} mobileMode={mobileMode} />
       <div className="mode-switch" role="radiogroup" aria-label={lang === "es" ? "Qué ver en el planeta" : "What to show"}>
         {([["all", lang === "es" ? "Todo" : "All"], ["risk", lang === "es" ? "Amenazas" : "Hazards"], ["watch", lang === "es" ? "Vigilancia ambiental" : "Environmental watch"]] as const).map(([value, label]) => (
           <button key={value} type="button" role="radio" aria-checked={mode === value} className={mode === value ? "is-active" : undefined} onClick={() => changeMode(value)}>
             <span className="mode-ico" aria-hidden="true">{value === "all" ? <Globe2 size={15} /> : value === "risk" ? <TriangleAlert size={15} /> : <Leaf size={15} />}</span>
             <span className="mode-label">{label}</span>
-            {value === "watch" && <span className="mode-dot" />}
           </button>
         ))}
       </div>
-      <button
+      <motion.button
         type="button"
         className="hero-search-btn"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label={c.search}
         title={`${c.search} (/)`}
+        style={{ y: searchButtonY }}
       >
         <Search size={16} />
-      </button>
+      </motion.button>
 
       <AnimatePresence>
         {open && (

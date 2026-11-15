@@ -1,14 +1,26 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useTransform, type MotionValue } from "framer-motion";
 import { Check, Languages, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AVAILABLE_LANGUAGES, useI18n, type LanguageOption } from "@/lib/i18n";
 
-export default function LanguageModal() {
+export default function LanguageModal({ progress, mobileMode }: { progress: MotionValue<number>; mobileMode: MotionValue<boolean> }) {
   const { lang, globalLang, setGlobalLang } = useI18n();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
+  // En escritorio despeja el espacio del cintillo; en móvil acompaña el descubrimiento del planeta.
+  const buttonY = useTransform(() => {
+    const value = progress.get();
+    if (!mobileMode.get()) return -42 * Math.max(0, Math.min(1, value / 0.2));
+    const reveal = Math.max(0, Math.min(1, value / 0.8));
+    return 42 * (1 - reveal);
+  });
+  const buttonOpacity = useTransform(() => {
+    if (!mobileMode.get()) return 1;
+    return Math.max(0, Math.min(1, (progress.get() - 0.42) / 0.38));
+  });
+  const buttonPointerEvents = useTransform(buttonOpacity, (opacity) => opacity > 0.85 ? "auto" : "none");
 
   const active = useMemo(() => {
     return (
@@ -37,7 +49,7 @@ export default function LanguageModal() {
 
   return (
     <>
-      <button
+      <motion.button
         type="button"
         className="hero-lang-btn notranslate"
         translate="no"
@@ -45,10 +57,11 @@ export default function LanguageModal() {
         aria-haspopup="dialog"
         aria-label={`Idioma / Language: ${active.native}`}
         title={`Idioma / Language: ${active.native}`}
+        style={{ y: buttonY, opacity: buttonOpacity, pointerEvents: buttonPointerEvents }}
       >
         <Languages size={17} />
         <span className="hero-lang-badge notranslate" translate="no">{active.code.slice(0, 2).toUpperCase()}</span>
-      </button>
+      </motion.button>
 
       <AnimatePresence>
         {open && (

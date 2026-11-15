@@ -1756,7 +1756,7 @@ html body .space-stars {
 .hero-search-btn:hover {
   border-color: rgba(168, 85, 247, .75);
   background: linear-gradient(135deg, rgba(104, 25, 147, .65) 0%, rgba(15, 22, 48, .88) 50%, rgba(168, 85, 247, .35) 100%);
-  transform: scale(1.06);
+  scale: 1.06;
   box-shadow: 0 0 22px rgba(104, 25, 147, .75), 0 0 12px rgba(168, 85, 247, .45)
 }
 
@@ -1798,7 +1798,7 @@ html body .space-stars {
 .hero-lang-btn:hover {
   border-color: rgba(168, 85, 247, .75);
   background: linear-gradient(135deg, rgba(104, 25, 147, .65) 0%, rgba(15, 22, 48, .88) 50%, rgba(168, 85, 247, .35) 100%);
-  transform: scale(1.06);
+  scale: 1.06;
   box-shadow: 0 0 22px rgba(104, 25, 147, .75), 0 0 12px rgba(168, 85, 247, .45)
 }
 
@@ -3182,7 +3182,7 @@ html body .saru-pool{position:fixed;left:0;top:0;width:320px;height:1px;overflow
   html body .mode-switch button{min-width:0;min-height:38px;padding:4px 3px;justify-content:center;font-size:clamp(9px,2.4vw,11.5px);line-height:1.15;gap:2px;text-align:center}
   html body .mode-switch .mode-label{overflow-wrap:anywhere}
   html body .mode-switch .mode-dot{display:none}
-  html body .hero-lang-btn,html body .hero-search-btn{width:40px;height:44px;min-height:44px;top:max(12px,env(safe-area-inset-top))}
+  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(12px,env(safe-area-inset-top))}
   html body .earth-orbit{top:46%}
   html body .hero-lang-btn{left:8px}
   html body .hero-search-btn{right:8px}

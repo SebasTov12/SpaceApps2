@@ -54,8 +54,8 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
     if (clouds.current) clouds.current.rotation.y += step * 0.006;
   });
   // más subdivisiones para que el relieve desplazado se vea sobresalir
-  const earthSegments: [number, number] = quality === "compact" ? [220, 110] : [480, 240];
-  const shellSegments: [number, number] = quality === "compact" ? [56, 28] : [96, 48];
+  const earthSegments: [number, number] = quality === "compact" ? [320, 160] : [480, 240];
+  const shellSegments: [number, number] = quality === "compact" ? [64, 32] : [96, 48];
   return (
     <group ref={userGroup}>
     <group rotation={[-0.25, 0, -0.08]}>
@@ -208,6 +208,7 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
     return window.matchMedia("(max-width: 760px)").matches || memory <= 4 ? "compact" : "full";
   });
+  const compact = quality === "compact";
   const showScene = useCallback(() => { setReady(true); onReady(); }, [onReady]);
   // con el mapa de una zona a pantalla completa el planeta queda oculto: no se dibuja (ahorra GPU y batería)
   const [hidden, setHidden] = useState(false);
@@ -253,8 +254,10 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
   return (
     <div className="earth-render is-draggable" onPointerDown={startDrag} role="group" aria-label={lang === "en" ? "Interactive globe: drag to rotate Earth; NISAR orbits and its illustrative radar detects risk zones. The zone list is in the recognition panel." : "Globo interactivo: arrastra para girar la Tierra; NISAR orbita y su radar ilustrativo detecta zonas de riesgo. La lista de zonas está en el panel de reconocimiento."}>
       <SceneBoundary onFailure={showScene}>
-        <Canvas style={{ position: "absolute", inset: "-35%", width: "170%", height: "170%" }}
-          camera={{ position: [0, 0, 3.5], fov: 58 }} dpr={quality === "compact" ? [1, 1.2] : [1, 1.6]}
+        <Canvas style={compact
+          ? { position: "absolute", inset: "-20%", width: "140%", height: "140%" }
+          : { position: "absolute", inset: "-35%", width: "170%", height: "170%" }}
+          camera={{ position: [0, 0, compact ? 2.9 : 3.5], fov: 58 }} dpr={compact ? [1.1, 1.35] : [1, 1.6]}
           frameloop={playing && !hidden ? "always" : "demand"}
           fallback={<NoWebGL onReady={showScene} />}
           resize={{ offsetSize: true }}
