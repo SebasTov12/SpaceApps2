@@ -172,3 +172,9 @@ livianos y documentación de procedencia.
   La última revisión de Tailscale muestra `orivia` offline. El checkout remoto
   y la API todavía no incorporan este commit; al recuperar conectividad habrá
   que actualizar la API y verificar su salud antes de seguir con datos.
+- El catálogo actual tiene 10 fechas por stack. Para el horizonte de 24 días,
+  cinco observaciones de entrenamiento y tolerancia de 8 días, la secuencia
+  permite como máximo cuatro fechas objetivo distintas en el backtest. El
+  piloto actual no puede alcanzar el cribado mínimo de seis; habrá que esperar
+  adquisiciones posteriores y conservar solo las que pasen controles de
+  calidad.

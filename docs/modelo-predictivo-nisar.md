@@ -135,6 +135,15 @@ demostración de fiabilidad. El error principal se expresa en milímetros,
 porque el porcentaje de error se vuelve inestable si el LOS real está cerca de
 cero.
 
+Implicación para el inventario actual: cada stack Neiva tiene 10 fechas de
+adquisición. Con cinco observaciones iniciales de entrenamiento y un horizonte
+de 24 días con tolerancia de 8 días, el máximo es cuatro fechas objetivo
+distintas para validar (menos si fallan máscaras o calidad). Por tanto, esos
+datos servirían para una evaluación preliminar, pero no pueden superar el
+umbral mínimo de seis fechas objetivo distintas. Se necesitan nuevas
+adquisiciones útiles antes de intentar siquiera ese cribado; incluso superarlo
+no demostraría fiabilidad.
+
 Las semillas sintéticas de `pipeline/sql/002` y `pipeline/sql/003` no son entradas para el esquema científico `nisar`.
 
 ## Pendientes para completar el flujo
