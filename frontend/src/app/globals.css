@@ -111,4 +111,4 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #9ce2
   .hero-wordmark{top:60%}
   .wordmark-title{font-size:clamp(62px,17vw,104px);gap:.14em}
 }
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.scroll-cue svg,.mobile-globe-cue,.mobile-globe-cue svg,.space-stars,.space-dust,.route-state-orbit,.state-progress i,.scene-loading-ring{animation:none}.dashboard-main{opacity:1!important;transform:none!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.scroll-cue svg,.mobile-globe-cue,.mobile-globe-cue svg,.route-state-orbit,.state-progress i,.scene-loading-ring{animation:none}.space-stars{animation-duration:180s!important}.space-dust{animation-duration:90s!important}.dashboard-main{opacity:1!important;transform:none!important}}

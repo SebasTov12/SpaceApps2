@@ -58,8 +58,8 @@ function SmallSat({ color }: { color: string }) {
   );
 }
 
-function Companion({ orbit, playing, index, schedule, onVisibilityChange }: {
-  orbit: Orbit; playing: boolean; index: number; schedule: RefObject<DetectionSchedule>; onVisibilityChange: (index: number, visible: boolean) => void;
+function Companion({ orbit, playing, reducedMotion, passDuration, index, schedule, onVisibilityChange }: {
+  orbit: Orbit; playing: boolean; reducedMotion: boolean; passDuration: number; index: number; schedule: RefObject<DetectionSchedule>; onVisibilityChange: (index: number, visible: boolean) => void;
 }) {
   const moving = useRef<Group>(null);
   const detector = useRef<Group>(null);
@@ -74,7 +74,7 @@ function Companion({ orbit, playing, index, schedule, onVisibilityChange }: {
   const path = useMemo(() => circle(orbit.radius), [orbit.radius]);
   const tail = useMemo(() => trail(orbit.radius, Math.sign(orbit.speed)), [orbit.radius, orbit.speed]);
   useFrame(({ camera }, delta) => {
-    if (moving.current && playing) moving.current.rotation.z += Math.min(delta, 0.1) * orbit.speed;
+    if (moving.current && playing) moving.current.rotation.z += Math.min(delta, 0.1) * orbit.speed * (reducedMotion ? 0.55 : 1);
     if (moving.current) {
       moving.current.updateWorldMatrix(true, false);
       moving.current.getWorldPosition(centerPosition);
@@ -85,7 +85,7 @@ function Companion({ orbit, playing, index, schedule, onVisibilityChange }: {
     const active = playing && schedule.current.active === index;
     if (detector.current) detector.current.visible = active;
     if (!active) return;
-    const progress = Math.min(1, Math.max(0, (performance.now() / 1000 - schedule.current.startedAt) / PASS_DURATION));
+    const progress = Math.min(1, Math.max(0, (performance.now() / 1000 - schedule.current.startedAt) / passDuration));
     const glow = Math.sin(progress * Math.PI) ** 2;
     if (beam.current) beam.current.opacity = glow * 0.34;
     if (footprint.current) footprint.current.opacity = glow * 0.58;
@@ -117,6 +117,7 @@ function Companion({ orbit, playing, index, schedule, onVisibilityChange }: {
 
 export default function CompanionSats({ playing }: { playing: boolean }) {
   const reducedMotion = useReducedMotion();
+  const passDuration = reducedMotion ? PASS_DURATION * 1.4 : PASS_DURATION;
   const schedule = useRef<DetectionSchedule>({ active: -1, startedAt: 0, nextAt: [], inView: [false, false] });
   const onVisibilityChange = useCallback((index: number, visible: boolean) => { schedule.current.inView[index] = visible; }, []);
   // Se evalúa antes de dibujar los dos satélites: un único turno evita solapamientos.
@@ -127,13 +128,13 @@ export default function CompanionSats({ playing }: { playing: boolean }) {
     const elapsed = now - scanAt;
     const clear = scanAt >= 0 && elapsed > SCAN_DURATION + SCAN_FADE + 0.4
       && elapsed < SCAN_INTERVAL - 0.5 && globeState.beam < 0.001;
-    if (!playing || reducedMotion || globeState.zoom > 0.05 || !clear) {
+    if (!playing || globeState.zoom > 0.05 || !clear) {
       state.active = -1;
       return;
     }
     if (!state.nextAt.length) state.nextAt = [now + 1, now + 18.5];
-    if (state.active >= 0 && now - state.startedAt >= PASS_DURATION) state.active = -1;
-    if (state.active >= 0 || elapsed + PASS_DURATION >= SCAN_INTERVAL - 0.5) return;
+    if (state.active >= 0 && now - state.startedAt >= passDuration) state.active = -1;
+    if (state.active >= 0 || elapsed + passDuration >= SCAN_INTERVAL - 0.5) return;
     // Si hay dos turnos pendientes, sale primero el que más ha esperado.
     const eligible = [0, 1].filter((i) => now >= state.nextAt[i] && state.inView[i]);
     if (!eligible.length) return;
@@ -144,7 +145,7 @@ export default function CompanionSats({ playing }: { playing: boolean }) {
   }, -1);
   return (
     <group>
-      {ORBITS.map((orbit, i) => <Companion key={i} orbit={orbit} index={i} schedule={schedule} onVisibilityChange={onVisibilityChange} playing={playing} />)}
+      {ORBITS.map((orbit, i) => <Companion key={i} orbit={orbit} index={i} schedule={schedule} onVisibilityChange={onVisibilityChange} playing={playing} reducedMotion={Boolean(reducedMotion)} passDuration={passDuration} />)}
     </group>
   );
 }

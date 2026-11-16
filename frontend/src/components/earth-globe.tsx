@@ -216,7 +216,9 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
   const [ready, setReady] = useState(false);
   const [quality] = useState<SceneQuality>(() => {
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
-    return window.matchMedia("(max-width: 760px)").matches || memory <= 4 ? "compact" : "full";
+    const cores = navigator.hardwareConcurrency || 4;
+    const saveData = Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
+    return window.matchMedia("(max-width: 760px)").matches || memory <= 4 || cores <= 4 || saveData ? "compact" : "full";
   });
   const compact = quality === "compact";
   const renderRef = useRef<HTMLDivElement>(null);

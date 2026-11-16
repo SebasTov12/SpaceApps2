@@ -2744,9 +2744,9 @@ html body .hero-latest {
   transform: translateY(-50%)
 }
 
-.space-comet-a { left: 0%; top: 12%; --comet-angle: 14deg; --comet-period: 24s; --comet-delay: 1s; --comet-x: 40vw; --comet-y: 10vw }
-.space-comet-b { left: 55%; top: 18%; --comet-angle: -9deg; --comet-period: 24s; --comet-delay: 9s; --comet-x: 25vw; --comet-y: -4vw }
-.space-comet-c { left: 3%; top: 64%; --comet-angle: -15deg; --comet-period: 24s; --comet-delay: 17s; --comet-x: 22vw; --comet-y: -6vw }
+.space-comet-a { left: 0%; top: 12%; --comet-angle: 14deg; --comet-period: 18s; --comet-delay: 0s; --comet-x: 40vw; --comet-y: 10vw }
+.space-comet-b { left: 55%; top: 18%; --comet-angle: -9deg; --comet-period: 18s; --comet-delay: 6s; --comet-x: 25vw; --comet-y: -4vw }
+.space-comet-c { left: 3%; top: 64%; --comet-angle: -15deg; --comet-period: 18s; --comet-delay: 12s; --comet-x: 22vw; --comet-y: -6vw }
 
 @keyframes comet-pass {
   0% { opacity: 0; translate: 0 0 }
@@ -2809,15 +2809,22 @@ html body .hero-latest {
 }
 
 @media(prefers-reduced-motion:reduce) {
+  /* Conserva el ambiente del planeta con desplazamientos más lentos y suaves. */
+  .orbit-ring { animation-duration: 240s !important }
+  .space-twinkles { animation-duration: 100s !important }
+  .space-twinkles i,.space-twinkles circle { animation-duration: 9s !important }
+  .space-milkyway,.space-galaxy { animation-duration: 64s !important }
+  .space-comet { animation: comet-pass-soft 42s linear var(--comet-delay) infinite !important }
+  .space-comet-a { --comet-x: 12vw; --comet-y: 3vw }
+  .space-comet-b { --comet-x: 8vw; --comet-y: -1vw }
+  .space-comet-c { --comet-x: 9vw; --comet-y: -3vw }
+}
 
-  .orbit-ring,
-  .space-twinkles circle,
-  .space-twinkles,
-  .space-milkyway,
-  .space-galaxy,
-  .space-comet {
-    animation: none
-  }
+@keyframes comet-pass-soft {
+  0%,100% { opacity: 0; translate: var(--comet-x) var(--comet-y) }
+  12% { opacity: .22; translate: 0 0 }
+  18% { opacity: .16; translate: 0 0 }
+  28% { opacity: 0; translate: var(--comet-x) var(--comet-y) }
 }
 
 @media(max-width:720px) {
