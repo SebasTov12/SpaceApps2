@@ -349,7 +349,8 @@ export default function CountryLayer() {
       ))}
       {pins.map((pin) => {
         const pos = v3(pin.lat, pin.lon, SURFACE + 0.006);
-        const size = 0.012 + 0.006 * Math.log10(pin.records + pin.zones + 1);
+        // El marcador identifica un país; su tamaño no depende de cuántos registros tenga.
+        const size = 0.012;
         return (
           <group key={pin.code} ref={(g) => { if (g) pinsRef.current.set(pin.code, g); else pinsRef.current.delete(pin.code); }}
             position={pos} quaternion={new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), pos.clone().normalize())}>
