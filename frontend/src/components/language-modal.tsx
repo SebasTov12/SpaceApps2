@@ -13,8 +13,7 @@ export default function LanguageModal({ progress, mobileMode }: { progress: Moti
   const buttonY = useTransform(() => {
     const value = progress.get();
     if (!mobileMode.get()) return -42 * Math.max(0, Math.min(1, value / 0.2));
-    const reveal = Math.max(0, Math.min(1, value / 0.8));
-    return 42 * (1 - reveal);
+    return 0;
   });
   const buttonOpacity = useTransform(() => {
     if (!mobileMode.get()) return 1;

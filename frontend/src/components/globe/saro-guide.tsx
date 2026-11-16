@@ -463,6 +463,7 @@ export default function SaroGuide() {
       setStep(0);
       setAside(null);
       setReply(null);
+      if (id) setArrivals((n) => n + 1);
       // The home greeting is only narrated on initial page load. Closing a
       // selected location returns Saru to idle instead of replaying it.
       setPlaying(Boolean(id));
@@ -505,7 +506,9 @@ export default function SaroGuide() {
     : (prog.text === displayText ? prog.n : 0);
   const typed = !hydrated ? displayText : displayText.slice(0, typedCount);
   useEffect(() => {
-    if (!hydrated || speechDriven) return;
+    // Start the typewriter when Saru enters the scene, so mobile doesn't finish
+    // transcribing while the avatar is still hidden below the reveal.
+    if (!hydrated || speechDriven || away) return;
     const id = window.setInterval(() => {
       setProg((p) => {
         const next = (p.text === displayText ? p.n : 0) + 3;
@@ -514,7 +517,7 @@ export default function SaroGuide() {
       });
     }, 28);
     return () => window.clearInterval(id);
-  }, [displayText, hydrated, speechDriven]);
+  }, [displayText, hydrated, speechDriven, away]);
 
   // ---------- voz: neuronal pregrabada (frase completa o frase por frase) y, si falta, la del navegador ----------
   const [recorded, setRecorded] = useState<Set<string> | null>(null);
@@ -823,8 +826,8 @@ export default function SaroGuide() {
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.div layout="position" transition={chatTransition} className={`saru-avatar-anchor${(zone ? zoneMenuOpen : homeOrbitOpen) ? " is-menu-open" : ""}`}>
-        <button ref={avatarRef} type="button" className="saro-avatar saru-enter" key={`${zoneId ?? "home"}-${arrivals}`} onClick={zone ? toggleZoneMenu : toggleHomeOrbit}
+        <motion.div layout="position" transition={chatTransition} key={`${zoneId ?? "home"}-${arrivals}`} className={`saru-avatar-anchor saru-enter${(zone ? zoneMenuOpen : homeOrbitOpen) ? " is-menu-open" : ""}`}>
+        <button ref={avatarRef} type="button" className="saro-avatar" onClick={zone ? toggleZoneMenu : toggleHomeOrbit}
           aria-expanded={zone ? zoneMenuOpen || transcriptOpen || chatOpen : homeOrbitOpen || transcriptOpen || chatOpen} aria-controls={chatOpen ? "saru-chat" : undefined}
           aria-label={zone ? (zoneMenuOpen ? (es ? "Ocultar controles de Saru" : "Hide Saru controls") : (es ? "Mostrar controles de Saru" : "Show Saru controls")) : chatOpen ? (es ? "Cerrar chat de Saru y mostrar diálogo" : "Close Saru chat and show dialogue") : homeOrbitOpen ? (es ? "Ocultar controles de Saru" : "Hide Saru controls") : (es ? "Mostrar controles de Saru" : "Show Saru controls")}>
           <span className="saru-trail" aria-hidden="true" />

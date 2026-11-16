@@ -106,7 +106,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
   const input = useRef<HTMLInputElement>(null);
   const searchButtonY = useTransform(() => {
     const value = progress.get();
-    if (mobileMode.get()) return 42 * (1 - Math.max(0, Math.min(1, value / 0.8)));
+    if (mobileMode.get()) return 0;
     return -42 * Math.max(0, Math.min(1, value / 0.2));
   });
 

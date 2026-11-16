@@ -3208,10 +3208,10 @@ html body .saru-pool{position:fixed;left:0;top:0;width:320px;height:1px;overflow
 /* Mobile: controls share the top row; Saru stays above the news ticker. */
 @media(max-width:720px){
   .earth-render.is-draggable{touch-action:none}
-  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(8px,calc(env(safe-area-inset-top) + 8px))}
+  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(4px,calc(env(safe-area-inset-top) + 4px))}
   html body .earth-orbit{top:46%}
-  html body .hero-lang-btn{left:8px}
-  html body .hero-search-btn{right:8px}
+  html body .hero-lang-btn{left:max(4px,calc(env(safe-area-inset-left) + 4px))}
+  html body .hero-search-btn{right:max(4px,calc(env(safe-area-inset-right) + 4px))}
   html body .saro:not(.in-zone){left:clamp(34px,6vw,44px);right:10px;bottom:calc(50px + env(safe-area-inset-bottom));gap:4px}
   html body .saro:not(.in-zone) .saru-row{width:100%;gap:6px}
   html body .saro:not(.in-zone) .saru-caption{width:auto;flex:1;min-width:0;margin:0 0 8px;padding:10px 11px 8px}
