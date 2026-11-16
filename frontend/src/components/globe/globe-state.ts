@@ -46,8 +46,6 @@ export const globeState = {
   beam: 0,
   /** La interfaz del planeta (puntos, barra de modos, Saru) aparece al bajar con el scroll. */
   uiRevealed: false,
-  /** Qué se ve en el planeta: todo, solo amenazas o solo vigilancia ambiental (tala y minería). */
-  mode: "all" as "all" | "risk" | "watch",
   /** País abierto (código ISO-2): el planeta se acerca y muestra dentro todos sus puntos. null = vista de países. */
   country: null as string | null,
   /** Acercamiento de la cámara a un país (0 = planeta completo, 1 = país en primer plano). */

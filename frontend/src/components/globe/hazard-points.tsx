@@ -84,14 +84,14 @@ export default function HazardPoints() {
     revealAt.current = null;
   }, [layout]);
 
-  // entrada escalonada al revelar la interfaz; latido suave; se ocultan en «Vigilancia ambiental»
+  // Entrada escalonada al revelar la interfaz y latido suave.
   useFrame(({ clock }) => {
     const m = mesh.current;
     const glow = glowMesh.current;
     if (!m || !glow || !layout.length) return;
     const t = clock.getElapsedTime();
     // en la vista de países se agrupan en el punto del país; aparecen al abrirlo
-    const show = globeState.uiRevealed && globeState.mode !== "watch" && globeState.country !== null && globeState.countryZoom > 0;
+    const show = globeState.uiRevealed && globeState.country !== null && globeState.countryZoom > 0;
     m.visible = show;
     glow.visible = show;
     if (!show) { revealAt.current = null; settled.current = undefined; return; }
@@ -127,7 +127,7 @@ export default function HazardPoints() {
   // los puntos son diminutos: se elige el más cercano al cursor en pantalla (máx. ~12 px)
   const { size: view } = useThree();
   const nearest = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
-    if (!root.current || !(globeState.uiRevealed && globeState.mode !== "watch" && globeState.country !== null)) return null;
+    if (!root.current || !(globeState.uiRevealed && globeState.country !== null)) return null;
     const m = root.current.matrixWorld;
     const camPos = e.camera.position;
     center.setFromMatrixPosition(m);

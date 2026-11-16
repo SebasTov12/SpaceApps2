@@ -2381,7 +2381,7 @@ font {
 
 @media(max-width:720px) {
   .hero-search-btn {
-    top: max(52px,calc(env(safe-area-inset-top) + 52px));
+    top: max(8px,calc(env(safe-area-inset-top) + 8px));
     right: 14px;
     width: 34px;
     height: 34px;
@@ -2389,7 +2389,7 @@ font {
   }
 
   .hero-lang-btn {
-    top: max(52px,calc(env(safe-area-inset-top) + 52px));
+    top: max(8px,calc(env(safe-area-inset-top) + 8px));
     left: 14px;
     width: 34px;
     height: 34px;
@@ -2845,11 +2845,6 @@ html body .hero-latest {
 .zone-watch .watch-cross .is-bad{color:#fda4af;font-weight:600}
 .zone-watch .watch-cross .is-warn{color:#fcd34d;font-weight:600}
 .zone-watch .watch-notify{margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#d6def3}
-.mode-switch{position:absolute;left:50%;top:28px;translate:-50% 0;z-index:7;display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(9,13,30,.72);border:1px solid rgba(104,25,147,.55);backdrop-filter:blur(12px);pointer-events:auto;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-.mode-switch button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#cfd8f0;font-size:12.5px;font-weight:500;transition:background .3s,color .3s}
-.mode-switch button.is-active{background:linear-gradient(90deg,#681993,#3b4bd8);color:#fff}
-.mode-switch .mode-dot{width:8px;height:8px;border-radius:50%;background:#e0b341;box-shadow:0 0 8px #e0b341}
-@media(max-width:720px){.mode-switch{top:auto;bottom:92px}.mode-switch button{padding:0 10px;font-size:11.5px}}
 
 /* ---------- Propuesta: panel de zona en tarjetas (vista simple) ---------- */
 .zs{display:grid;gap:12px}
@@ -2925,7 +2920,7 @@ html body .zone-panel .zs .zs-bubble .zs-u{display:inline;margin-left:3px;font-f
 html body .zone-panel .zs .zs-lead{font-size:12px;line-height:1.5;color:#9aa6c6}
 
 /* ---------- Propuesta: Saro, guía animado ---------- */
-.saro{position:fixed!important;z-index:10000!important;left:22px;bottom:70px;display:flex;align-items:flex-end;gap:6px;pointer-events:none;flex-direction:row-reverse;justify-content:flex-end}
+.saro{position:fixed!important;z-index:10000!important;left:36px;bottom:70px;display:flex;align-items:flex-end;gap:6px;pointer-events:none;flex-direction:row-reverse;justify-content:flex-end}
 .saro.in-zone{bottom:150px}
 /* Keep Saru above the MapLibre canvas and terrain view while retaining map controls. */
 html body .saro.in-zone{z-index:10000!important;visibility:visible;opacity:1}
@@ -3151,13 +3146,6 @@ html body .saro .saru-ask,html body .saro .saru-ask.in-zone{position:relative;le
 @media(prefers-reduced-motion:reduce){.saru-dots-think i{animation:none;opacity:.7}}
 
 /* ---------- Inicio limpio: la interfaz del planeta aparece al bajar con el scroll ---------- */
-html body .hero-overlay .mode-switch{opacity:0;transform:translateY(-16px) scale(.96);pointer-events:none;transition:opacity .45s ease,transform .55s cubic-bezier(.22,1,.36,1)}
-html body .hero-overlay.ui-shown .mode-switch{opacity:1;transform:none;pointer-events:auto;transition-delay:.12s}
-html body .hero-overlay .mode-switch button{opacity:0;transform:translateY(-6px);transition:opacity .35s ease,transform .45s cubic-bezier(.22,1,.36,1),background .3s,color .3s}
-html body .hero-overlay.ui-shown .mode-switch button{opacity:1;transform:none}
-html body .hero-overlay.ui-shown .mode-switch button:nth-child(1){transition-delay:.25s,.25s,0s,0s}
-html body .hero-overlay.ui-shown .mode-switch button:nth-child(2){transition-delay:.35s,.35s,0s,0s}
-html body .hero-overlay.ui-shown .mode-switch button:nth-child(3){transition-delay:.45s,.45s,0s,0s}
 html body .hero-overlay .hero-search-btn{opacity:0;transform:scale(.8);pointer-events:none;transition:opacity .4s ease,transform .5s cubic-bezier(.34,1.56,.64,1)}
 html body .hero-overlay.ui-shown .hero-search-btn{opacity:1;transform:none;pointer-events:auto;transition-delay:.3s}
 
@@ -3178,7 +3166,7 @@ html body .saru-enter{animation:saru-fly 1.6s cubic-bezier(.22,1.2,.36,1) both}
 }
 html body .saru-trail{animation:saru-trail-fly 1.5s ease-out both}
 @keyframes saru-trail-fly{0%{opacity:.95;transform:translate(-200px,170px) scale(2.2,.5) rotate(-38deg)}70%{opacity:.4}100%{opacity:0;transform:scale(.5)}}
-@media(prefers-reduced-motion:reduce){html body .hero-overlay .mode-switch,html body .hero-overlay .mode-switch button,html body .hero-overlay .hero-search-btn{transition:opacity .2s}html body .saru-enter,html body .saru-trail{animation:none}}
+@media(prefers-reduced-motion:reduce){html body .hero-overlay .hero-search-btn{transition:opacity .2s}html body .saru-enter,html body .saru-trail{animation:none}}
 
 /* ---------- Saru aterriza: anillo de impacto y humo ---------- */
 html body .saru-land{position:absolute;left:50%;bottom:4px;width:0;height:0;pointer-events:none;z-index:-1}
@@ -3197,20 +3185,6 @@ html body .saru-land s{position:absolute;left:-2px;top:-3px;width:4px;height:4px
   animation:saru-spark .7s ease-out calc(1.06s + var(--k) * .02s) both}
 @keyframes saru-spark{0%{opacity:1;transform:none}100%{opacity:0;transform:translate(calc(var(--d) * 70px),calc(-26px - var(--k) * 4px))}}
 @media(prefers-reduced-motion:reduce){html body .saru-shock,html body .saru-land i,html body .saru-land s{animation:none;opacity:0}}
-
-/* ---------- Barra de modos: riel vertical a la derecha del planeta ---------- */
-@media(min-width:721px){
-  html body .mode-switch{left:auto;right:22px;top:50%;translate:0 -50%;flex-direction:column;align-items:stretch;gap:4px;padding:6px;border-radius:20px;min-width:196px}
-  html body .mode-switch button{justify-content:flex-start;gap:10px;min-height:42px;padding:0 14px 0 8px;border-radius:14px;text-align:left}
-  html body .mode-switch button:not(.is-active):hover{background:rgba(104,25,147,.22);color:#fff}
-  html body .mode-switch .mode-ico{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.06);flex:none}
-  html body .mode-switch button.is-active .mode-ico{background:rgba(255,255,255,.16)}
-  html body .mode-switch .mode-dot{margin-left:auto}
-  html body .hero-overlay .mode-switch{transform:translateX(28px) scale(.97)}
-  html body .hero-overlay .mode-switch button{transform:translateX(12px)}
-  html body .hero-overlay.ui-shown .mode-switch,html body .hero-overlay.ui-shown .mode-switch button{transform:none}
-}
-@media(max-width:720px){html body .mode-switch .mode-ico{display:none}html body .mode-switch .mode-dot{margin-left:2px}}
 
 /* ---------- Emergencias según el país y la amenaza ---------- */
 html body .zs-sos{margin-top:12px;display:grid;gap:8px;border-radius:16px}
@@ -3234,15 +3208,11 @@ html body .saru-pool{position:fixed;left:0;top:0;width:320px;height:1px;overflow
 /* Mobile: controls share the top row; Saru stays above the news ticker. */
 @media(max-width:720px){
   .earth-render.is-draggable{touch-action:none}
-  html body .mode-switch{top:max(4px,env(safe-area-inset-top));bottom:auto;left:58px;right:58px;translate:none;min-width:0;min-height:44px;padding:3px;gap:2px;display:grid;grid-template-columns:.7fr 1fr 1.6fr;border-radius:20px}
-  html body .mode-switch button{min-width:0;min-height:38px;padding:4px 3px;justify-content:center;font-size:clamp(9px,2.4vw,11.5px);line-height:1.15;gap:2px;text-align:center}
-  html body .mode-switch .mode-label{overflow-wrap:anywhere}
-  html body .mode-switch .mode-dot{display:none}
-  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(52px,calc(env(safe-area-inset-top) + 52px))}
+  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(8px,calc(env(safe-area-inset-top) + 8px))}
   html body .earth-orbit{top:46%}
   html body .hero-lang-btn{left:8px}
   html body .hero-search-btn{right:8px}
-  html body .saro:not(.in-zone){left:10px;right:10px;bottom:calc(50px + env(safe-area-inset-bottom));gap:4px}
+  html body .saro:not(.in-zone){left:clamp(34px,6vw,44px);right:10px;bottom:calc(50px + env(safe-area-inset-bottom));gap:4px}
   html body .saro:not(.in-zone) .saru-row{width:100%;gap:6px}
   html body .saro:not(.in-zone) .saru-caption{width:auto;flex:1;min-width:0;margin:0 0 8px;padding:10px 11px 8px}
   html body .saro:not(.in-zone) .saru-text{max-height:min(18dvh,120px);font-size:12px;line-height:1.5}
@@ -3318,17 +3288,16 @@ html body .earth-stage[data-zoomed="true"] .cy-country-callout{display:none}
 @media(prefers-reduced-motion:reduce){html body .cy-country-callout{animation:none}}
 
 /* ---------- Filtro por tipo dentro del país (panel derecho) ---------- */
-html body .kind-filter{position:absolute;right:22px;top:calc(50% + 92px);z-index:7;width:min(236px,calc(100vw - 44px));max-height:calc(50vh - 120px);overflow:auto;display:grid;gap:3px;padding:10px;border-radius:18px;
-  background:rgba(9,13,30,.78);border:1px solid rgba(104,25,147,.55);backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35);scrollbar-width:thin}
-@media(min-width:721px){html body .mode-switch,html body .kind-filter{box-sizing:border-box;width:236px}}
+html body .kind-filter{position:absolute;right:22px;top:50%;translate:0 -50%;z-index:7;width:min(236px,calc(100vw - 44px));box-sizing:border-box;display:grid;gap:3px;padding:10px;border-radius:18px;
+  background:rgba(9,13,30,.78);border:1px solid rgba(104,25,147,.55);backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
 html body .kind-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px;padding:7px 9px;border:0;border-radius:11px;background:transparent;color:#dfe6ff;font-size:12.5px;text-align:left;cursor:pointer;transition:background .2s,opacity .2s}
 html body .kind-row:hover{background:rgba(255,255,255,.06)}
 html body .kind-row i{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);transition:background .2s,box-shadow .2s}
 html body .kind-row .kind-count{font-size:11px;color:#9aa5cc;font-variant-numeric:tabular-nums;white-space:nowrap}
 html body .kind-row.is-off{opacity:.42}
 html body .kind-row.is-off i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
-/* la capa de la interfaz deja pasar el mouse al planeta: el filtro sí lo recibe (clic y desplazamiento) */
-html body .kind-filter{pointer-events:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+/* el filtro sí recibe clics; su altura depende de las categorías que tenga ese país */
+html body .kind-filter{pointer-events:auto}
 
 /* ---------- Vista de país en el teléfono ---------- */
 @media(max-width:720px){
@@ -3340,6 +3309,7 @@ html body .kind-filter{pointer-events:auto;overscroll-behavior:contain;touch-act
 @media (max-width:1100px) and (hover:none) and (pointer:coarse){
   html body .kind-filter{display:none}
 }
+@media(max-width:720px){html body .kind-filter{display:none}}
 
 .saru-chat-invite{margin:6px 0 0;color:#c9a6ff;font-size:11px;line-height:1.35}
 
@@ -3353,7 +3323,7 @@ html body .kind-filter{pointer-events:auto;overscroll-behavior:contain;touch-act
 .orientation-guard.is-active p{max-width:320px;margin:0;font-size:16px;line-height:1.5}
 
 /* En las ubicaciones, Saru y sus controles orbitan sobre el mapa 3D. */
-html body .zone-saru-slot{position:absolute;top:72px;left:72px;z-index:10;width:min(340px,calc(100% - 580px));min-height:72px;margin:0;display:flex;align-items:flex-start;justify-content:flex-start;pointer-events:none}
+html body .zone-saru-slot{position:absolute;top:82px;left:82px;z-index:10;width:min(340px,calc(100% - 580px));min-height:72px;margin:0;display:flex;align-items:flex-start;justify-content:flex-start;pointer-events:none}
 html body .zone-saru-slot>.saro.in-zone{position:relative!important;inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:100%;min-height:72px;display:flex;align-items:flex-start;justify-content:flex-start;z-index:2!important;pointer-events:auto}
 html body .zone-saru-slot .saru-row{width:100%;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-start;gap:10px}
 html body .zone-saru-slot .saru-caption{display:block!important;flex:1;min-width:0;width:auto;max-width:none;max-height:min(220px,32vh);margin:0!important;padding:8px 10px 6px;border-radius:16px 16px 16px 5px;overflow:hidden}
@@ -3377,10 +3347,8 @@ html body .saro .saru-zone-orbit-plane .orbit-chat{top:73%;left:14%;margin:-15px
 html body .saro .saru-zone-orbit-plane button:hover,html body .saro .saru-zone-orbit-plane button:focus-visible{background:radial-gradient(circle at 35% 28%,rgba(170,112,255,.95),rgba(57,30,111,.96) 72%);color:#fff;box-shadow:0 0 0 4px rgba(139,92,246,.2),0 0 24px rgba(167,139,250,.9),inset 0 1px rgba(255,255,255,.35);outline:none}
 @keyframes saru-orbit-turn{to{rotate:360deg}}
 @keyframes saru-orbit-counter{to{rotate:-360deg}}
-html body .saro .saru-avatar-anchor.is-menu-open::after{content:"";position:absolute;z-index:0;left:-34px;top:-29px;width:130px;height:130px;border:1px solid rgba(167,139,250,.2);border-right-color:rgba(94,240,255,.72);border-bottom-color:rgba(94,240,255,.4);border-radius:50%;pointer-events:none;animation:saru-menu-ring 17s linear infinite}
 html body .saro .saru-avatar-anchor .saro-avatar{z-index:1}
-@keyframes saru-menu-ring{to{transform:rotate(360deg)}}
 html body .saro.in-zone .zone-transcript-bar{opacity:1}
 @media(min-width:901px){html body .saro:not(.in-zone) .saru-zone-orbit{width:136px;height:136px;margin:-68px 0 0 -68px}}
-@media(max-width:900px){html body .zone-stage-map .zone-saru-slot{top:72px;left:72px;width:min(260px,calc(100% - 84px));min-height:72px}html body .zone-saru-slot .saru-avatar{width:62px;height:72px}html body .zone-saru-slot .saru-caption{max-height:min(200px,30vh)}html body .zone-saru-slot .saru-caption .saru-text{max-height:126px}html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{width:100%;max-width:100%}html body .saro:not(.in-zone) .saru-zone-orbit{left:calc(50% + 14px);width:108px;height:108px;margin:-54px 0 0 -54px}html body .saro:not(.in-zone) .saru-avatar-anchor.is-menu-open::after{left:-22px;top:-18px;width:108px;height:108px}}
-@media(prefers-reduced-motion:reduce){html body .saro .saru-zone-orbit-plane,html body .saro .saru-zone-orbit-plane button svg,html body .saro .saru-avatar-anchor.is-menu-open::after{animation:none}}
+@media(max-width:900px){html body .zone-stage-map .zone-saru-slot{top:82px;left:82px;width:min(260px,calc(100% - 94px));min-height:72px}html body .zone-saru-slot .saru-avatar{width:62px;height:72px}html body .zone-saru-slot .saru-caption{max-height:min(200px,30vh)}html body .zone-saru-slot .saru-caption .saru-text{max-height:126px}html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{width:100%;max-width:100%}html body .saro:not(.in-zone) .saru-zone-orbit{left:50%;width:108px;height:108px;margin:-54px 0 0 -54px}}
+@media(prefers-reduced-motion:reduce){html body .saro .saru-zone-orbit-plane,html body .saro .saru-zone-orbit-plane button svg{animation:none}}

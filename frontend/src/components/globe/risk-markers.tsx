@@ -3,7 +3,7 @@
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdditiveBlending, DoubleSide, Vector3, type Group, type Mesh, type MeshBasicMaterial } from "three";
-import { riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
+import { riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { countryOf } from "@/lib/emergency";
 import { GLOBE_SELECT, RELIEF, focusZone, globeState } from "./globe-state";
 
@@ -86,7 +86,6 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     anchor.parent.worldToLocal(cameraLocal);
     cameraLocal.sub(anchor.position);
     facingCamera.current = cameraLocal.dot(normal) > 0.03;
-    const inMode = globeState.mode === "all" || (globeState.mode === "watch") === watchKinds.has(zone.kind);
     if (!globeState.uiRevealed) {
       node.visible = false;
       revealAt.current = null; // al volver a mostrarse, entra otra vez con su animación
@@ -95,7 +94,7 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     // en la vista de países las zonas se agrupan en el punto de su país; se ven al abrirlo (o si están abiertas)
     const inCountry = globeState.selected === zone.id || (globeState.country !== null && countryOf(zone) === globeState.country);
     const filtered = globeState.hiddenKinds.has(zone.kind) && globeState.selected !== zone.id;
-    if (!globeState.revealed.has(zone.id) || !facingCamera.current || !inMode || !inCountry || filtered) {
+    if (!globeState.revealed.has(zone.id) || !facingCamera.current || !inCountry || filtered) {
       node.visible = false;
       return;
     }

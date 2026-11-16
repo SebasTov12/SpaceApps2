@@ -1,12 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion, useTransform } from "framer-motion";
-import { Globe2, Leaf, Search, TriangleAlert, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { MotionValue } from "framer-motion";
 import { levelInfo } from "@/lib/insights";
 import { useI18n } from "@/lib/i18n";
-import { riskKindLabel, riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
+import { riskKindLabel, riskKinds, riskZones, type RiskZone } from "@/lib/risk-zones";
 import { loadSites, type SiteSummary } from "@/lib/sites";
 import LanguageModal from "@/components/language-modal";
 import { HAZARD_POINT_SELECT, HAZARDS_EVENT, hazardKind, hazardPointId, loadHazardPoints, type HazardPoint, type HazardPoints } from "@/lib/hazard-points";
@@ -72,7 +72,6 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
       window.removeEventListener(UI_REVEAL, onReveal);
     };
   }, []);
-  const [mode, setMode] = useState<"all" | "risk" | "watch">("all");
   // filtro por tipo dentro del país (panel derecho): registros de la base + zonas vigiladas
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -90,31 +89,26 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
       row.zones += 1;
       rows.set(z.kind, row);
     }
-    // el modo decide qué tipos entran: amenazas (registros + zonas de riesgo) o vigilancia ambiental (tala y minería)
+    // Combina los tipos presentes en los registros y las zonas de referencia del país.
     return Array.from(rows.entries())
-      .filter(([kind]) => mode === "all" || (mode === "watch" ? watchKinds.has(kind as RiskZone["kind"]) : !watchKinds.has(kind as RiskZone["kind"])))
       .map(([kind, row]) => ({ kind, ...row }))
       .sort((a, b) => b.records + b.zones * 1000 - (a.records + a.zones * 1000));
-  }, [country, countryStats, mode]);
+  }, [country, countryStats]);
   const kindInfo = (kind: string) => {
     const zone = riskKinds[kind as RiskZone["kind"]];
     const hz = hazardKind(kind);
     return { color: zone?.color ?? hz.color, label: zone ? zone[lang === "es" ? "es" : "en"] : hz[lang === "es" ? "es" : "en"] };
   };
-  const changeMode = (next: "all" | "risk" | "watch") => {
-    setMode(next);
-    setVisibleResultLimit(80);
-    setCursor(0);
-  };
-  useEffect(() => {
-    globeState.mode = mode;
-  }, [mode]);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [cursor, setCursor] = useState(0);
   const [visibleResultLimit, setVisibleResultLimit] = useState(80);
   const input = useRef<HTMLInputElement>(null);
-  const searchButtonY = useTransform(() => -42 * Math.max(0, Math.min(1, progress.get() / 0.2)));
+  const searchButtonY = useTransform(() => {
+    const value = progress.get();
+    if (mobileMode.get()) return 42 * (1 - Math.max(0, Math.min(1, value / 0.8)));
+    return -42 * Math.max(0, Math.min(1, value / 0.2));
+  });
 
   useEffect(() => {
     if (!open || sitesLoaded) return;
@@ -143,15 +137,13 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
 
   const results = useMemo(() => {
     const q = fold(deferredQuery.trim());
-    const match = (z: RiskZone) => !hidden.has(z.kind) && (mode === "all" || (mode === "watch" ? watchKinds.has(z.kind) : !watchKinds.has(z.kind))) && (!q || [z.name.es, z.name.en, z.place.es, z.place.en, riskKinds[z.kind].es, riskKinds[z.kind].en].some((v) => fold(v).includes(q)));
+    const match = (z: RiskZone) => !hidden.has(z.kind) && (!q || [z.name.es, z.name.en, z.place.es, z.place.en, riskKinds[z.kind].es, riskKinds[z.kind].en].some((v) => fold(v).includes(q)));
     const list = riskZones.filter(match);
     return [...list.filter((z) => z.country === "CO"), ...list.filter((z) => z.country !== "CO")];
-  }, [deferredQuery, hidden, mode]);
+  }, [deferredQuery, hidden]);
   const groupedRecords = useMemo(() => {
     const filtered = (hazards?.points ?? []).filter((point) => {
       if (point.kind === "model_assessment" || hidden.has(point.kind)) return false;
-      if (mode === "risk" && watchKinds.has(point.kind as RiskZone["kind"])) return false;
-      if (mode === "watch" && !watchKinds.has(point.kind as RiskZone["kind"])) return false;
       return true;
     });
     const groups = new Map<string, HazardPoint>();
@@ -171,7 +163,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
       current.events = [...(current.events ?? []), ...(point.events ?? [])];
     }
     return Array.from(groups.values()).sort((a, b) => pointCountry(a).localeCompare(pointCountry(b)) || a.place.localeCompare(b.place));
-  }, [hazards, hidden, mode]);
+  }, [hazards, hidden]);
   const recordSearchIndex = useMemo(() => groupedRecords.map((point) => ({
     point,
     searchText: fold([point.place, point.type, hazardKind(point.kind).es, hazardKind(point.kind).en, pointCountry(point)].join(" ")),
@@ -198,14 +190,6 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
   return (
     <div className={`hero-overlay${shown ? " ui-shown" : ""}`}>
       <LanguageModal progress={progress} mobileMode={mobileMode} />
-      <div className="mode-switch" role="radiogroup" aria-label={lang === "es" ? "Qué ver en el planeta" : "What to show"}>
-        {([["all", lang === "es" ? "Todo" : "All"], ["risk", lang === "es" ? "Amenazas" : "Hazards"], ["watch", lang === "es" ? "Vigilancia ambiental" : "Environmental watch"]] as const).map(([value, label]) => (
-          <button key={value} type="button" role="radio" aria-checked={mode === value} className={mode === value ? "is-active" : undefined} onClick={() => changeMode(value)}>
-            <span className="mode-ico" aria-hidden="true">{value === "all" ? <Globe2 size={15} /> : value === "risk" ? <TriangleAlert size={15} /> : <Leaf size={15} />}</span>
-            <span className="mode-label">{label}</span>
-          </button>
-        ))}
-      </div>
       <AnimatePresence>
         {country && kindRows.some((row) => row.records > 0 || row.zones > 0) && (
           <motion.div className="kind-filter" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>

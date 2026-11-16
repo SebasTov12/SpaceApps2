@@ -56,7 +56,7 @@ export default function NisarFrames() {
   const country = useMemo(() => (frames[0] ? frameCountry(frames[0]) : null), [frames]);
 
   useFrame(({ clock }) => {
-    const on = globeState.country !== null && globeState.country === country && globeState.mode !== "watch" && !globeState.hiddenKinds.has(NISAR_KIND);
+    const on = globeState.country !== null && globeState.country === country && !globeState.hiddenKinds.has(NISAR_KIND);
     fade.current += ((on ? 1 : 0) - fade.current) * 0.08;
     const pulse = 0.75 + 0.25 * Math.sin(clock.getElapsedTime() * 1.6);
     const l = lineRef.current?.material as LineBasicMaterial | undefined;
