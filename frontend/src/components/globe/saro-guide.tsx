@@ -3,8 +3,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { History, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { emergencyFor } from "@/lib/emergency";
-import { recommendations } from "@/lib/insights";
 import { isAutoLang, ProtectedTerms, useI18n, type Lang } from "@/lib/i18n";
 import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
@@ -578,6 +576,7 @@ export default function SaroGuide() {
               initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
               transition={chatTransition}>
               <p className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{auto ? shownText : typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
+              <p className="saru-chat-invite">{es ? "Haz clic sobre mí para interactuar conmigo." : "Click on me to interact with me."}</p>
               <div className="saru-bar">
                 <span className="saru-name notranslate" translate="no">Saru</span>
                 {!reply && lines.length > 1 && (

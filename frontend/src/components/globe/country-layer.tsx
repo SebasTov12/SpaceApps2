@@ -26,6 +26,31 @@ const SURFACE = 1 + RELIEF;
 const v3 = (lat: number, lon: number, r: number) => new Vector3(...spherePosition(lat, lon, r));
 const tmp = { a: new Vector3(), b: new Vector3() };
 
+/** Borde del contorno a la altura del cartel; el extremo global de la caja puede estar mucho más lejos. */
+function edgeAtLatitude(shape: CountryShape, lat: number, side: "east" | "west") {
+  let edge = side === "east" ? -Infinity : Infinity;
+  for (const ring of shape.outline) for (let i = 0; i < ring.length; i++) {
+    const [aLon, aLat] = ring[i], [bLon, bLat] = ring[(i + 1) % ring.length];
+    if ((aLat <= lat && bLat > lat) || (bLat <= lat && aLat > lat)) {
+      const lon = aLon + ((lat - aLat) / (bLat - aLat)) * (bLon - aLon);
+      edge = side === "east" ? Math.max(edge, lon) : Math.min(edge, lon);
+    }
+  }
+  if (Number.isFinite(edge)) return edge;
+  return side === "east" ? shape.bbox?.[2] ?? shape.center[0] : shape.bbox?.[0] ?? shape.center[0];
+}
+
+/** Los carteles HTML ya miran a la cámara; una inclinación pequeña responde al punto de vista. */
+function faceViewer(label: HTMLElement, x: number, y: number) {
+  const tiltX = (Math.max(-1, Math.min(1, y)) * 5).toFixed(1);
+  const tiltY = (Math.max(-1, Math.min(1, -x)) * 6).toFixed(1);
+  const value = `${tiltX},${tiltY}`;
+  if (label.dataset.tilt === value) return;
+  label.dataset.tilt = value;
+  label.style.setProperty("--look-x", `${tiltX}deg`);
+  label.style.setProperty("--look-y", `${tiltY}deg`);
+}
+
 /** Pared luminosa del contorno: se ve en relieve sobre el planeta. */
 const wallMaterial = () => new ShaderMaterial({
   transparent: true, depthWrite: false, blending: AdditiveBlending, side: DoubleSide,
@@ -105,7 +130,11 @@ export default function CountryLayer() {
   const [country, setCountry] = useState<string | null>(null);
   const [shape, setShape] = useState<CountryShape | null>(null);
   const pinsRef = useRef<Map<string, Group>>(new Map());
-  const labelsRef = useRef<Map<string, HTMLDivElement>>(new Map());
+  const labelsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const desktopAnchor = useRef<Group>(null);
+  const mobileAnchor = useRef<Group>(null);
+  const desktopCallout = useRef<HTMLDivElement>(null);
+  const mobileCallout = useRef<HTMLDivElement>(null);
   const aim = useRef<{ code: string } | null>(null);
   const fade = useRef(0);
   const wallRef = useRef<Mesh>(null);
@@ -127,7 +156,10 @@ export default function CountryLayer() {
 
   // país abierto (por el punto, por el panel o al abrir una zona desde el buscador)
   useEffect(() => {
-    const onCountry = (e: Event) => setCountry((e as CustomEvent<string | null>).detail);
+    const onCountry = (e: Event) => {
+      setShape(null);
+      setCountry((e as CustomEvent<string | null>).detail);
+    };
     const onZone = (e: Event) => {
       const id = (e as CustomEvent<string | null>).detail;
       const zone = id ? riskZones.find((z) => z.id === id) : null;
@@ -153,7 +185,7 @@ export default function CountryLayer() {
     }).catch(() => alive && setShape(null));
     return () => { alive = false; };
   }, [country]);
-  const geo = useMemo(() => (shape ? buildShape(shape) : null), [shape]);
+  const geo = useMemo(() => (shape?.country === country ? buildShape(shape) : null), [shape, country]);
   useEffect(() => {
     if (!shape?.bbox) return;
     const [w, s0, e, n] = shape.bbox;
@@ -190,11 +222,25 @@ export default function CountryLayer() {
   }, [records]);
 
   const ordered = useMemo(() => [...pins].sort((a, b) => b.records + b.zones * 50 - (a.records + a.zones * 50)), [pins]);
+  const activePin = country ? pins.find((pin) => pin.code === country) : null;
+  const activeAnchors = useMemo(() => {
+    if (!activePin) return [];
+    const current = shape?.country === country ? shape : null;
+    const lat = current?.center[1] ?? activePin.lat;
+    const gap = current?.bbox ? Math.max(0.2, Math.min(0.7, (current.bbox[2] - current.bbox[0]) * 0.025)) : 0.35;
+    return (["desktop", "mobile"] as const).map((view) => ({
+      view,
+      lat,
+      lon: current
+        ? edgeAtLatitude(current, lat, view === "desktop" ? "east" : "west") + (view === "desktop" ? gap : -gap)
+        : activePin.lon + (view === "desktop" ? 4 : -4),
+    }));
+  }, [activePin, country, shape]);
   useFrame(({ clock, camera, size }) => {
     const t = clock.getElapsedTime();
     const open = globeState.country;
-    const planetView = globeState.uiRevealed && open === null && globeState.zoom === 0;
-    // puntos de país (solo en la vista de planeta, en la cara visible)
+    const countryView = globeState.uiRevealed && globeState.zoom === 0;
+    // Los otros países siguen disponibles durante el acercamiento para pasar de uno a otro.
     // etiquetas sin encimarse: primero los países con más datos; las que chocan se ocultan (el punto queda)
     const boxes: { x: number; y: number; w: number; h: number }[] = [];
     for (const pin of ordered) {
@@ -202,18 +248,27 @@ export default function CountryLayer() {
       const label = labelsRef.current.get(pin.code);
       if (!node) continue;
       node.getWorldPosition(tmp.a);
-      const facing = tmp.a.clone().normalize().dot(tmp.b.copy(camera.position).sub(tmp.a).normalize()) > 0.15;
-      const show = planetView && facing;
+      const facing = tmp.a.clone().normalize().dot(tmp.b.copy(camera.position).sub(tmp.a).normalize());
+      const show = countryView && pin.code !== open && facing > 0.18;
       node.visible = show;
       let labelOn = show;
       if (show && label) {
         if (!label.dataset.w || label.dataset.w === "0") { label.dataset.w = String(label.offsetWidth); label.dataset.h = String(label.offsetHeight); }
         tmp.b.copy(tmp.a).project(camera);
+        faceViewer(label, tmp.b.x, tmp.b.y);
         const box = { x: ((tmp.b.x + 1) / 2) * size.width, y: ((1 - tmp.b.y) / 2) * size.height - 34, w: Number(label.dataset.w) + 6, h: Number(label.dataset.h) + 4 };
         labelOn = !boxes.some((o) => Math.abs(o.x - box.x) * 2 < o.w + box.w && Math.abs(o.y - box.y) * 2 < o.h + box.h);
         if (labelOn) boxes.push(box);
       }
-      if (label && label.dataset.on !== (labelOn ? "1" : "0")) { label.dataset.on = labelOn ? "1" : "0"; label.style.opacity = labelOn ? "1" : "0"; }
+      if (label && label.dataset.on !== (labelOn ? "1" : "0")) {
+        label.dataset.on = labelOn ? "1" : "0";
+        label.style.pointerEvents = labelOn ? "auto" : "none";
+        label.tabIndex = labelOn ? 0 : -1;
+      }
+      if (label) {
+        const opacity = labelOn ? Math.min(1, (facing - 0.18) / 0.24).toFixed(2) : "0";
+        if (label.style.opacity !== opacity) label.style.opacity = opacity;
+      }
       if (show) {
         const ring = node.children[1];
         const phase = (t * 0.7 + pin.lat) % 1;
@@ -221,7 +276,21 @@ export default function CountryLayer() {
         ((ring as unknown as { material: MeshBasicMaterial }).material).opacity = 0.7 * (1 - phase);
       }
     }
+    for (const [anchorRef, labelRef] of [[desktopAnchor, desktopCallout], [mobileAnchor, mobileCallout]] as const) {
+      const anchor = anchorRef.current, label = labelRef.current;
+      if (!anchor || !label) continue;
+      anchor.getWorldPosition(tmp.a);
+      const facing = tmp.a.clone().normalize().dot(tmp.b.copy(camera.position).sub(tmp.a).normalize());
+      label.style.visibility = facing > 0.18 ? "visible" : "hidden";
+      const opacity = Math.max(0, Math.min(1, (facing - 0.18) / 0.24)).toFixed(2);
+      if (label.style.opacity !== opacity) label.style.opacity = opacity;
+      if (facing > 0.18) {
+        tmp.b.copy(tmp.a).project(camera);
+        faceViewer(label, tmp.b.x, tmp.b.y);
+      }
+    }
     // girar el planeta para traer el país al frente mientras se acerca
+    if (aim.current && globeState.user.moved > 8) aim.current = null;
     if (aim.current && globeState.userGroup) {
       const node = pinsRef.current.get(aim.current.code);
       if (node) {
@@ -250,18 +319,34 @@ export default function CountryLayer() {
     if (fillMat) fillMat.opacity = 0.08 * f;
   });
 
-  const onPin = (code: string) => (e: ThreeEvent<MouseEvent>) => {
-    e.stopPropagation();
-    if (globeState.country !== null) return;
+  const selectCountry = (code: string) => {
+    if (globeState.zoom > 0 || globeState.country === code) return;
     // mientras el planeta frena y la cámara se acerca, se sigue corrigiendo el giro hacia el país
     aim.current = { code };
     window.setTimeout(() => { if (aim.current?.code === code) aim.current = null; }, 2400);
     openCountry(code);
   };
+  const onPin = (code: string) => (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (globeState.user.moved > 8) return;
+    selectCountry(code);
+  };
 
   const fmt = (n: number) => n.toLocaleString(es ? "es-CO" : "en-US");
   return (
     <group>
+      {activePin && globeState.zoom === 0 && activeAnchors.map(({ view, lat, lon }) => (
+        <group key={`${activePin.code}-${view}`} position={v3(lat, lon, SURFACE + 0.075)}
+          ref={view === "desktop" ? desktopAnchor : mobileAnchor}>
+          <Html center className={`cy-country-anchor cy-country-anchor-${view}`} zIndexRange={[24, 22]} style={{ pointerEvents: "none" }}>
+            <div className="cy-country-callout" role="status" aria-live="polite"
+              ref={view === "desktop" ? desktopCallout : mobileCallout}>
+              <strong>{countryName(activePin.code, es ? "es" : "en")}</strong>
+              <span>{activePin.zones.toLocaleString(es ? "es-CO" : "en-US")} {es ? "Zonas" : "Zones"}</span>
+            </div>
+          </Html>
+        </group>
+      ))}
       {pins.map((pin) => {
         const pos = v3(pin.lat, pin.lon, SURFACE + 0.006);
         const size = 0.012 + 0.006 * Math.log10(pin.records + pin.zones + 1);
@@ -280,14 +365,16 @@ export default function CountryLayer() {
               <circleGeometry args={[size * 1.6, 12]} />
             </mesh>
             <Html center zIndexRange={[20, 10]} position={[0, 0, 0.004]} style={{ pointerEvents: "none" }}>
-              <div className="cy-pin" ref={(el) => { if (el) labelsRef.current.set(pin.code, el); else labelsRef.current.delete(pin.code); }}>
+              <button type="button" className="cy-pin" aria-label={`${countryName(pin.code, es ? "es" : "en")}: ${pin.zones} ${es ? "Zonas" : "Zones"}`}
+                onClick={(event) => { if (event.detail === 0 || globeState.user.moved <= 8) selectCountry(pin.code); }}
+                ref={(el) => { if (el) labelsRef.current.set(pin.code, el); else labelsRef.current.delete(pin.code); }}>
                 <strong>{countryName(pin.code, es ? "es" : "en")}</strong>
                 <span>
                   {pin.records > 0 && <>{fmt(pin.records)} {es ? "registros" : "records"}</>}
                   {pin.records > 0 && pin.zones > 0 && " · "}
                   {pin.zones > 0 && <>{pin.zones} {pin.zones === 1 ? (es ? "zona" : "zone") : (es ? "zonas" : "zones")}</>}
                 </span>
-              </div>
+              </button>
             </Html>
           </group>
         );

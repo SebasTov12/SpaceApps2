@@ -27,6 +27,7 @@ export default function CameraRig() {
   const zoom = useRef(0);
   const dive = useRef(0);
   const country = useRef(0);
+  const distance = useRef(COUNTRY);
   const offset = useRef({ x: 0, y: 0 });
   const tmp = useMemo(() => new Vector3(), []);
   useFrame(({ camera, gl }, delta) => {
@@ -39,7 +40,9 @@ export default function CameraRig() {
     country.current += (globeState.countryZoom - country.current) * (1 - Math.exp(-step * 2.2));
     const near = NEAR + (DIVE - NEAR) * smooth(Math.min(1, dive.current));
     // con un país abierto la cámara parte más cerca; al abrir una zona sigue acercándose desde ahí
-    const far = FAR + ((globeState.countryDistance || COUNTRY) - FAR) * smooth(Math.min(1, country.current));
+    const countryDistance = Math.min(FAR, 1 + ((globeState.countryDistance || COUNTRY) - 1) / globeState.countryMagnification);
+    distance.current += (countryDistance - distance.current) * (1 - Math.exp(-step * 3));
+    const far = FAR + (distance.current - FAR) * smooth(Math.min(1, country.current));
     camera.position.z = far + (Math.min(near, far) - far) * smooth(Math.min(1, zoom.current));
     camera.lookAt(0, 0, 0);
 
@@ -70,7 +73,6 @@ export default function CameraRig() {
     const c = smooth(Math.min(1, country.current));
     const style = gl.domElement.style;
     if (c > 0.01) {
-      // radio en píxeles según el lado más corto real del lienzo (en el teléfono no es cuadrado)
       const half = Math.min(gl.domElement.clientWidth, gl.domElement.clientHeight) / 2;
       const r = half * (1.5 - 0.52 * c);
       const mask = `radial-gradient(circle ${r.toFixed(0)}px at 50% 50%, #000 ${(r * 0.86).toFixed(0)}px, rgba(0,0,0,.55) ${(r * 0.94).toFixed(0)}px, transparent ${r.toFixed(0)}px)`;

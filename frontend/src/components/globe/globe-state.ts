@@ -44,6 +44,8 @@ export const globeState = {
   countryZoom: 0,
   /** Distancia de la cámara para el país abierto (según su tamaño: los grandes se ven desde más lejos). */
   countryDistance: 1.9,
+  /** Escala adicional controlada con la rueda mientras un país está abierto. */
+  countryMagnification: 1,
   /** Tipos ocultos con el filtro del panel derecho (amenazas y zonas comparten las claves de tipo). */
   hiddenKinds: new Set<string>(),
   /** Cambia cada vez que cambia el filtro (la malla de puntos se recalcula). */
@@ -79,6 +81,7 @@ export const COUNTRY_EVENT = "saros:country";
 export function openCountry(code: string) {
   globeState.country = code;
   globeState.countryZoom = 1;
+  globeState.countryMagnification = 1;
   window.dispatchEvent(new CustomEvent(COUNTRY_EVENT, { detail: code }));
 }
 
@@ -97,6 +100,7 @@ export function toggleKind(kind: string | null) {
 /** Vuelve a la vista de países. */
 export function closeCountry() {
   globeState.country = null;
+  globeState.countryMagnification = 1;
   globeState.hiddenKinds.clear();
   globeState.filterVersion += 1;
   globeState.countryZoom = 0;

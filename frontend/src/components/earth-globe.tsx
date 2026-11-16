@@ -11,7 +11,7 @@ import CountryLayer from "@/components/globe/country-layer";
 import NisarFrames from "@/components/globe/nisar-frames";
 import ReconScan from "@/components/globe/recon-scan";
 import CompanionSats from "@/components/globe/companion-sats";
-import { RELIEF, globeState } from "@/components/globe/globe-state";
+import { RELIEF, closeCountry, globeState } from "@/components/globe/globe-state";
 import CameraRig from "@/components/globe/camera-rig";
 import { useI18n } from "@/lib/i18n";
 import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight, type DirectionalLight, type Group } from "three";
@@ -218,6 +218,57 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     return window.matchMedia("(max-width: 760px)").matches || memory <= 4 ? "compact" : "full";
   });
   const compact = quality === "compact";
+  const renderRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const render = renderRef.current;
+    if (!render) return;
+    const changeCountryZoom = (factor: number) => {
+      if (!globeState.country || globeState.zoom > 0 || !globeState.uiRevealed) return false;
+      const next = globeState.countryMagnification * factor;
+      const minimum = Math.max(0.18, (globeState.countryDistance - 1) / 2.5);
+      if (next <= minimum) closeCountry();
+      else globeState.countryMagnification = Math.min(3.2, next);
+      return true;
+    };
+    const zoomCountry = (event: WheelEvent) => {
+      if (!globeState.country || globeState.zoom > 0 || !globeState.uiRevealed) return;
+      // La rueda sobre el globo modifica la cámara 3D; no desplaza el documento.
+      event.preventDefault();
+      const pixels = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+      changeCountryZoom(Math.exp(-pixels * 0.001));
+    };
+    let previousPinch = 0;
+    const separation = (event: TouchEvent) => Math.hypot(event.touches[0].clientX - event.touches[1].clientX, event.touches[0].clientY - event.touches[1].clientY);
+    const startPinch = (event: TouchEvent) => {
+      if (event.touches.length !== 2 || !globeState.country) return;
+      previousPinch = separation(event);
+      render.dataset.pinching = "true";
+    };
+    const movePinch = (event: TouchEvent) => {
+      if (event.touches.length !== 2 || previousPinch <= 0 || !globeState.country) return;
+      event.preventDefault();
+      const current = separation(event);
+      changeCountryZoom(current / previousPinch);
+      previousPinch = current;
+    };
+    const endPinch = (event: TouchEvent) => {
+      if (event.touches.length >= 2) return;
+      previousPinch = 0;
+      delete render.dataset.pinching;
+    };
+    render.addEventListener("wheel", zoomCountry, { passive: false });
+    render.addEventListener("touchstart", startPinch, { passive: true });
+    render.addEventListener("touchmove", movePinch, { passive: false });
+    render.addEventListener("touchend", endPinch);
+    render.addEventListener("touchcancel", endPinch);
+    return () => {
+      render.removeEventListener("wheel", zoomCountry);
+      render.removeEventListener("touchstart", startPinch);
+      render.removeEventListener("touchmove", movePinch);
+      render.removeEventListener("touchend", endPinch);
+      render.removeEventListener("touchcancel", endPinch);
+    };
+  }, []);
   const showScene = useCallback(() => { setReady(true); onReady(); }, [onReady]);
   // con el mapa de una zona a pantalla completa el planeta queda oculto: no se dibuja (ahorra GPU y batería)
   const [hidden, setHidden] = useState(false);
@@ -240,6 +291,7 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     user.velocity = 0;
     const move = (e: PointerEvent) => {
       if (e.pointerId !== pointerId) return;
+      if (renderRef.current?.dataset.pinching === "true") return;
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       lastX = e.clientX;
@@ -261,11 +313,11 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     window.addEventListener("pointercancel", end);
   }, []);
   return (
-    <div className="earth-render is-draggable" onPointerDown={startDrag} role="group" aria-label={lang === "en" ? "Interactive globe: drag to rotate Earth; NISAR orbits and its illustrative radar detects risk zones. The zone list is in the recognition panel." : "Globo interactivo: arrastra para girar la Tierra; NISAR orbita y su radar ilustrativo detecta zonas de riesgo. La lista de zonas está en el panel de reconocimiento."}>
+    <div ref={renderRef} className="earth-render is-draggable" onPointerDown={startDrag} role="group" aria-label={lang === "en" ? "Interactive globe: drag to rotate Earth; NISAR orbits and its illustrative radar detects risk zones. The zone list is in the recognition panel." : "Globo interactivo: arrastra para girar la Tierra; NISAR orbita y su radar ilustrativo detecta zonas de riesgo. La lista de zonas está en el panel de reconocimiento."}>
       <SceneBoundary onFailure={showScene}>
         <Canvas style={compact
-          ? { position: "absolute", inset: "-20%", width: "140%", height: "140%" }
-          : { position: "absolute", inset: "-35%", width: "170%", height: "170%" }}
+          ? { position: "absolute", inset: "-20%", width: "140%", height: "140%", overflow: "visible" }
+          : { position: "absolute", inset: "-35%", width: "170%", height: "170%", overflow: "visible" }}
           camera={{ position: [0, 0, compact ? 2.9 : 3.5], fov: 58 }} dpr={compact ? [1.1, 1.35] : [1, 1.6]}
           frameloop={playing && !hidden ? "always" : "demand"}
           fallback={<NoWebGL onReady={showScene} />}
