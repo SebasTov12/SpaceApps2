@@ -342,6 +342,7 @@ export default function CountryLayer() {
             <div className="cy-country-callout" role="status" aria-live="polite"
               ref={view === "desktop" ? desktopCallout : mobileCallout}>
               <strong>{countryName(activePin.code, es ? "es" : "en")}</strong>
+              <span>{(activePin.records + activePin.zones).toLocaleString(es ? "es-CO" : "en-US")} {es ? "registros" : "records"}</span>
             </div>
           </Html>
         </group>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { SITE_EVENT } from "@/components/globe/globe-state";
 import { SarosStar } from "@/components/saros-logo";
 import { loadHeadlines, type Headline } from "@/lib/headlines";
+import { HAZARD_POINT_SELECT, hazardPointId, loadHazardPoints } from "@/lib/hazard-points";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
 
 const LIVE_BY_LANG: Record<string, string> = {
@@ -49,6 +50,18 @@ export default function HeadlineTicker({ className }: { className?: string }) {
   const liveLabel = LIVE_BY_LANG[currentCode] || LIVE_BY_LANG[currentCode.split("-")[0]] || "ÚLTIMA HORA";
   const [items, setItems] = useState<Headline[]>([]);
 
+  const openItem = async (item: Headline) => {
+    if (item.hazardPointId) {
+      const data = await loadHazardPoints();
+      const point = data?.points.find((candidate) => hazardPointId(candidate) === item.hazardPointId);
+      if (point) {
+        window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: point }));
+        return;
+      }
+    }
+    if (item.siteId) window.dispatchEvent(new CustomEvent(SITE_EVENT, { detail: item.siteId }));
+  };
+
   useEffect(() => {
     let alive = true;
     loadHeadlines().then((list) => alive && setItems(list)).catch(() => alive && setItems([]));
@@ -59,7 +72,7 @@ export default function HeadlineTicker({ className }: { className?: string }) {
 
   const renderItem = (item: Headline, copy: boolean) => {
     return (
-    <button key={`${item.id}-${copy ? "b" : "a"}-${currentCode}`} type="button" className="ticker-item" disabled={!item.siteId} onClick={() => item.siteId && window.dispatchEvent(new CustomEvent(SITE_EVENT, { detail: item.siteId }))}
+    <button key={`${item.id}-${copy ? "b" : "a"}-${currentCode}`} type="button" className="ticker-item" disabled={!item.siteId && !item.hazardPointId} onClick={() => void openItem(item)}
       tabIndex={copy ? -1 : undefined} aria-hidden={copy || undefined}>
       <b className={`ticker-sev sev-${item.severity}`}>{l.severity[item.severity]}</b>
       <span className="ticker-title"><ProtectedTerms text={item.title[activeLang]} /></span>

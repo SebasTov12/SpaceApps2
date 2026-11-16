@@ -9,6 +9,7 @@
  */
 import { riskZones } from "@/lib/risk-zones";
 import { loadAvailability, loadManifest, loadSites } from "@/lib/sites";
+import { loadHazardPoints, hazardPointId } from "@/lib/hazard-points";
 
 export type Severity = "alta" | "media" | "baja" | "info";
 
@@ -26,6 +27,8 @@ export type Headline = {
   demo: boolean;
   /** sitio del explorador relacionado */
   siteId?: string;
+  /** Identificador del grupo de registros real que abre directamente en el mapa. */
+  hazardPointId?: string;
 };
 
 const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -41,16 +44,31 @@ async function fromApi(): Promise<Headline[] | null> {
   try {
     const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/headlines`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
     if (!response.ok) return null;
-    const data = (await response.json()) as { headlines?: Headline[] };
-    return Array.isArray(data.headlines) ? data.headlines : null;
+    const data = (await response.json()) as { headlines?: (Headline & { hazard_point_id?: string })[] };
+    return Array.isArray(data.headlines) ? data.headlines.map((item) => ({ ...item, hazardPointId: item.hazardPointId ?? item.hazard_point_id })) : null;
   } catch {
     return null;
   }
 }
 
 async function fromStaticData(): Promise<Headline[]> {
-  const [sites, availability] = await Promise.all([loadSites(), loadAvailability().catch(() => null)]);
+  const [sites, availability, hazardData] = await Promise.all([loadSites(), loadAvailability().catch(() => null), loadHazardPoints()]);
   const items: Headline[] = [];
+
+  // Prioriza registros vigentes del backend y enlázalos al punto exacto del mapa.
+  for (const point of hazardData?.points ?? []) {
+    if (point.kind === "model_assessment") continue;
+    const time = point.last ?? point.first;
+    if (!time) continue;
+    const count = point.n.toLocaleString("es-CO");
+    const type = point.type || point.kind;
+    items.push({
+      id: `hazard-${hazardPointId(point)}`, hazardPointId: hazardPointId(point), kind: point.kind,
+      severity: point.priority === "P1" ? "alta" : point.priority === "P2" ? "media" : "info",
+      title: { es: `${type}: ${count} registros · ${time}`, en: `${type}: ${point.n.toLocaleString("en-US")} records · ${time}` },
+      place: { es: point.place, en: point.place }, time, source: point.sources?.[0] ?? "Backend", demo: false,
+    });
+  }
 
   // Datos reales: escenas NISAR publicadas por ASF para cada sitio
   for (const site of availability?.sites ?? []) {
@@ -163,7 +181,7 @@ async function fromStaticData(): Promise<Headline[]> {
     demo: false,
   });
 
-  return items.sort((a, b) => b.time.localeCompare(a.time));
+  return items.sort((a, b) => Number(b.hazardPointId !== undefined) - Number(a.hazardPointId !== undefined) || Number(a.demo) - Number(b.demo) || b.time.localeCompare(a.time));
 }
 
 /** Respaldo mínimo con referencias históricas si también faltan los archivos estáticos. */
