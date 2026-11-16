@@ -437,6 +437,7 @@ export default function ZoneView() {
               splitValue={split}
               padding={padding}
             />
+            <div className="zone-saru-slot" aria-label={lang === "es" ? "Saru, guía de la ubicación" : "Saru, location guide"} />
             <AnimatePresence>
               {explain && active && legend && (
                 <motion.div key={explain.nonce} className="sp-explain" initial={{ opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
@@ -490,7 +491,6 @@ export default function ZoneView() {
             </header>
             <h2 className="zone-title">{zone.name[lang]}</h2>
             <p className="zone-place"><MapPin size={13} /> {zone.place[lang] !== zone.name[lang] ? `${zone.place[lang]} · ` : ""}{formatCoord(zone.lat, zone.lon)}</p>
-            <div className="zone-saru-slot" aria-label={lang === "es" ? "Saru, guía de la ubicación" : "Saru, location guide"} />
             <TerritorialImpact key={zone.id} zoneId={zone.id} lat={zone.lat} lon={zone.lon} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
             <div className="zone-level" data-tour="level" style={{ "--level": modelAssessment ? levelInfo[level].color : "#8993ad" } as React.CSSProperties}>
               <i />{modelAssessment ? `${modelAssessment.priority} · ${lang === "es" ? "prioridad exploratoria" : "exploratory priority"}` : (lang === "es" ? "Sin evaluación del modelo" : "No model assessment")}

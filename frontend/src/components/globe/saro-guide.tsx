@@ -349,13 +349,16 @@ export default function SaroGuide() {
     }
     let frame = 0;
     let attempts = 0;
-    const attachToPanel = () => {
-      const slot = document.querySelector<HTMLElement>(".zone-panel .zone-saru-slot");
+    const attachToMap = () => {
+      const slot = document.querySelector<HTMLElement>(".zone-stage-map .zone-saru-slot");
       if (slot) setPortalRoot(slot);
-      else if (attempts++ < 30) frame = requestAnimationFrame(attachToPanel);
+      else if (attempts++ < 180) frame = requestAnimationFrame(attachToMap);
       else setPortalRoot(document.body);
     };
-    frame = requestAnimationFrame(attachToPanel);
+    frame = requestAnimationFrame(() => {
+      setPortalRoot(null);
+      attachToMap();
+    });
     return () => cancelAnimationFrame(frame);
   }, [hydrated, zoneId]);
   useEffect(() => {
@@ -750,7 +753,7 @@ export default function SaroGuide() {
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.div layout="position" transition={chatTransition} className="saru-avatar-anchor">
+        <motion.div layout="position" transition={chatTransition} className={`saru-avatar-anchor${zoneMenuOpen ? " is-menu-open" : ""}`}>
         <button ref={avatarRef} type="button" className="saro-avatar saru-enter" key={`${zoneId ?? "home"}-${arrivals}`} onClick={zone ? toggleZoneMenu : toggleChat}
           aria-expanded={zone ? zoneMenuOpen || transcriptOpen || chatOpen : chatOpen} aria-controls={chatOpen ? "saru-chat" : undefined}
           aria-label={zone ? (es ? "Abrir menú de Saru" : "Open Saru menu") : chatOpen ? (es ? "Cerrar chat de Saru y mostrar diálogo" : "Close Saru chat and show dialogue") : (es ? "Conversar con Saru" : "Chat with Saru")}>
