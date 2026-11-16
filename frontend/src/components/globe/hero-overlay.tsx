@@ -114,9 +114,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
   const [cursor, setCursor] = useState(0);
   const [visibleResultLimit, setVisibleResultLimit] = useState(80);
   const input = useRef<HTMLInputElement>(null);
-  const searchButtonY = useTransform(() => mobileMode.get()
-    ? 0
-    : -42 * Math.max(0, Math.min(1, progress.get() / 0.2)));
+  const searchButtonY = useTransform(() => -42 * Math.max(0, Math.min(1, progress.get() / 0.2)));
 
   useEffect(() => {
     if (!open || sitesLoaded) return;

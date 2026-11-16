@@ -1764,7 +1764,7 @@ html body .space-stars {
 
 .hero-search-btn {
   position: absolute;
-  top: 28px;
+  top: 56px;
   right: 20px;
   display: grid;
   place-items: center;
@@ -1805,7 +1805,7 @@ html body .space-stars {
 /* ---------- Botón de idioma en esquina superior izquierda (simétrico a la lupita) ---------- */
 .hero-lang-btn {
   position: absolute;
-  top: 28px;
+  top: 56px;
   left: 20px;
   display: grid;
   place-items: center;
@@ -2381,7 +2381,7 @@ font {
 
 @media(max-width:720px) {
   .hero-search-btn {
-    top: 46px;
+    top: max(52px,calc(env(safe-area-inset-top) + 52px));
     right: 14px;
     width: 34px;
     height: 34px;
@@ -2389,7 +2389,7 @@ font {
   }
 
   .hero-lang-btn {
-    top: 46px;
+    top: max(52px,calc(env(safe-area-inset-top) + 52px));
     left: 14px;
     width: 34px;
     height: 34px;
@@ -3238,7 +3238,7 @@ html body .saru-pool{position:fixed;left:0;top:0;width:320px;height:1px;overflow
   html body .mode-switch button{min-width:0;min-height:38px;padding:4px 3px;justify-content:center;font-size:clamp(9px,2.4vw,11.5px);line-height:1.15;gap:2px;text-align:center}
   html body .mode-switch .mode-label{overflow-wrap:anywhere}
   html body .mode-switch .mode-dot{display:none}
-  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(4px,env(safe-area-inset-top))}
+  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(52px,calc(env(safe-area-inset-top) + 52px))}
   html body .earth-orbit{top:46%}
   html body .hero-lang-btn{left:8px}
   html body .hero-search-btn{right:8px}
