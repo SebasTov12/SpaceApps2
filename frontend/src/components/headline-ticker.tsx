@@ -5,7 +5,6 @@ import { SITE_EVENT } from "@/components/globe/globe-state";
 import { SarosStar } from "@/components/saros-logo";
 import { loadHeadlines, type Headline } from "@/lib/headlines";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
-import { riskZones } from "@/lib/risk-zones";
 
 const LIVE_BY_LANG: Record<string, string> = {
   es: "ÚLTIMA HORA",
@@ -58,20 +57,9 @@ export default function HeadlineTicker({ className }: { className?: string }) {
     };
   }, []);
 
-  const resolveZone = (item: Headline) => {
-    const byId = riskZones.find((z) => z.id === item.siteId || (item.siteId && z.siteId === item.siteId));
-    if (byId) return byId.id;
-    const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
-    const location = item.place?.es && normalize(item.place.es);
-    if (!location) return undefined;
-    const matches = riskZones.filter((z) => normalize(z.place.es) === location);
-    return matches.length === 1 ? matches[0].id : undefined;
-  };
-
   const renderItem = (item: Headline, copy: boolean) => {
-    const zoneId = resolveZone(item);
     return (
-    <button key={`${item.id}-${copy ? "b" : "a"}-${currentCode}`} type="button" className="ticker-item" disabled={!zoneId} onClick={() => zoneId && window.dispatchEvent(new CustomEvent(SITE_EVENT, { detail: zoneId }))}
+    <button key={`${item.id}-${copy ? "b" : "a"}-${currentCode}`} type="button" className="ticker-item" disabled={!item.siteId} onClick={() => item.siteId && window.dispatchEvent(new CustomEvent(SITE_EVENT, { detail: item.siteId }))}
       tabIndex={copy ? -1 : undefined} aria-hidden={copy || undefined}>
       <b className={`ticker-sev sev-${item.severity}`}>{l.severity[item.severity]}</b>
       <span className="ticker-title"><ProtectedTerms text={item.title[activeLang]} /></span>
