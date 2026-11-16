@@ -2,7 +2,7 @@
 
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AdditiveBlending, Color, DoubleSide, Vector3, type Group, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial, type ShaderMaterial } from "three";
+import { AdditiveBlending, DoubleSide, Vector3, type Group, type Mesh, type MeshBasicMaterial } from "three";
 import { riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { countryOf } from "@/lib/emergency";
 import { GLOBE_SELECT, RELIEF, focusZone, globeState } from "./globe-state";
@@ -16,22 +16,6 @@ export function spherePosition(lat: number, lon: number, radius: number): [numbe
 
 const easeOutBack = (t: number) => 1 + 2.2 * Math.pow(t - 1, 3) + 1.2 * Math.pow(t - 1, 2);
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-
-// Columna de luz: degradado luminoso que asciende desde la superficie
-const pillarVertex = `
-  varying vec2 vUv;
-  void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
-`;
-const pillarFragment = `
-  uniform vec3 uColor;
-  uniform float uOpacity;
-  varying vec2 vUv;
-  void main() {
-    float core = pow(1.0 - abs(vUv.x - 0.5) * 2.0, 1.4);
-    float glow = (0.35 + 0.65 * (1.0 - vUv.y)) * core;
-    gl_FragColor = vec4(uColor, glow * uOpacity);
-  }
-`;
 
 /** Altura del terreno (0–1) en cada zona, leída del mismo mapa que desplaza la superficie. */
 function useTerrainHeights() {
@@ -65,10 +49,6 @@ function useTerrainHeights() {
 function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: boolean; index: number; terrain: number }) {
   const group = useRef<Group>(null);
   const body = useRef<Group>(null);
-  const pillar = useRef<Group>(null);
-  const pillarMaterial = useRef<ShaderMaterial>(null);
-  const orbMaterial = useRef<MeshStandardMaterial>(null);
-  const haloMesh = useRef<Mesh>(null);
   const pulse = useRef<Mesh>(null);
   const burst = useRef<Mesh>(null);
   const base = useRef<Mesh>(null);
@@ -78,14 +58,12 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
   const cameraLocal = useMemo(() => new Vector3(), []);
   const [hover, setHover] = useState(false);
 
-  const color = "#f2bd68";
+  const color = riskKinds[zone.kind].color;
   const position = useMemo(() => spherePosition(zone.lat, zone.lon, 1.002 + RELIEF * terrain), [zone.lat, zone.lon, terrain]);
   
-  // Orbe apoyado sobre el terreno; toda la baliza comparte la rotación de la superficie.
-  const size = 0.0115;
-  const stemHeight = size * 1.05;
+  // Marcador plano: misma forma circular y halo que los puntos del inventario.
+  const size = 0.0075;
   const normal = useMemo(() => new Vector3(...position).normalize(), [position]);
-  const uniforms = useMemo(() => ({ uColor: { value: new Color(color) }, uOpacity: { value: 0.6 } }), [color]);
 
   useEffect(() => {
     const node = group.current;
@@ -140,24 +118,6 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
     const fine = 1 - 0.58 * close;
     node.scale.setScalar(Math.max(0.001, easeOutBack(appear) * fine));
 
-    // Iluminación reactiva del orbe 3D y su anillo holográfico
-    const baseEmissive = selected ? 0.85 : hover ? 0.7 : 0.35;
-    const emissiveIntensity = baseEmissive + detectorGlow * 0.25;
-    if (orbMaterial.current) orbMaterial.current.emissiveIntensity = emissiveIntensity;
-
-    // Halo atmosférico alrededor de la esfera
-    if (haloMesh.current) {
-      (haloMesh.current.material as MeshBasicMaterial).opacity = (0.05 + detectorGlow * 0.08 + (hover || selected ? 0.08 : 0)) * (1 - 0.8 * close);
-    }
-
-    // Columna de luz: se estira y resplandece suavemente al recibir el detector del satélite
-    if (pillar.current) {
-      pillar.current.scale.set(1, 1, Math.max(0.001, appear * (1 - 0.7 * close)));
-    }
-    if (pillarMaterial.current) {
-      pillarMaterial.current.uniforms.uOpacity.value = 0.45 + detectorGlow * 0.28 + (selected ? 0.2 : 0);
-    }
-
     // Pulso constante y sereno en la superficie: velocidad constante para evitar saltos o parpadeos bruscos
     if (pulse.current) {
       const p = (t * 0.38 + index * 0.18) % 1;
@@ -176,7 +136,7 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
         (burst.current.material as MeshBasicMaterial).opacity = 0.32 * burstFade * (1 - f * 0.5);
       }
     }
-    if (base.current) (base.current.material as MeshBasicMaterial).opacity = selected || hover ? 0.95 : 0.65;
+    if (base.current) (base.current.material as MeshBasicMaterial).opacity = selected || hover ? 0.42 : 0.24;
   });
 
   // Selección sin fricción: tolera microdesplazamientos de arrastre y clics rápidos
@@ -210,60 +170,43 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
   return (
     <group ref={group} position={position}>
       <group ref={body} visible={false}>
-        {/* 1. Base en la superficie del terreno */}
+        {/* Halo difuso y núcleo circular, iguales al estilo de los puntos de datos */}
         <mesh ref={base} position={[0, 0, 0.002]}>
-          <ringGeometry args={[size * 1.15, size * 1.5, 36]} />
-          <meshBasicMaterial color={selected ? "#ffffff" : color} transparent opacity={0.65} side={DoubleSide} depthWrite={false} toneMapped={false} />
+          <circleGeometry args={[size * 2.1, 24]} />
+          <meshBasicMaterial color={color} transparent opacity={0.24} side={DoubleSide} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
         </mesh>
 
-        {/* 2. Pulso de sonar/radar sobre el terreno */}
+        <mesh position={[0, 0, 0.0025]}>
+          <circleGeometry args={[size, 24]} />
+          <meshBasicMaterial color={color} transparent opacity={0.95} side={DoubleSide} depthWrite={false} toneMapped={false} />
+        </mesh>
+
+        <mesh position={[0, 0, 0.0028]}>
+          <circleGeometry args={[size * 0.34, 16]} />
+          <meshBasicMaterial color="#fff5df" transparent opacity={0.82} side={DoubleSide} depthWrite={false} toneMapped={false} />
+        </mesh>
+
+        {/* Pulso suave para indicar detección sin cambiar la forma del punto */}
         <mesh ref={pulse} position={[0, 0, 0.0024]}>
           <ringGeometry args={[size * 1.25, size * 1.55, 36]} />
           <meshBasicMaterial color={color} transparent opacity={0} side={DoubleSide} depthWrite={false} toneMapped={false} />
         </mesh>
 
-        {/* 3. Onda expansiva al ser detectado por el satélite */}
+        {/* Onda breve cuando NISAR pasa sobre la zona */}
         <mesh ref={burst} position={[0, 0, 0.0028]} visible={false}>
           <ringGeometry args={[size * 1.4, size * 1.9, 48]} />
           <meshBasicMaterial color="#e6fbff" transparent opacity={0} side={DoubleSide} depthWrite={false} toneMapped={false} />
         </mesh>
 
-        {/* 4. Columna/haz de luz que conecta el suelo con la baliza flotante */}
-        <group ref={pillar}>
-          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, stemHeight / 2]}>
-            <cylinderGeometry args={[size * 0.22, size * 0.42, stemHeight, 16, 1, true]} />
-            <shaderMaterial ref={pillarMaterial} uniforms={uniforms} vertexShader={pillarVertex} fragmentShader={pillarFragment}
-              transparent depthWrite={false} blending={AdditiveBlending} side={DoubleSide} />
-          </mesh>
-        </group>
-
-        {/* 5. Baliza 3D flotante: Esfera suspendida con núcleo brillante */}
-        <mesh position={[0, 0, stemHeight]}>
-          <sphereGeometry args={[size * 1.05, 24, 20]} />
-          <meshStandardMaterial ref={orbMaterial} color={color} emissive={color} emissiveIntensity={0.75} roughness={0.25} metalness={0.4} toneMapped={false} />
-        </mesh>
-
-        {/* Brillo interior del orbe */}
-        <mesh position={[0, 0, stemHeight]} scale={0.3}>
-          <sphereGeometry args={[size * 1.05, 16, 12]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.35} toneMapped={false} />
-        </mesh>
-
-        {/* Halo atmosférico luminoso alrededor de la esfera */}
-        <mesh ref={haloMesh} position={[0, 0, stemHeight]} scale={1.2}>
-          <sphereGeometry args={[size * 1.05, 18, 14]} />
-          <meshBasicMaterial color={color} transparent opacity={0.25} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
-        </mesh>
-
-        {/* 7. Volumen de interacción amplio: abarca toda la baliza en 3D para una pulsación cómoda e inmediata */}
+        {/* Volumen invisible amplio para facilitar la selección con ratón o tacto */}
         <mesh
-          position={[0, 0, stemHeight]}
+          position={[0, 0, 0.004]}
           onPointerDown={handlePointerDown}
           onClick={handleClick}
           onPointerOver={(event) => { if (!facingCamera.current || !body.current?.visible) return; event.stopPropagation(); setHover(true); document.body.style.cursor = "pointer"; }}
           onPointerOut={() => { setHover(false); document.body.style.cursor = ""; }}
         >
-          <sphereGeometry args={[size * 2.6, 16, 12]} />
+          <circleGeometry args={[size * 3.2, 20]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
         </mesh>
       </group>

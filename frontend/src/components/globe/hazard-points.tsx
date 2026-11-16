@@ -3,7 +3,7 @@
 import { Html } from "@react-three/drei";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleGeometry, Color, Group, InstancedMesh, MeshBasicMaterial, Object3D, Quaternion, Vector3 } from "three";
+import { AdditiveBlending, CircleGeometry, Color, Group, InstancedMesh, MeshBasicMaterial, Object3D, Quaternion, Vector3 } from "three";
 import { useI18n } from "@/lib/i18n";
 import { HAZARD_POINT_SELECT, HAZARDS_EVENT, hazardKind, pointCountry, loadHazardPoints, sourceName, type HazardPoint } from "@/lib/hazard-points";
 import { RELIEF, globeState } from "./globe-state";
@@ -26,6 +26,7 @@ export default function HazardPoints() {
   const es = lang !== "en";
   const [points, setPoints] = useState<HazardPoint[]>([]);
   const mesh = useRef<InstancedMesh>(null);
+  const glowMesh = useRef<InstancedMesh>(null);
   const root = useRef<Group>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [pinned, setPinned] = useState<number | null>(null);
@@ -47,30 +48,38 @@ export default function HazardPoints() {
     const pos = new Vector3(...spherePosition(p.lat, p.lon, RADIUS));
     const quat = new Quaternion().setFromUnitVectors(up, pos.clone().normalize());
     const size = 0.0019 + 0.0016 * Math.log10(p.n + 1);
-    return { country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color("#f2bd68") };
+    return { country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color(hazardKind(p.kind).color) };
   }), [points]);
 
   const geometry = useMemo(() => new CircleGeometry(1, 14), []);
   const material = useMemo(() => new MeshBasicMaterial({ transparent: true, opacity: 0.82, depthWrite: false, toneMapped: false }), []);
-  useEffect(() => () => { geometry.dispose(); material.dispose(); }, [geometry, material]);
+  const glowMaterial = useMemo(() => new MeshBasicMaterial({ transparent: true, opacity: 0.22, blending: AdditiveBlending, depthWrite: false, toneMapped: false }), []);
+  useEffect(() => () => { geometry.dispose(); material.dispose(); glowMaterial.dispose(); }, [geometry, material, glowMaterial]);
 
   const dummy = useMemo(() => new Object3D(), []);
   useEffect(() => {
     const m = mesh.current;
-    if (!m) return;
-    layout.forEach((item, i) => m.setColorAt(i, item.color));
+    const glow = glowMesh.current;
+    if (!m || !glow) return;
+    layout.forEach((item, i) => {
+      m.setColorAt(i, item.color);
+      glow.setColorAt(i, item.color);
+    });
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    if (glow.instanceColor) glow.instanceColor.needsUpdate = true;
     revealAt.current = null;
   }, [layout]);
 
   // entrada escalonada al revelar la interfaz; latido suave; se ocultan en «Vigilancia ambiental»
   useFrame(({ clock }) => {
     const m = mesh.current;
-    if (!m || !layout.length) return;
+    const glow = glowMesh.current;
+    if (!m || !glow || !layout.length) return;
     const t = clock.getElapsedTime();
     // en la vista de países se agrupan en el punto del país; aparecen al abrirlo
     const show = globeState.uiRevealed && globeState.mode !== "watch" && globeState.country !== null && globeState.countryZoom > 0;
     m.visible = show;
+    glow.visible = show;
     if (!show) { revealAt.current = null; settled.current = undefined; return; }
     if (revealAt.current === null) revealAt.current = t;
     const since = t - revealAt.current;
@@ -83,15 +92,19 @@ export default function HazardPoints() {
     for (let i = 0; i < layout.length; i++) {
       const item = layout[i];
       const k = Math.min(1, Math.max(0, (since - (i % 60) * 0.012) / 0.5));
-      const here = item.country === globeState.country ? 1 : 0;
+      const here = item.country === globeState.country && !globeState.hiddenKinds.has(item.kind) ? 1 : 0;
       const scale = here * item.size * (k < 1 ? k * (1.4 - 0.4 * k) : 1) * (i === active ? 3 : 1);
       dummy.position.copy(item.pos);
       dummy.quaternion.copy(item.quat);
       dummy.scale.setScalar(Math.max(1e-5, scale));
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
+      dummy.scale.multiplyScalar(1.9);
+      dummy.updateMatrix();
+      glow.setMatrixAt(i, dummy.matrix);
     }
     m.instanceMatrix.needsUpdate = true;
+    glow.instanceMatrix.needsUpdate = true;
   });
 
   // los puntos son diminutos: se elige el más cercano al cursor en pantalla (máx. ~12 px)
@@ -137,6 +150,7 @@ export default function HazardPoints() {
   if (!points.length) return null;
   return (
     <group ref={root}>
+      <instancedMesh ref={glowMesh} args={[geometry, glowMaterial, points.length]} frustumCulled={false} renderOrder={2} raycast={() => null} />
       <instancedMesh ref={mesh} args={[geometry, material, points.length]} frustumCulled={false} renderOrder={3} raycast={() => null} />
       {/* esfera invisible que recibe el cursor para encontrar el punto más cercano */}
       <mesh onPointerMove={onMove} onPointerOut={onOut} onClick={onClick}>

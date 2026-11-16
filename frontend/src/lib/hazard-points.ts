@@ -58,12 +58,16 @@ export const HAZARDS_EVENT = "saros:hazards";
 export const HAZARD_POINT_SELECT = "saros:hazard-point-select";
 
 export const HAZARD_KINDS: Record<string, { color: string; es: string; en: string }> = {
+  // Mantener esta paleta sincronizada con riskKinds, que pinta los filtros del mapa.
   landslide: { color: "#e8b36b", es: "Movimiento en masa", en: "Landslide" },
-  flood: { color: "#5aa8ff", es: "Inundación", en: "Flooding" },
-  wildfire: { color: "#ff7a3d", es: "Incendio", en: "Wildfire" },
-  earthquake: { color: "#c084fc", es: "Sismo", en: "Earthquake" },
-  volcano: { color: "#ff5a5a", es: "Volcán", en: "Volcano" },
+  flood: { color: "#6fa8e8", es: "Inundación", en: "Flooding" },
+  wildfire: { color: "#ffb04a", es: "Incendio", en: "Wildfire" },
+  earthquake: { color: "#c9a2ff", es: "Sismo", en: "Earthquake" },
+  volcano: { color: "#ff7a5c", es: "Volcán", en: "Volcano" },
   subsidence: { color: "#e8805a", es: "Hundimiento", en: "Subsidence" },
+  glacier: { color: "#bfe9f2", es: "Glaciar", en: "Glacier" },
+  deforestation: { color: "#7fd18b", es: "Deforestación", en: "Deforestation" },
+  mining: { color: "#e0b341", es: "Minería", en: "Mining" },
   erosion: { color: "#d9b38c", es: "Erosión", en: "Erosion" },
   storm: { color: "#7dd3fc", es: "Vendaval o tormenta", en: "Windstorm" },
   drought: { color: "#f5d061", es: "Sequía", en: "Drought" },
