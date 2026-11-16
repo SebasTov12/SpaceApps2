@@ -155,6 +155,8 @@ const prosody: Record<"happy" | "attentive" | "worried", { rate: number; pitch: 
 
 const firstSentence = (text: string) => (text.match(/^[^.:;]+[.:;]?/)?.[0] ?? text).trim();
 const fmt = (v: number, d = 1) => Math.abs(v).toLocaleString("es-CO", { maximumFractionDigits: d });
+// Saru nunca muestra emojis, aunque una respuesta de datos externos los incluya.
+const withoutEmoji = (text: string) => text.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "").replace(/\s{2,}/g, " ").trim();
 
 /** Guion de Saro para una zona: frases cortas, de lo más importante a lo práctico. */
 function scriptFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "en"): string[] {
@@ -221,8 +223,8 @@ export default function SaroGuide() {
   const [replyValue, setReplyValue] = useState<LocalizedLine | null>(null);
   const aside = asideValue?.lang === lang ? asideValue.text : null;
   const reply = replyValue?.lang === lang ? replyValue.text : null;
-  const setAside = useCallback((text: string | null) => setAsideValue(text === null ? null : { text, lang }), [lang]);
-  const setReply = useCallback((text: string | null) => setReplyValue(text === null ? null : { text, lang }), [lang]);
+  const setAside = useCallback((text: string | null) => setAsideValue(text === null ? null : { text: withoutEmoji(text), lang }), [lang]);
+  const setReply = useCallback((text: string | null) => setReplyValue(text === null ? null : { text: withoutEmoji(text), lang }), [lang]);
   const [prog, setProg] = useState({ text: "", n: 0 });
   // El primer HTML debe coincidir en servidor y navegador; activa escritura tras hidratar.
   const [hydrated, setHydrated] = useState(false);
