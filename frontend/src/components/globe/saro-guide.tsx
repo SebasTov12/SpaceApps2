@@ -428,7 +428,9 @@ export default function SaroGuide() {
       setStep(0);
       setAside(null);
       setReply(null);
-      setPlaying(true);
+      // The home greeting is only narrated on initial page load. Closing a
+      // selected location returns Saru to idle instead of replaying it.
+      setPlaying(Boolean(id));
       if (id) { setMinimized(false); setChatOpen(false); }
       manifestRef.current = null;
       const z = riskZones.find((r) => r.id === id);
