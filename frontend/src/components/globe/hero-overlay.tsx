@@ -11,7 +11,7 @@ import { loadSites, type SiteSummary } from "@/lib/sites";
 import LanguageModal from "@/components/language-modal";
 import { HAZARD_POINT_SELECT, HAZARDS_EVENT, hazardKind, hazardPointId, loadHazardPoints, type HazardPoint, type HazardPoints } from "@/lib/hazard-points";
 import { COUNTRY_EVENT, KIND_FILTER_EVENT, closeCountry, focusZone, globeState, toggleKind, UI_REVEAL } from "./globe-state";
-import { countryOf } from "@/lib/emergency";
+import { countryOf, countryName } from "@/lib/emergency";
 import { pointCountry } from "@/lib/hazard-points";
 
 const copy = {
@@ -91,8 +91,8 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
     }
     // el modo decide qué tipos entran: amenazas (registros + zonas de riesgo) o vigilancia ambiental (tala y minería)
     return Array.from(rows.entries())
-      .filter(([kind, row]) => mode === "all" || (mode === "watch" ? watchKinds.has(kind as RiskZone["kind"]) && row.zones > 0 : !watchKinds.has(kind as RiskZone["kind"])))
-      .map(([kind, row]) => ({ kind, ...row, records: mode === "watch" ? 0 : row.records }))
+      .filter(([kind]) => mode === "all" || (mode === "watch" ? watchKinds.has(kind as RiskZone["kind"]) : !watchKinds.has(kind as RiskZone["kind"])))
+      .map(([kind, row]) => ({ kind, ...row }))
       .sort((a, b) => b.records + b.zones * 1000 - (a.records + a.zones * 1000));
   }, [country, countryStats, mode]);
   const kindInfo = (kind: string) => {
@@ -133,14 +133,36 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
 
   const results = useMemo(() => {
     const q = fold(query.trim());
-    const match = (z: RiskZone) => !q || [z.name.es, z.name.en, z.place.es, z.place.en, riskKinds[z.kind].es, riskKinds[z.kind].en].some((v) => fold(v).includes(q));
+    const match = (z: RiskZone) => !hidden.has(z.kind) && (mode === "all" || (mode === "watch" ? watchKinds.has(z.kind) : !watchKinds.has(z.kind))) && (!q || [z.name.es, z.name.en, z.place.es, z.place.en, riskKinds[z.kind].es, riskKinds[z.kind].en].some((v) => fold(v).includes(q)));
     const list = riskZones.filter(match);
     return [...list.filter((z) => z.country === "CO"), ...list.filter((z) => z.country !== "CO")];
-  }, [query]);
-  const recordResults = useMemo(() => (hazards?.points ?? []).filter((point) => {
+  }, [query, hidden, mode]);
+  const recordResults = useMemo(() => {
     const q = fold(query.trim());
-    return !q || [point.place, point.type, hazardKind(point.kind).es, hazardKind(point.kind).en, pointCountry(point)].some((v) => fold(v ?? "").includes(q));
-  }), [hazards, query]);
+    const filtered = (hazards?.points ?? []).filter((point) => {
+      if (point.kind === "model_assessment" || hidden.has(point.kind)) return false;
+      if (mode === "risk" && watchKinds.has(point.kind as RiskZone["kind"])) return false;
+      if (mode === "watch" && !watchKinds.has(point.kind as RiskZone["kind"])) return false;
+      return !q || [point.place, point.type, hazardKind(point.kind).es, hazardKind(point.kind).en, pointCountry(point)].some((v) => fold(v ?? "").includes(q));
+    });
+    const groups = new Map<string, HazardPoint>();
+    for (const point of filtered) {
+      const place = point.place.trim().replace(/\s+/g, " ");
+      const key = `${pointCountry(point)}|${fold(place)}|${point.kind}`;
+      const current = groups.get(key);
+      if (!current) { groups.set(key, { ...point, id: `search-${key}`, place }); continue; }
+      const total = current.n + point.n;
+      current.lat = (current.lat * current.n + point.lat * point.n) / total;
+      current.lon = (current.lon * current.n + point.lon * point.n) / total;
+      current.n = total;
+      current.first = !current.first ? point.first : !point.first ? current.first : current.first < point.first ? current.first : point.first;
+      current.last = !current.last ? point.last : !point.last ? current.last : current.last > point.last ? current.last : point.last;
+      current.affected += point.affected; current.homes += point.homes; current.deaths += point.deaths;
+      current.sources = Array.from(new Set([...(current.sources ?? []), ...(point.sources ?? [])]));
+      current.events = [...(current.events ?? []), ...(point.events ?? [])];
+    }
+    return Array.from(groups.values()).sort((a, b) => pointCountry(a).localeCompare(pointCountry(b)) || a.place.localeCompare(b.place));
+  }, [hazards, query, hidden, mode]);
   const sitesById = useMemo(() => new Map(sites.map((site) => [site.id, site])), [sites]);
 
   const choose = (zone: RiskZone) => {
@@ -165,9 +187,9 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
         ))}
       </div>
       <AnimatePresence>
-        {country && kindRows.some((row) => row.zones > 0) && (
+        {country && kindRows.some((row) => row.records > 0 || row.zones > 0) && (
           <motion.div className="kind-filter" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-            {kindRows.filter((row) => row.zones > 0).map((row) => {
+            {kindRows.filter((row) => row.records > 0 || row.zones > 0).map((row) => {
               const info = kindInfo(row.kind);
               const off = hidden.has(row.kind);
               return (
@@ -175,7 +197,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
                   <i />
                   <span className="kind-name">{info.label}</span>
                   <span className="kind-count">
-                    {row.zones.toLocaleString(lang === "es" ? "es-CO" : "en-US")} {lang === "es" ? (row.zones === 1 ? "zona" : "zonas") : (row.zones === 1 ? "zone" : "zones")}
+                    {(row.records + row.zones).toLocaleString(lang === "es" ? "es-CO" : "en-US")} {lang === "es" ? "registros" : "records"}
                   </span>
                 </button>
               );
@@ -214,21 +236,38 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
                   onKeyDown={(event) => {
                     if (event.key === "ArrowDown") { event.preventDefault(); setCursor((i) => Math.min(results.length + recordResults.length - 1, i + 1)); }
                     if (event.key === "ArrowUp") { event.preventDefault(); setCursor((i) => Math.max(0, i - 1)); }
-                    if (event.key === "Enter") { if (results[cursor]) choose(results[cursor]); else if (recordResults[cursor - results.length]) chooseRecord(recordResults[cursor - results.length]); }
+                    if (event.key === "Enter") { if (recordResults[cursor]) chooseRecord(recordResults[cursor]); else if (results[cursor - recordResults.length]) choose(results[cursor - recordResults.length]); }
                     if (event.key === "Escape") setOpen(false);
                   }} />
                 <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar"><X size={16} /></button>
               </div>
               <ul className="search-results" role="listbox">
                 {results.length === 0 && recordResults.length === 0 && <li className="search-empty">{c.none}</li>}
+                {recordResults.map((point, index) => {
+                  const kind = hazardKind(point.kind);
+                  const cursorIndex = index;
+                  const country = pointCountry(point);
+                  const prev = recordResults[index - 1];
+                  const firstInCountry = !prev || pointCountry(prev) !== country;
+                  return <li key={`record-${hazardPointId(point)}`} role="option" aria-selected={cursorIndex === cursor}>
+                    {firstInCountry && <p className="search-group">{countryName(country, lang)}</p>}
+                    <button type="button" className={cursorIndex === cursor ? "is-active" : undefined} onMouseEnter={() => setCursor(cursorIndex)} onClick={() => chooseRecord(point)}>
+                      <i style={{ background: kind.color }} />
+                      <span><strong>{point.place || point.type || kind[lang]}</strong><small>{point.n.toLocaleString(lang === "es" ? "es-CO" : "en-US")} {lang === "es" ? "registros" : "records"}</small></span>
+                      <em>{kind[lang]}</em>
+                    </button>
+                  </li>;
+                })}
+                {results.length > 0 && <li><p className="search-group">{lang === "es" ? "Registros complementarios" : "Additional records"}</p></li>}
                 {results.map((zone, index) => {
                   const site = zone.siteId ? sitesById.get(zone.siteId) : undefined;
+                  const cursorIndex = recordResults.length + index;
                   const firstWorld = index > 0 && zone.country !== "CO" && results[index - 1].country === "CO";
                   return (
-                    <li key={zone.id} role="option" aria-selected={index === cursor}>
+                    <li key={zone.id} role="option" aria-selected={cursorIndex === cursor}>
                       {(index === 0 && zone.country === "CO") && <p className="search-group">{c.colombia}</p>}
                       {(firstWorld || (index === 0 && zone.country !== "CO")) && <p className="search-group">{c.world}</p>}
-                      <button type="button" className={index === cursor ? "is-active" : undefined} onMouseEnter={() => setCursor(index)} onClick={() => choose(zone)}>
+                      <button type="button" className={cursorIndex === cursor ? "is-active" : undefined} onMouseEnter={() => setCursor(cursorIndex)} onClick={() => choose(zone)}>
                         <i style={{ background: riskKinds[zone.kind].color }} />
                         <span><strong>{zone.name[lang]}</strong><small>{zone.place[lang]}</small></span>
                         <em translate={zone.kind === "subsidence" && globalLang === "pt" ? "no" : undefined}>{riskKindLabel(zone.kind, lang, globalLang)}</em>
@@ -236,18 +275,6 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
                       </button>
                     </li>
                   );
-                })}
-                {recordResults.length > 0 && <li><p className="search-group">{lang === "es" ? "Registros" : "Records"}</p></li>}
-                {recordResults.map((point, index) => {
-                  const kind = hazardKind(point.kind);
-                  const cursorIndex = results.length + index;
-                  return <li key={`record-${hazardPointId(point)}`} role="option" aria-selected={cursorIndex === cursor}>
-                    <button type="button" className={cursorIndex === cursor ? "is-active" : undefined} onMouseEnter={() => setCursor(cursorIndex)} onClick={() => chooseRecord(point)}>
-                      <i style={{ background: kind.color }} />
-                      <span><strong>{point.place || point.type || kind[lang]}</strong><small>{pointCountry(point)} · {point.n.toLocaleString(lang === "es" ? "es-CO" : "en-US")} {lang === "es" ? "registros" : "records"}</small></span>
-                      <em>{kind[lang]}</em>
-                    </button>
-                  </li>;
                 })}
               </ul>
             </motion.div>
