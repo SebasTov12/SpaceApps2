@@ -7,8 +7,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import ZoneSimple from "./zone-simple";
-import HazardPointDetail from "./hazard-point-detail";
-import { HAZARD_POINT_SELECT, loadHazardPoints, type HazardPoint } from "@/lib/hazard-points";
+import { HAZARD_POINT_SELECT, hazardPointId, loadHazardPoints, pointCountry, type HazardPoint } from "@/lib/hazard-points";
 import { POINT_EVENT } from "./saro-guide";
 import { TOUR_EVENT, type LegendKind, type SaroAction, type TourKey } from "@/lib/saro-brain";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
@@ -107,7 +106,6 @@ export default function ZoneView() {
   const wrapper = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement | null>(null);
   const [zoneId, setZoneId] = useState<string | null>(null);
-  const [selectedHazard, setSelectedHazard] = useState<HazardPoint | null>(null);
   const [hazardPoints, setHazardPoints] = useState<HazardPoint[]>([]);
   const [modelPoints, setModelPoints] = useState<HazardPoint[]>([]);
   const [mapVisible, setMapVisible] = useState(false);
@@ -131,7 +129,25 @@ export default function ZoneView() {
   const [pick, setPick] = useState<{ lon: number; lat: number } | null>(null);
   const [wide, setWide] = useState(true);
 
-  const zone = riskZones.find((z) => z.id === zoneId) ?? null;
+  const zone = useMemo(() => {
+    const curated = riskZones.find((item) => item.id === zoneId);
+    if (curated || !zoneId) return curated ?? null;
+    const point = globeState.hazardFocus;
+    if (!point || point.id !== zoneId) return null;
+    const kind = Object.prototype.hasOwnProperty.call(riskKinds, point.kind) ? point.kind as RiskZone["kind"]
+      : point.kind === "flood" || point.kind === "storm" ? "flood"
+        : point.kind === "volcano" ? "volcano"
+          : point.kind === "earthquake" ? "earthquake"
+            : point.kind === "wildfire" || point.kind === "drought" ? "wildfire"
+              : point.kind === "deforestation" ? "deforestation"
+                : point.kind === "mining" ? "mining"
+                  : point.kind === "subsidence" ? "subsidence"
+                    : point.kind === "glacier" ? "glacier" : "landslide";
+    return {
+      id: point.id, kind, lat: point.lat, lon: point.lon, country: point.country,
+      name: { es: point.place, en: point.place }, place: { es: point.place, en: point.place },
+    } satisfies RiskZone;
+  }, [zoneId]);
   const siteId = zone?.siteId ?? null;
 
   useLayoutEffect(() => {
@@ -150,7 +166,6 @@ export default function ZoneView() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const onSelect = (event: Event) => {
       const id = (event as CustomEvent<string | null>).detail;
-      setSelectedHazard(null);
       clearTimeout(timer);
       setZoneId(id);
       setTab("simple");
@@ -158,6 +173,7 @@ export default function ZoneView() {
       setMapReady(false);
       setDiving(false);
       setTerrain(false);
+      setPick(null);
       setAnnotate(null);
       setExplain(null);
       revealTimers.current.forEach(clearTimeout);
@@ -188,16 +204,19 @@ export default function ZoneView() {
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setSelectedHazard(null);
         if (globeState.zoom > 0) closeZone();
       }
     };
     const onHazardPoint = (event: Event) => {
       const point = (event as CustomEvent<HazardPoint | null>).detail;
-      // Closing an active zone first is needed to clear the satellite map. In the country
-      // explorer there is no zone to close; emitting GLOBE_SELECT there also resets detail state.
-      if (point && globeState.zoom > 0) closeZone();
-      setSelectedHazard(point ?? null);
+      if (!point) return;
+      const id = hazardPointId(point);
+      globeState.hazardFocus = {
+        id, lat: point.lat, lon: point.lon, kind: point.kind,
+        place: point.place || point.type || `${point.lat.toFixed(3)}, ${point.lon.toFixed(3)}`,
+        country: pointCountry(point),
+      };
+      focusZone(id);
     };
     window.addEventListener(GLOBE_SELECT, onSelect);
     window.addEventListener(SITE_EVENT, onSite);
@@ -573,9 +592,6 @@ export default function ZoneView() {
             </AnimatePresence>
           </motion.aside>
         )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {selectedHazard && <HazardPointDetail key={selectedHazard.id ?? `${selectedHazard.lat}-${selectedHazard.lon}`} point={selectedHazard} lang={lang} onClose={() => setSelectedHazard(null)} />}
       </AnimatePresence>
     </div>
   );

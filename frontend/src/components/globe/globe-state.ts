@@ -24,6 +24,9 @@ export const globeState = {
   orbit: null as Object3D | null,
   /** Marcadores de zonas por id (los registra risk-markers). */
   markers: new Map<string, Object3D>(),
+  /** Puntos georreferenciados del backend para enfoque/selección, sin contarlos como zonas curadas. */
+  hazardMarkers: new Map<string, Object3D>(),
+  hazardFocus: null as { id: string; lat: number; lon: number; kind: string; place: string; country: string } | null,
   /** Reconocimiento inicial: 0 = no empezó, 0–1 = en curso, 1 = terminado. */
   scan: { progress: 0, origin: new Vector3(0, 0, 1), startedAt: -1, originCapturedAt: -1 },
   /** Zonas ya descubiertas por el reconocimiento. */
@@ -121,12 +124,14 @@ export const emit = <T,>(name: string, detail: T) => window.dispatchEvent(new Cu
 /** Cierra la zona abierta y aleja la cámara. */
 export function closeZone() {
   globeState.focus = null;
+  globeState.hazardFocus = null;
   globeState.dive = 0;
   emit(GLOBE_SELECT, null);
 }
 
 /** Pide girar el planeta hasta una zona (lo resuelve el controlador en useFrame). */
 export function focusZone(id: string) {
+  if (globeState.hazardFocus?.id !== id) globeState.hazardFocus = null;
   globeState.focus = id;
   emit(GLOBE_SELECT, id);
 }

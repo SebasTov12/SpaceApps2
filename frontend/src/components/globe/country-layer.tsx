@@ -163,7 +163,8 @@ export default function CountryLayer() {
     const onZone = (e: Event) => {
       const id = (e as CustomEvent<string | null>).detail;
       const zone = id ? riskZones.find((z) => z.id === id) : null;
-      const code = zone ? countryOf(zone) : null;
+      const hazard = id && globeState.hazardFocus?.id === id ? globeState.hazardFocus : null;
+      const code = zone ? countryOf(zone) : hazard?.country ?? null;
       if (code && code !== globeState.country) {
         globeState.country = code;
         globeState.countryZoom = 1;

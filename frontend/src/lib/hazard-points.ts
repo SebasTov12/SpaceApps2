@@ -75,7 +75,11 @@ export const HAZARD_KINDS: Record<string, { color: string; es: string; en: strin
   model_assessment: { color: "#ff8c69", es: "Evaluación exploratoria", en: "Exploratory assessment" },
 };
 export const hazardKind = (kind: string) => HAZARD_KINDS[kind] ?? HAZARD_KINDS.other;
-export const pointCountry = (p: Pick<HazardPoint, "country">) => p.country ?? "CO";
+export const pointCountry = (p: Pick<HazardPoint, "country">) => p.country?.toUpperCase() ?? "CO";
+/** Identificador estable para enlazar selección, barrido y panel aunque cambie el orden del API. */
+export function hazardPointId(point: HazardPoint) {
+  return point.id ?? `${pointCountry(point)}-${point.lat.toFixed(5)}-${point.lon.toFixed(5)}-${point.kind}-${point.first ?? ""}-${point.last ?? ""}`;
+}
 
 const SOURCE_NAMES: Record<string, string> = {
   ungrd_emergencies_v1: "UNGRD",

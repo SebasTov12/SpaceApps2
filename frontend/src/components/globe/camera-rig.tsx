@@ -48,7 +48,9 @@ export default function CameraRig() {
 
     // seguir la zona: llevarla al centro del área del mapa
     let goal = { x: 0, y: 0 };
-    const node = globeState.selected ? globeState.markers.get(globeState.selected) : undefined;
+    const node = globeState.selected
+      ? globeState.markers.get(globeState.selected) ?? globeState.hazardMarkers.get(globeState.selected)
+      : undefined;
     if (node && globeState.zoom > 0) {
       node.getWorldPosition(tmp);
       if (tmp.z > 0) {

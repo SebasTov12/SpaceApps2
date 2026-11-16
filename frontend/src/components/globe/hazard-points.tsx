@@ -5,7 +5,7 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AdditiveBlending, CircleGeometry, Color, Group, InstancedMesh, MeshBasicMaterial, Object3D, Quaternion, Vector3 } from "three";
 import { useI18n } from "@/lib/i18n";
-import { HAZARD_POINT_SELECT, HAZARDS_EVENT, hazardKind, pointCountry, loadHazardPoints, sourceName, type HazardPoint } from "@/lib/hazard-points";
+import { HAZARD_POINT_SELECT, HAZARDS_EVENT, hazardKind, hazardPointId, pointCountry, loadHazardPoints, sourceName, type HazardPoint } from "@/lib/hazard-points";
 import { RELIEF, globeState } from "./globe-state";
 import { spherePosition } from "./risk-markers";
 
@@ -29,7 +29,6 @@ export default function HazardPoints() {
   const glowMesh = useRef<InstancedMesh>(null);
   const root = useRef<Group>(null);
   const [hover, setHover] = useState<number | null>(null);
-  const [pinned, setPinned] = useState<number | null>(null);
   const revealAt = useRef<number | null>(null);
   const settled = useRef<string | undefined>(undefined); // punto activo con el que se dejó quieta la malla
 
@@ -44,11 +43,11 @@ export default function HazardPoints() {
   }, []);
 
   // posición, orientación (mirando hacia afuera) y tamaño de cada punto
-  const layout = useMemo(() => points.map((p, index) => {
+  const layout = useMemo(() => points.map((p) => {
     const pos = new Vector3(...spherePosition(p.lat, p.lon, RADIUS));
     const quat = new Quaternion().setFromUnitVectors(up, pos.clone().normalize());
     const size = 0.0075;
-    return { id: p.id ?? `${p.country ?? "CO"}-${p.lat}-${p.lon}-${index}`, country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color(hazardKind(p.kind).color) };
+    return { id: hazardPointId(p), country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color(hazardKind(p.kind).color) };
   }), [points]);
 
   const geometry = useMemo(() => new CircleGeometry(1, 14), []);
@@ -57,6 +56,21 @@ export default function HazardPoints() {
   useEffect(() => () => { geometry.dispose(); material.dispose(); glowMaterial.dispose(); }, [geometry, material, glowMaterial]);
 
   const dummy = useMemo(() => new Object3D(), []);
+  useEffect(() => {
+    const parent = root.current;
+    if (!parent) return;
+    const nodes = layout.map((item) => {
+      const node = new Object3D();
+      node.position.copy(item.pos);
+      parent.add(node);
+      globeState.hazardMarkers.set(item.id, node);
+      return [item.id, node] as const;
+    });
+    return () => nodes.forEach(([id, node]) => {
+      parent.remove(node);
+      if (globeState.hazardMarkers.get(id) === node) globeState.hazardMarkers.delete(id);
+    });
+  }, [layout]);
   useEffect(() => {
     const m = mesh.current;
     const glow = glowMesh.current;
@@ -83,7 +97,7 @@ export default function HazardPoints() {
     if (!show) { revealAt.current = null; settled.current = undefined; return; }
     if (revealAt.current === null) revealAt.current = t;
     const since = t - revealAt.current;
-    const active = pinned ?? hover;
+    const active = hover;
     // terminada la entrada, recalcular solo con selección, filtros, nuevas detecciones o mientras anima un destello
     const done = since > 0.5 + 60 * 0.012;
     const key = `${active}|${globeState.country}|${globeState.filterVersion}|${globeState.hazardRevealed.size}|${globeState.hazardFlashVersion}`;
@@ -139,14 +153,14 @@ export default function HazardPoints() {
   const onOut = () => { setHover(null); document.body.style.cursor = ""; };
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     const i = nearest(e);
-    if (i === null) { setPinned(null); window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: null })); return; }
+    if (i === null) return;
     e.stopPropagation();
-    // A second click on the same marker must keep its detail panel open.
-    setPinned(i);
-    window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: points[i] }));
+    const point = points[i];
+    setHover(null);
+    window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: point }));
   };
 
-  const shown = pinned ?? hover;
+  const shown = hover;
   const p = shown !== null ? points[shown] : null;
   const fmt = (n: number) => n.toLocaleString(es ? "es-CO" : "en-US");
 

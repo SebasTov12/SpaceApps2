@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { AdditiveBlending, Vector3, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
 import { riskZones } from "@/lib/risk-zones";
-import { loadHazardPoints } from "@/lib/hazard-points";
+import { hazardPointId, loadHazardPoints } from "@/lib/hazard-points";
 import { spherePosition } from "./risk-markers";
 import { FOOTPRINT_LOCAL, OVER_RELIEF, GLOBE_DETECT, GLOBE_RECON, SCAN_GRID_DEGREES, SCAN_INTERVAL, SCAN_DURATION, SCAN_FADE, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
 
@@ -72,8 +72,8 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     let alive = true;
     loadHazardPoints().then((data) => {
       if (!alive || !data) return;
-      hazardPoints.current = data.points.map((point, index) => ({
-        id: point.id ?? `${point.country ?? "CO"}-${point.lat}-${point.lon}-${index}`,
+      hazardPoints.current = data.points.map((point) => ({
+        id: hazardPointId(point),
         direction: new Vector3(...spherePosition(point.lat, point.lon, 1)).normalize(),
       }));
     });
@@ -175,7 +175,7 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     const userGroup = globeState.userGroup;
     if (focus && userGroup) {
       globeState.focus = null;
-      const node = globeState.markers.get(focus);
+      const node = globeState.markers.get(focus) ?? globeState.hazardMarkers.get(focus);
       if (node) {
         node.getWorldPosition(tmp.marker);
         // coordenadas antes de la rotación del usuario
