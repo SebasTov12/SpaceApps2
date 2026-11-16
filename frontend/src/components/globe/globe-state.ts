@@ -50,6 +50,8 @@ export const globeState = {
   country: null as string | null,
   /** Acercamiento de la cámara a un país (0 = planeta completo, 1 = país en primer plano). */
   countryZoom: 0,
+  /** Acercamiento por gesto al globo completo, sin seleccionar un país. */
+  planetZoom: 0,
   /** Distancia de la cámara para el país abierto (según su tamaño: los grandes se ven desde más lejos). */
   countryDistance: 1.9,
   /** Escala adicional controlada con la rueda mientras un país está abierto. */

@@ -13,7 +13,7 @@ function rng(seed: number) {
 }
 
 const rand = rng(7);
-const TWINKLES = Array.from({ length: 34 }, (_, i) => ({
+const TWINKLES = Array.from({ length: 48 }, (_, i) => ({
   id: i,
   x: rand() * 100,
   y: rand() * 100,
@@ -32,9 +32,13 @@ const GALAXIES = [
 function SpaceComets() {
   return (
     <div className="space-comets" aria-hidden="true">
-      <span className="space-comet space-comet-a" />
-      <span className="space-comet space-comet-b" />
-      <span className="space-comet space-comet-c" />
+      {["a", "b", "c"].map((id) => (
+        <span key={id} className={`space-comet space-comet-${id}`}>
+          <i className="comet-glow" />
+          <i className="comet-tail" />
+          <i className="comet-nucleus" />
+        </span>
+      ))}
     </div>
   );
 }

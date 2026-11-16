@@ -43,7 +43,9 @@ export default function CameraRig() {
     const countryDistance = Math.min(FAR, 1 + ((globeState.countryDistance || COUNTRY) - 1) / globeState.countryMagnification);
     distance.current += (countryDistance - distance.current) * (1 - Math.exp(-step * 3));
     const far = FAR + (distance.current - FAR) * smooth(Math.min(1, country.current));
-    camera.position.z = far + (Math.min(near, far) - far) * smooth(Math.min(1, zoom.current));
+    const zoneDistance = far + (Math.min(near, far) - far) * smooth(Math.min(1, zoom.current));
+    const freePlanetZoom = globeState.zoom === 0 && globeState.countryZoom < 0.01 ? globeState.planetZoom : 0;
+    camera.position.z = zoneDistance - freePlanetZoom * 1.35;
     camera.lookAt(0, 0, 0);
 
     // seguir la zona: llevarla al centro del área del mapa

@@ -19,7 +19,7 @@ export default function SpaceBackdrop() {
   return (
     <svg className="space-stars" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       {stars.map((star, index) => (
-        <circle key={index} cx={star.x} cy={star.y} r={star.radius} fill={star.color} opacity={star.opacity} />
+        <circle key={index} className={index % 19 === 0 ? "star-bright" : undefined} style={index % 19 === 0 ? { animationDelay: `${(index % 7) * 0.7}s` } : undefined} cx={star.x} cy={star.y} r={star.radius} fill={star.color} opacity={star.opacity} />
       ))}
     </svg>
   );

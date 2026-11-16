@@ -246,15 +246,19 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     let previousPinch = 0;
     const separation = (event: TouchEvent) => Math.hypot(event.touches[0].clientX - event.touches[1].clientX, event.touches[0].clientY - event.touches[1].clientY);
     const startPinch = (event: TouchEvent) => {
-      if (event.touches.length !== 2 || !globeState.country) return;
+      if (event.touches.length !== 2 || globeState.zoom > 0) return;
       previousPinch = separation(event);
       render.dataset.pinching = "true";
     };
     const movePinch = (event: TouchEvent) => {
-      if (event.touches.length !== 2 || previousPinch <= 0 || !globeState.country) return;
+      if (event.touches.length !== 2 || previousPinch <= 0 || globeState.zoom > 0) return;
       event.preventDefault();
       const current = separation(event);
-      changeCountryZoom(current / previousPinch);
+      if (globeState.country) {
+        changeCountryZoom(current / previousPinch);
+      } else {
+        globeState.planetZoom = Math.max(0, Math.min(1, globeState.planetZoom + Math.log(current / previousPinch) * 0.8));
+      }
       previousPinch = current;
     };
     const endPinch = (event: TouchEvent) => {

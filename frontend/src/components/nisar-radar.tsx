@@ -2,15 +2,16 @@
 
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { AdditiveBlending, DoubleSide, Vector3, type LineBasicMaterial, type ShaderMaterial } from "three";
+import { AdditiveBlending, DoubleSide, Vector3, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
-import { FOOTPRINT_LOCAL, OVER_RELIEF, SCAN_GRID_DEGREES, globeState } from "./globe/globe-state";
+import { FOOTPRINT_LOCAL, OVER_RELIEF, globeState } from "./globe/globe-state";
 
 // Artistic side-looking footprint; not an acquisition polygon or live telemetry.
 // The surface is sampled on a sphere so the swath never becomes a flat decal.
 const SHELL = OVER_RELIEF;
-const HALF_CELL = SCAN_GRID_DEGREES * Math.PI / 360;
-const FOOTPRINT_RADIUS = HALF_CELL * 0.78;
+// La huella supera el radio de los detectores secundarios y se difumina en la superficie.
+const FOOTPRINT_RADIUS = 0.13;
+const ANTENNA_RADIUS = 0.046;
 const FOOTPRINT_CENTER = FOOTPRINT_LOCAL.clone().setLength(SHELL);
 const FOOTPRINT_NORMAL = FOOTPRINT_CENTER.clone().normalize();
 const FOOTPRINT_U = new Vector3(0, 1, 0);
@@ -27,20 +28,26 @@ function makeGeometry(apex: [number, number, number]) {
   const beamUv: number[] = [];
   const disk: number[] = [];
   const diskUv: number[] = [];
+  const sourceRing = Array.from({ length: segments }, (_, index) => {
+    const angle = index / segments * Math.PI * 2;
+    return [apex[0], apex[1] + ANTENNA_RADIUS * Math.cos(angle), apex[2] + ANTENNA_RADIUS * Math.sin(angle)];
+  });
   for (let index = 0; index < segments; index++) {
     const next = (index + 1) % segments;
     const angle = index / segments * Math.PI * 2;
     const nextAngle = (index + 1) / segments * Math.PI * 2;
-    // El cono y su área de detección terminan en un círculo sobre la esfera.
-    beam.push(...apex, ...ring[index], ...ring[next]);
-    beamUv.push(0.5, 0, 0.5 + 0.5 * Math.cos(angle), 1, 0.5 + 0.5 * Math.cos(nextAngle), 1);
+    // Frustum: el haz nace en todo el radio de la antena y se abre hasta la huella terrestre.
+    const u0 = 0.5 + 0.5 * Math.cos(angle);
+    const u1 = 0.5 + 0.5 * Math.cos(nextAngle);
+    beam.push(...sourceRing[index], ...ring[index], ...ring[next], ...sourceRing[index], ...ring[next], ...sourceRing[next]);
+    beamUv.push(u0, 0, u0, 1, u1, 1, u0, 0, u1, 1, u1, 0);
     disk.push(...FOOTPRINT_CENTER.toArray(), ...ring[index], ...ring[next]);
     const a = angle;
     const b = nextAngle;
     diskUv.push(0.5, 0.5, 0.5 + 0.5 * Math.cos(a), 0.5 + 0.5 * Math.sin(a), 0.5 + 0.5 * Math.cos(b), 0.5 + 0.5 * Math.sin(b));
   }
   return { beam: new Float32Array(beam), beamUv: new Float32Array(beamUv),
-    disk: new Float32Array(disk), diskUv: new Float32Array(diskUv), edge: new Float32Array(ring.flat()) };
+    disk: new Float32Array(disk), diskUv: new Float32Array(diskUv) };
 }
 
 const vertex = `
@@ -56,7 +63,6 @@ export default function NisarRadar({ apex, playing, progress }: {
 }) {
   const beam = useRef<ShaderMaterial>(null);
   const swath = useRef<ShaderMaterial>(null);
-  const footprint = useRef<LineBasicMaterial>(null);
   const elapsed = useRef(0);
   const [ax, ay, az] = apex;
   const geometry = useMemo(() => makeGeometry([ax, ay, az]), [ax, ay, az]);
@@ -78,7 +84,6 @@ export default function NisarRadar({ apex, playing, progress }: {
       swath.current.uniforms.time.value = elapsed.current;
       swath.current.uniforms.visibility.value = visibility;
     }
-    if (footprint.current) footprint.current.opacity = visibility * 0.68;
   });
 
   return (
@@ -96,9 +101,8 @@ export default function NisarRadar({ apex, playing, progress }: {
             uniform float visibility;
             void main() {
               float wave = pow(max(0.0, 1.0 - abs(fract(radarUv.y * 1.25 - time * 0.42) - 0.5) * 2.0), 22.0);
-              float core = pow(max(0.0, 1.0 - abs(radarUv.x * 2.0 - 1.0)), 5.0);
               float edge = smoothstep(0.74, 1.0, radarUv.y);
-              float alpha = (0.07 + wave * 0.2 + core * 0.07 + edge * 0.035) * radarUv.y * visibility;
+              float alpha = (0.085 + wave * 0.22 + edge * 0.04) * radarUv.y * visibility;
               gl_FragColor = vec4(0.38, 0.82, 0.86, alpha);
             }
           `} />
@@ -116,18 +120,13 @@ export default function NisarRadar({ apex, playing, progress }: {
             uniform float visibility;
             void main() {
               float radius = length((radarUv - 0.5) * 2.0);
-              float fill = 1.0 - smoothstep(0.72, 1.0, radius);
-              float wave = exp(-pow((radius - fract(time * 0.16)) * 24.0, 2.0));
-              float alpha = (fill * 0.14 + wave * 0.13) * visibility;
-              gl_FragColor = vec4(0.27, 0.74, 0.78, alpha);
+              float fill = 1.0 - smoothstep(0.2, 1.0, radius);
+              float wave = exp(-pow((radius - fract(time * 0.11)) * 18.0, 2.0));
+              float alpha = (fill * 0.24 + wave * 0.025) * visibility;
+              gl_FragColor = vec4(0.2, 0.48, 0.53, alpha);
             }
           `} />
       </mesh>
-      <lineLoop>
-        <bufferGeometry><bufferAttribute attach="attributes-position" args={[geometry.edge, 3]} /></bufferGeometry>
-        <lineBasicMaterial ref={footprint} color="#8ce4df" transparent opacity={0}
-          blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
-      </lineLoop>
     </group>
   );
 }

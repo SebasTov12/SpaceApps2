@@ -181,6 +181,7 @@ export default function ZoneView() {
       readyHandled.current = false;
       openedAt.current = performance.now();
       globeState.zoom = id ? 1 : 0;
+      if (id) globeState.planetZoom = 0;
       globeState.dive = 0;
       globeState.selected = id;
       const stage = wrapper.current?.closest(".earth-stage") as HTMLElement | null;

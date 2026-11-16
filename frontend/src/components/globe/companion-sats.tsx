@@ -4,12 +4,12 @@ import { Line } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useCallback, useMemo, useRef, type RefObject } from "react";
 import { useReducedMotion } from "framer-motion";
-import { AdditiveBlending, DoubleSide, Vector3, type Group, type MeshBasicMaterial } from "three";
+import { AdditiveBlending, Color, DoubleSide, Vector3, type Group, type MeshBasicMaterial, type ShaderMaterial } from "three";
 import { globeState, SCAN_INTERVAL, SCAN_DURATION, SCAN_FADE } from "./globe-state";
 
 const PASS_INTERVAL_MIN = 34;
 const PASS_INTERVAL_VARIANCE = 8;
-const PASS_DURATION = 4.4;
+const PASS_DURATION = 5.6;
 type DetectionSchedule = { activeUntil: number[]; nextAt: number[]; inView: boolean[] };
 
 type Orbit = { radius: number; tilt: [number, number, number]; speed: number; phase: number; color: string; scale: number };
@@ -65,7 +65,11 @@ function Companion({ orbit, playing, reducedMotion, passDuration, index, schedul
   const moving = useRef<Group>(null);
   const detector = useRef<Group>(null);
   const beam = useRef<MeshBasicMaterial>(null);
-  const footprint = useRef<MeshBasicMaterial>(null);
+  const footprint = useRef<ShaderMaterial>(null);
+  const footprintUniforms = useMemo(() => ({
+    color: { value: new Color(orbit.color) },
+    opacity: { value: 0 },
+  }), [orbit.color]);
   const satellitePosition = useMemo(() => new Vector3(), []);
   const centerPosition = useMemo(() => new Vector3(), []);
   const viewDirection = useMemo(() => new Vector3(), []);
@@ -91,7 +95,7 @@ function Companion({ orbit, playing, reducedMotion, passDuration, index, schedul
     const progress = Math.min(1, Math.max(0, (now - startedAt) / passDuration));
     const glow = Math.sin(progress * Math.PI) ** 2;
     if (beam.current) beam.current.opacity = glow * 0.34;
-    if (footprint.current) footprint.current.opacity = glow * 0.58;
+    if (footprint.current) footprint.current.uniforms.opacity.value = glow * 0.42;
   });
   return (
     <group rotation={orbit.tilt}>
@@ -103,8 +107,10 @@ function Companion({ orbit, playing, reducedMotion, passDuration, index, schedul
             <meshBasicMaterial ref={beam} color={orbit.color} transparent opacity={0} side={DoubleSide} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
           </mesh>
           <mesh position={[ground, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-            <ringGeometry args={[0.055, 0.072, 48]} />
-            <meshBasicMaterial ref={footprint} color={orbit.color} transparent opacity={0} side={DoubleSide} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
+            <circleGeometry args={[0.095, 64]} />
+            <shaderMaterial ref={footprint} uniforms={footprintUniforms} transparent depthWrite={false} side={DoubleSide} blending={AdditiveBlending} toneMapped={false}
+              vertexShader={`varying vec2 footprintUv; void main(){footprintUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+              fragmentShader={`uniform vec3 color;uniform float opacity;varying vec2 footprintUv;void main(){float r=length((footprintUv-0.5)*2.0);float softness=1.0-smoothstep(0.12,1.0,r);float clouding=0.92+0.08*sin(footprintUv.x*19.0+footprintUv.y*13.0);float alpha=softness*clouding*opacity;gl_FragColor=vec4(color,alpha);}`} />
           </mesh>
         </group>
         {tail.map((points, i) => (

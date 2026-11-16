@@ -168,6 +168,7 @@ export default function CountryLayer() {
       if (code && code !== globeState.country) {
         globeState.country = code;
         globeState.countryZoom = 1;
+        globeState.planetZoom = 0;
         window.dispatchEvent(new CustomEvent(COUNTRY_EVENT, { detail: code }));
       }
     };
