@@ -3321,6 +3321,10 @@ html body .kind-filter{pointer-events:auto;overscroll-behavior:contain;touch-act
 
 .saru-chat-invite{margin:6px 0 0;color:#c9a6ff;font-size:11px;line-height:1.35}
 
+.earth-stage[data-scene-ready="false"]>:not(.space-backdrop):not(.space-dust):not(.scene-prelude):not(.earth-orbit){visibility:hidden;pointer-events:none}
+.earth-stage[data-scene-ready="false"] .earth-orbit>.orbit-line,
+.earth-stage[data-scene-ready="false"] .earth-orbit>.orbit-line-two{visibility:hidden}
+
 .orientation-guard{display:none}
 @media (orientation:landscape) and (hover:none) and (pointer:coarse) and (max-height:1024px){
   .orientation-guard{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;background:radial-gradient(circle at 50% 40%,#272052,#090c1d 68%);color:#e9e4ff;text-align:center;touch-action:none}

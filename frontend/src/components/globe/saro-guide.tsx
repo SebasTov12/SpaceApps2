@@ -481,6 +481,7 @@ export default function SaroGuide() {
   }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away, chatOpen]);
 
   const talking = hydrated && (typed.length < text.length || (voice && unlocked && speaking));
+  const showCaption = !voice || !playing || (unlocked && (speaking || typed.length > 0));
   // mientras señala algo en el mapa, Saru se inclina hacia él
   const pointing = !reply && !aside && (current?.action?.type === "point" || current?.action?.type === "hotspots");
 
@@ -571,10 +572,10 @@ export default function SaroGuide() {
       <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}`} aria-hidden={away || undefined}>
         <motion.div layout="position" transition={chatTransition} className="saru-row">
         <AnimatePresence initial={false} mode="popLayout">
-          {!minimized && !chatOpen && (
+          {!minimized && !chatOpen && showCaption && (
             <motion.div layout="position" key="caption" className="saru-caption" role="status" aria-live="polite"
-              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
-              transition={chatTransition}>
+              initial={{ opacity: 0, y: 18, scale: 0.96, filter: "blur(5px)" }} animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, y: 10, scale: 0.98, filter: "blur(3px)" }}
+              transition={{ ...chatTransition, duration: reduce ? 0 : 0.55 }}>
               <p className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{auto ? shownText : typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
               <p className="saru-chat-invite">{es ? "Haz clic sobre mí para interactuar conmigo." : "Click on me to interact with me."}</p>
               <div className="saru-bar">
@@ -588,7 +589,6 @@ export default function SaroGuide() {
                 <button type="button" className={`saru-btn${voice ? " on" : ""}`} onClick={() => setVoice((v) => !v)} aria-pressed={voice} aria-label={es ? "Voz" : "Voice"}>{voice ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>
                 <button type="button" className="saru-btn" onClick={() => setMinimized(true)} aria-label={es ? "Ocultar a Saru" : "Hide Saru"}><Minus size={13} /></button>
               </div>
-              {voice && !unlocked && <p className="saru-hint"><ProtectedTerms text={es ? "Toca cualquier parte para oír a Saru" : "Tap anywhere to hear Saru"} /></p>}
             </motion.div>
           )}
         </AnimatePresence>
