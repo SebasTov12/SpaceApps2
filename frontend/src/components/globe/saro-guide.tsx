@@ -91,7 +91,7 @@ function stepsForHazard(point: HazardPoint, zone: RiskZone, lang: "es" | "en"): 
   const number = (value: number) => value.toLocaleString(es ? "es-CO" : "en-US", { maximumFractionDigits: 1 });
   const kind = point.type || (es ? "evento reportado" : "reported event");
   const period = point.first && point.last && point.first !== point.last ? `${point.first} – ${point.last}` : point.last ?? point.first;
-  const sources = Array.from(new Set(point.sources)).join(es ? " y " : " and ");
+  const sources = Array.from(new Set(point.sources ?? [])).join(es ? " y " : " and ");
   const lines: TourStep[] = [{
     text: es
       ? `Este punto reúne ${number(point.n)} registros de ${kind.toLowerCase()} en ${zone.place.es}${period ? `, entre ${period}` : ""}${sources ? `. La fuente es ${sources}` : ""}. Son reportes del inventario, no una medición NISAR del evento.`
@@ -116,19 +116,22 @@ function stepsForHazard(point: HazardPoint, zone: RiskZone, lang: "es" | "en"): 
       : `In the history, on ${event.date}: ${event.type}${event.source ? `, reported by ${event.source}` : ""}${event.affected ? `, with ${number(event.affected)} people reported affected` : ""}.`,
     tour: "records",
   });
-  if (point.model_assessment) lines.push({
-    text: es
-      ? `La evaluación exploratoria del modelo asigna prioridad ${point.model_assessment.priority} e índice ${number(point.model_assessment.anomaly_index)} de 100. Es una priorización para revisión, no una probabilidad, alerta ni pronóstico.`
-      : `The model's exploratory assessment assigns priority ${point.model_assessment.priority} and an index of ${number(point.model_assessment.anomaly_index)} out of 100. This prioritizes review; it is not a probability, warning, or forecast.`,
-    tour: "model",
-  });
-  if (point.model_assessment?.recommendation) lines.push({
-    text: es
-      ? `La recomendación exploratoria asociada es: ${point.model_assessment.recommendation} Debe revisarla un equipo técnico; no sustituye una alerta oficial.`
-      : `The associated exploratory recommendation is: ${point.model_assessment.recommendation} A technical team should review it; it does not replace an official warning.`,
-    tour: "model",
-  });
-  if (!point.model_assessment) lines.push({ text: es ? "No hay una evaluación de movimiento NISAR para este punto; los registros históricos por sí solos no permiten calcularla." : "There is no point-specific NISAR motion assessment here; historical reports alone cannot provide one.", tour: "model" });
+  if (point.model_assessment) {
+    lines.push({
+      text: es
+        ? `La evaluación exploratoria del modelo asigna prioridad ${point.model_assessment.priority} e índice ${number(point.model_assessment.anomaly_index)} de 100. Es una priorización para revisión, no una probabilidad, alerta ni pronóstico.`
+        : `The model's exploratory assessment assigns priority ${point.model_assessment.priority} and an index of ${number(point.model_assessment.anomaly_index)} out of 100. This prioritizes review; it is not a probability, warning, or forecast.`,
+      tour: "model",
+    });
+    if (point.model_assessment.recommendation) lines.push({
+      text: es
+        ? `La recomendación exploratoria asociada es: ${point.model_assessment.recommendation} Debe revisarla un equipo técnico; no sustituye una alerta oficial.`
+        : `The associated exploratory recommendation is: ${point.model_assessment.recommendation} A technical team should review it; it does not replace an official warning.`,
+      tour: "model",
+    });
+  } else {
+    lines.push({ text: es ? "No hay una evaluación de movimiento NISAR para este punto; los registros históricos por sí solos no permiten calcularla." : "There is no point-specific NISAR motion assessment here; historical reports alone cannot provide one.", tour: "model" });
+  }
   if (point.model_context) {
     const estimates = Object.entries(point.model_context.estimated_historical_impacts ?? {}).slice(0, 3)
       .map(([key, value]) => `${number(value)} ${key.replaceAll("_", " ")}`).join(es ? ", " : ", ");
@@ -139,12 +142,13 @@ function stepsForHazard(point: HazardPoint, zone: RiskZone, lang: "es" | "en"): 
       tour: "model",
     });
   }
-  const sectors = sectorImpacts(zone.id, zone.kind);
-  if (sectors.length) lines.push({
+  const sectors = sectorImpacts(zone.id, zone.kind).slice(0, 3);
+  for (const item of sectors) lines.push({
     text: es
-      ? `Ahora reviso los sectores que podrían ser sensibles a este tipo de cambio: ${sectors.slice(0, 3).map((item) => sectorNames[item.sector].es.toLowerCase()).join(", ")}. Es orientación general; el panel no confirma daños en esos sectores.`
-      : `Now I will review sectors that could be sensitive to this type of change: ${sectors.slice(0, 3).map((item) => sectorNames[item.sector].en.toLowerCase()).join(", ")}. This is general guidance; the panel does not confirm damage in those sectors.`,
+      ? `En ${sectorNames[item.sector].es.toLowerCase()}, un efecto posible es: ${item.effect.es} Prevención: ${item.reinforce.es} Es orientación general, no un daño confirmado en esta ubicación.`
+      : `For ${sectorNames[item.sector].en.toLowerCase()}, one possible effect is: ${item.effect.en} Prevention: ${item.reinforce.en} This is general guidance, not confirmed damage at this location.`,
     tour: "sectors",
+    openSector: item.sector,
   });
   const advice = recommendations(zone.kind, "baja", zone.country === "CO", lang).filter((item) => !/123|emergency/i.test(item)).slice(0, 2);
   lines.push({
@@ -577,7 +581,9 @@ export default function SaroGuide() {
   }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away, chatOpen]);
 
   const talking = hydrated && (typed.length < text.length || (voice && unlocked && speaking));
-  const showCaption = !voice || !playing || (unlocked && (speaking || typed.length > 0));
+  // Keep Saru's caption visible for a selected point even while the browser waits
+  // for its first user gesture to allow audio playback.
+  const showCaption = Boolean(zone) || !voice || !playing || (unlocked && (speaking || typed.length > 0));
   // mientras señala algo en el mapa, Saru se inclina hacia él
   const pointing = !reply && !aside && (current?.action?.type === "point" || current?.action?.type === "hotspots");
 

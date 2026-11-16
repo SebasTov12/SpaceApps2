@@ -30,9 +30,8 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
   useEffect(() => {
     if (assessment !== undefined) return;
     const controller = new AbortController();
-    // Pintar enseguida la evaluación marcada como DEMO mientras llega la respuesta del backend.
-    const fallback = demoAssessments.find((item) => item.zoneId === zoneId) ?? null;
-    setResult({ zoneId, data: fallback, error: false });
+    // Keep state updates inside the async completion to avoid a synchronous
+    // render cascade when the selected zone changes.
     loadAssessment(zoneId, controller.signal).then((data) => {
       if (!controller.signal.aborted) setResult({ zoneId, data, error: false });
     }).catch(() => {
