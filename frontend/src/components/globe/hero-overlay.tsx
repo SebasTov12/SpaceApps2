@@ -12,7 +12,7 @@ import LanguageModal from "@/components/language-modal";
 import { HAZARD_POINT_SELECT, HAZARDS_EVENT, hazardKind, hazardPointId, loadHazardPoints, type HazardPoint, type HazardPoints } from "@/lib/hazard-points";
 import { COUNTRY_EVENT, KIND_FILTER_EVENT, closeCountry, focusZone, globeState, toggleKind, UI_REVEAL } from "./globe-state";
 import { countryOf } from "@/lib/emergency";
-import { hazardKind, pointCountry } from "@/lib/hazard-points";
+import { pointCountry } from "@/lib/hazard-points";
 
 const copy = {
   es: {
