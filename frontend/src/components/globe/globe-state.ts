@@ -28,6 +28,9 @@ export const globeState = {
   scan: { progress: 0, origin: new Vector3(0, 0, 1), startedAt: -1, originCapturedAt: -1 },
   /** Zonas ya descubiertas por el reconocimiento. */
   revealed: new Set<string>(),
+  /** Registros del backend alcanzados por el barrido visual del globo. */
+  hazardRevealed: new Set<string>(),
+  hazardFlashes: new Map<string, number>(),
   /** Último instante (s de reloj) en que el haz detectó cada zona. */
   flashes: new Map<string, number>(),
   /** Nivel de cercanía/iluminación del haz de radar sobre cada zona (0–1). */

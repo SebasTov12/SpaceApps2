@@ -1,10 +1,12 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { AdditiveBlending, Vector3, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
 import { riskZones } from "@/lib/risk-zones";
+import { loadHazardPoints } from "@/lib/hazard-points";
+import { spherePosition } from "./risk-markers";
 import { FOOTPRINT_LOCAL, OVER_RELIEF, GLOBE_DETECT, GLOBE_RECON, SCAN_GRID_DEGREES, SCAN_INTERVAL, SCAN_DURATION, SCAN_FADE, emit, globeState, type DetectEvent, type ReconEvent } from "./globe-state";
 
 const SCAN_DELAY = 3.6;      // esperar a que termine la entrada cinematográfica
@@ -63,6 +65,20 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
   }), []);
   const tmp = useMemo(() => ({ foot: new Vector3(), marker: new Vector3(), local: new Vector3() }), []);
   const lastEmit = useRef({ found: -1, at: 0, progress: 0 });
+  const hazardPoints = useRef<{ id: string; direction: Vector3 }[]>([]);
+  const hazardScanSeen = useRef(new Set<string>());
+  const previousScan = useRef(-1);
+  useEffect(() => {
+    let alive = true;
+    loadHazardPoints().then((data) => {
+      if (!alive || !data) return;
+      hazardPoints.current = data.points.map((point, index) => ({
+        id: point.id ?? `${point.country ?? "CO"}-${point.lat}-${point.lon}-${index}`,
+        direction: new Vector3(...spherePosition(point.lat, point.lon, 1)).normalize(),
+      }));
+    });
+    return () => { alive = false; };
+  }, []);
 
   useFrame(({ clock }) => {
     const u = material.current?.uniforms;
@@ -72,6 +88,10 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
     const now = performance.now() / 1000;
     globeState.clock = t;
     const scan = globeState.scan;
+    if (previousScan.current !== scan.startedAt) {
+      previousScan.current = scan.startedAt;
+      hazardScanSeen.current.clear();
+    }
 
     // 1. Programar el barrido solo cuando existe la órbita de NISAR.
     if (ready && globeState.orbit && (scan.startedAt < 0 || now - scan.startedAt >= SCAN_INTERVAL)) {
@@ -96,6 +116,16 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
 
     scan.progress = Math.min(1, Math.max(0, (now - scan.startedAt) / SCAN_DURATION));
     const angle = scan.progress * Math.PI * 1.04;
+    // Alcance visual sobre las coordenadas reales entregadas por /api/hazards.
+    // Esto solo anima la cobertura del barrido; no afirma que el evento haya sido observado por NISAR.
+    for (const point of hazardPoints.current) {
+      if (hazardScanSeen.current.has(point.id)) continue;
+      if (Math.acos(Math.min(1, Math.max(-1, point.direction.dot(scan.origin)))) <= angle) {
+        hazardScanSeen.current.add(point.id);
+        globeState.hazardRevealed.add(point.id);
+        globeState.hazardFlashes.set(point.id, t);
+      }
+    }
     u.uAngle.value = angle;
     u.uActive.value = smooth(0, 0.04, scan.progress) * (1 - smooth(0.92, 1, scan.progress));
     u.uTrail.value = smooth(0, 0.1, scan.progress) * (1 - smooth(scan.startedAt + SCAN_DURATION + 0.2, scan.startedAt + SCAN_DURATION + SCAN_FADE, now));

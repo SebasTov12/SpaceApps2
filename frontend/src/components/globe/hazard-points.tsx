@@ -44,11 +44,11 @@ export default function HazardPoints() {
   }, []);
 
   // posición, orientación (mirando hacia afuera) y tamaño de cada punto
-  const layout = useMemo(() => points.map((p) => {
+  const layout = useMemo(() => points.map((p, index) => {
     const pos = new Vector3(...spherePosition(p.lat, p.lon, RADIUS));
     const quat = new Quaternion().setFromUnitVectors(up, pos.clone().normalize());
     const size = 0.0019 + 0.0016 * Math.log10(p.n + 1);
-    return { country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color(hazardKind(p.kind).color) };
+    return { id: p.id ?? `${p.country ?? "CO"}-${p.lat}-${p.lon}-${index}`, country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color(hazardKind(p.kind).color) };
   }), [points]);
 
   const geometry = useMemo(() => new CircleGeometry(1, 14), []);
@@ -86,14 +86,16 @@ export default function HazardPoints() {
     const active = pinned ?? hover;
     // terminada la entrada, la malla queda quieta: solo se recalcula si cambia el punto señalado
     const done = since > 0.5 + 60 * 0.012;
-    const key = `${active}|${globeState.country}|${globeState.filterVersion}`;
+    const key = `${active}|${globeState.country}|${globeState.filterVersion}|${globeState.hazardRevealed.size}`;
     if (done && settled.current === key) return;
     if (done) settled.current = key;
     for (let i = 0; i < layout.length; i++) {
       const item = layout[i];
       const k = Math.min(1, Math.max(0, (since - (i % 60) * 0.012) / 0.5));
-      const here = item.country === globeState.country && !globeState.hiddenKinds.has(item.kind) ? 1 : 0;
-      const scale = here * item.size * (k < 1 ? k * (1.4 - 0.4 * k) : 1) * (i === active ? 3 : 1);
+      const here = item.country === globeState.country && globeState.hazardRevealed.has(item.id) && !globeState.hiddenKinds.has(item.kind) ? 1 : 0;
+      const flashAt = globeState.hazardFlashes.get(item.id) ?? -99;
+      const flash = Math.max(0, 1 - (t - flashAt) / 1.2);
+      const scale = here * item.size * (k < 1 ? k * (1.4 - 0.4 * k) : 1) * (1 + flash * 0.8) * (i === active ? 3 : 1);
       dummy.position.copy(item.pos);
       dummy.quaternion.copy(item.quat);
       dummy.scale.setScalar(Math.max(1e-5, scale));
