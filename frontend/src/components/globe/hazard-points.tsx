@@ -47,7 +47,7 @@ export default function HazardPoints() {
   const layout = useMemo(() => points.map((p, index) => {
     const pos = new Vector3(...spherePosition(p.lat, p.lon, RADIUS));
     const quat = new Quaternion().setFromUnitVectors(up, pos.clone().normalize());
-    const size = 0.0019 + 0.0016 * Math.log10(p.n + 1);
+    const size = 0.0075;
     return { id: p.id ?? `${p.country ?? "CO"}-${p.lat}-${p.lon}-${index}`, country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color(hazardKind(p.kind).color) };
   }), [points]);
 
@@ -84,10 +84,11 @@ export default function HazardPoints() {
     if (revealAt.current === null) revealAt.current = t;
     const since = t - revealAt.current;
     const active = pinned ?? hover;
-    // terminada la entrada, la malla queda quieta: solo se recalcula si cambia el punto señalado
+    // terminada la entrada, recalcular solo con selección, filtros, nuevas detecciones o mientras anima un destello
     const done = since > 0.5 + 60 * 0.012;
-    const key = `${active}|${globeState.country}|${globeState.filterVersion}|${globeState.hazardRevealed.size}`;
-    if (done && settled.current === key) return;
+    const key = `${active}|${globeState.country}|${globeState.filterVersion}|${globeState.hazardRevealed.size}|${globeState.hazardFlashVersion}`;
+    const animatingFlash = t < globeState.hazardFlashUntil;
+    if (done && settled.current === key && !animatingFlash) return;
     if (done) settled.current = key;
     for (let i = 0; i < layout.length; i++) {
       const item = layout[i];

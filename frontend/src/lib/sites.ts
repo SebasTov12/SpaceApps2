@@ -101,7 +101,7 @@ function getJson<T>(url: string): Promise<T> {
 
 const apiUrl = (path: string) => `${(process.env.NEXT_PUBLIC_SAROS_API || "").replace(/\/$/, "")}/api/v1${path}`;
 async function fromApi<T>(path: string): Promise<T> {
-  const response = await fetch(apiUrl(path), { cache: "no-store" });
+  const response = await fetch(apiUrl(path), { cache: "no-store", signal: AbortSignal.timeout(8000) });
   if (!response.ok) throw new Error(`SAROS API ${path}: ${response.status}`);
   return response.json() as Promise<T>;
 }

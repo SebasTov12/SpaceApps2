@@ -124,6 +124,8 @@ export default function ReconScan({ ready, progress }: { ready: boolean; progres
         hazardScanSeen.current.add(point.id);
         globeState.hazardRevealed.add(point.id);
         globeState.hazardFlashes.set(point.id, t);
+        globeState.hazardFlashVersion += 1;
+        globeState.hazardFlashUntil = t + 1.2;
       }
     }
     u.uAngle.value = angle;

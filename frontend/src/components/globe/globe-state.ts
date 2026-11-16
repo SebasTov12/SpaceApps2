@@ -31,6 +31,9 @@ export const globeState = {
   /** Registros del backend alcanzados por el barrido visual del globo. */
   hazardRevealed: new Set<string>(),
   hazardFlashes: new Map<string, number>(),
+  /** Invalida la malla instanciada y mantiene su animación mientras llegan nuevos destellos. */
+  hazardFlashVersion: 0,
+  hazardFlashUntil: -1,
   /** Último instante (s de reloj) en que el haz detectó cada zona. */
   flashes: new Map<string, number>(),
   /** Nivel de cercanía/iluminación del haz de radar sobre cada zona (0–1). */

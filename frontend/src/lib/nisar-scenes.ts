@@ -51,7 +51,7 @@ export const NISAR_EVENT = "saros:nisar-scenes";
 
 let request: Promise<NisarScenes | null> | null = null;
 export function loadNisarScenes(): Promise<NisarScenes | null> {
-  request ??= fetch("/api/nisar")
+  request ??= fetch("/api/nisar", { signal: AbortSignal.timeout(8000) })
     .then((r) => (r.ok ? r.json() : null))
     .then((d: NisarScenes | null) => (d && Array.isArray(d.frames) ? d : null))
     .catch(() => null);

@@ -39,7 +39,7 @@ async function fromApi(): Promise<Headline[] | null> {
   const base = process.env.NEXT_PUBLIC_SAROS_API;
   if (!base) return null;
   try {
-    const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/headlines`, { cache: "no-store" });
+    const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/headlines`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
     if (!response.ok) return null;
     const data = (await response.json()) as { headlines?: Headline[] };
     return Array.isArray(data.headlines) ? data.headlines : null;
@@ -166,10 +166,35 @@ async function fromStaticData(): Promise<Headline[]> {
   return items.sort((a, b) => b.time.localeCompare(a.time));
 }
 
+/** Respaldo mínimo con referencias históricas si también faltan los archivos estáticos. */
+function fromCuratedZones(): Headline[] {
+  return riskZones.flatMap((zone) => zone.event ? [{
+    id: `event-${zone.id}`,
+    kind: zone.kind,
+    severity: "info" as const,
+    title: { es: `${zone.event.date.slice(0, 4)} · ${zone.event.es}`, en: `${zone.event.date.slice(0, 4)} · ${zone.event.en}` },
+    place: zone.place,
+    time: zone.event.date,
+    source: "Referencia histórica",
+    demo: false,
+    siteId: zone.id,
+  }] : []).sort((a, b) => b.time.localeCompare(a.time));
+}
+
+async function fallbackHeadlines(): Promise<Headline[]> {
+  try {
+    const items = await fromStaticData();
+    if (items.length) return items;
+  } catch {
+    // Mantener el cintillo útil incluso si no se pueden leer los manifiestos locales.
+  }
+  return fromCuratedZones();
+}
+
 let cached: Promise<Headline[]> | null = null;
 export function loadHeadlines() {
   cached ??= process.env.NEXT_PUBLIC_SAROS_API
-    ? fromApi().then((api) => api ?? [])
-    : fromStaticData();
+    ? fromApi().then((api) => api?.length ? api : fallbackHeadlines()).catch(() => fallbackHeadlines())
+    : fallbackHeadlines();
   return cached;
 }

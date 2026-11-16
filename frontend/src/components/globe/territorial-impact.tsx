@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
-import { exposureScenarios, type TerritorialAssessment } from "@/lib/socioeconomic";
+import { demoAssessments, exposureScenarios, type TerritorialAssessment } from "@/lib/socioeconomic";
 import { loadAssessment, loadMunicipalProfile, type MunicipalProfile } from "@/lib/territorial-api";
 
 /** Embedded disclosure in the existing region view, opened by selecting the globe. */
@@ -28,18 +28,18 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
-    if (assessment !== undefined || hasLiveRegion) return;
-    // Production shows only backend-backed profiles. Demo assessments remain
-    // available to local development when no public SAROS API is configured.
-    if (hasBackend) return;
+    if (assessment !== undefined) return;
     const controller = new AbortController();
+    // Pintar enseguida la evaluación marcada como DEMO mientras llega la respuesta del backend.
+    const fallback = demoAssessments.find((item) => item.zoneId === zoneId) ?? null;
+    setResult({ zoneId, data: fallback, error: false });
     loadAssessment(zoneId, controller.signal).then((data) => {
       if (!controller.signal.aborted) setResult({ zoneId, data, error: false });
     }).catch(() => {
       if (!controller.signal.aborted) setResult({ zoneId, data: null, error: true });
     });
     return () => controller.abort();
-  }, [zoneId, assessment, retry, hasBackend, hasLiveRegion]);
+  }, [zoneId, assessment, retry]);
   useEffect(() => {
     if (!hasLiveRegion) return;
     const controller = new AbortController();
@@ -51,13 +51,13 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
     return () => controller.abort();
   }, [zoneId, lon, lat, retry, hasLiveRegion]);
   const loading = hasLiveRegion
-    ? liveResult?.zoneId !== zoneId
-    : assessment === undefined && !hasBackend && result?.zoneId !== zoneId;
+    ? liveResult?.zoneId !== zoneId && result?.zoneId !== zoneId
+    : assessment === undefined && result?.zoneId !== zoneId;
   const failed = hasLiveRegion
-    ? liveResult?.zoneId === zoneId && liveResult.error
-    : assessment === undefined && !hasBackend && result?.zoneId === zoneId && result.error;
+    ? liveResult?.zoneId === zoneId && liveResult.error && !result?.data
+    : assessment === undefined && result?.zoneId === zoneId && result.error;
   const profile = liveResult?.zoneId === zoneId ? liveResult.data : null;
-  const candidate = assessment === undefined ? (hasBackend ? null : result?.data) : assessment;
+  const candidate = assessment === undefined ? result?.data : assessment;
   const data = candidate?.zoneId === zoneId ? candidate : null;
   const alerts = data?.alerts?.filter((item) => Date.parse(item.issuedAt) <= now && Date.parse(item.expiresAt) > now) ?? [];
   const selected = exposureScenarios[scenario];
@@ -70,10 +70,10 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
   };
   return (
     <details className="zone-explain territorial-impact">
-      <summary>{en ? "Territory & livelihoods" : "Territorio y medios de vida"}<span className="territorial-badge notranslate" translate="no">{hasLiveRegion ? "DANE" : data?.mode === "demo" ? "DEMO" : "SAROS"}</span></summary>
+      <summary>{en ? "Territory & livelihoods" : "Territorio y medios de vida"}{(profile || data?.mode === "real") && <span className="territorial-badge notranslate" translate="no">{profile ? "DANE" : "SAROS"}</span>}</summary>
       {loading ? <p role="status">{en ? "Loading territorial data…" : "Cargando datos territoriales…"}</p>
         : failed ? <div role="alert"><p>{en ? "The backend could not provide territorial data." : "El backend no pudo entregar los datos territoriales."}</p><button className="territorial-retry" onClick={retryLoad}>{en ? "Retry" : "Reintentar"}</button></div>
-          : hasLiveRegion ? profile ? <>
+          : hasLiveRegion && profile ? <>
             <p>{en ? "Official municipal indicators from SAROS. The selected point is matched to the DANE municipal boundary." : "Indicadores municipales oficiales consultados a SAROS. El punto seleccionado se cruza con el límite municipal del DANE."}</p>
             <strong>{profile.municipality}, {profile.department} · DIVIPOLA {profile.divipola}</strong>
             <div className="zone-stats" aria-live="polite">
@@ -89,11 +89,10 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
             <p>{en ? "Source: DANE municipal framework and census; health and education counts are shown when available." : "Fuente: marco geoestadístico y censo municipal del DANE; los conteos de salud y educación se muestran cuando están disponibles."}</p>
             <p>{en ? "These are municipal baseline indicators, not people exposed to this radar change, confirmed losses, or a risk forecast." : "Son indicadores base del municipio; no representan personas expuestas a este cambio de radar, daños confirmados ni un pronóstico de riesgo."}</p>
             {profile.updatedAt && <small className="territorial-provenance">{en ? "Backend refresh" : "Actualizado en backend"}: {profile.updatedAt}</small>}
-          </> : <p>{en ? "No DANE municipal profile covers this point yet." : "Aún no hay un perfil municipal DANE que cubra este punto."}</p>
-            : !data ? <p>{en ? "No backend assessment is available for this region." : "No hay una evaluación del backend disponible para esta región."}</p> : <>
+          </> : !data ? <p>{en ? "No backend or local reference data is available for this region." : "No hay datos del backend ni referencias locales disponibles para esta región."}</p> : <>
               <p><ProtectedTerms text={en ? "SAROS connects surface observations with territorial exposure and preventive review." : "SAROS relaciona cambios de la superficie con exposición territorial y revisión preventiva."} /></p>
               <strong>{en ? "1. Surface observation" : "1. Observación de la superficie"}</strong>
-              <p>{observation ? `${observation.date} · ${observation.value == null ? "—" : observation.value.toFixed(1)} ${observation.unit}${observation.demo ? " · DEMO" : ""}` : (en ? "Observation unavailable" : "Observación no disponible")}</p>
+              <p>{observation ? `${observation.date} · ${observation.value == null ? "—" : observation.value.toFixed(1)} ${observation.unit}` : (en ? "Observation unavailable" : "Observación no disponible")}</p>
               <p>{en ? "Use the existing map timeline and chart to review the selected point. Exposure assumptions are independent of this measurement." : "Usa la línea de tiempo y la gráfica del mapa para revisar el punto seleccionado. Los supuestos de exposición son independientes de esta medición."}</p>
               <strong>{en ? "2. Territorial vulnerability" : "2. Vulnerabilidad territorial"}</strong>
               <p>{data.vulnerability.status === "unassessed" ? (en ? "Assessment pending" : "Evaluación pendiente") : (en ? "Assessed" : "Evaluada")}: {data.vulnerability.factors.map((factor) => factor[lang]).join(" · ")}</p>
@@ -125,7 +124,7 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
                   <p>{data.forecast.summary[lang]}</p><p>{data.forecast.method} · {data.forecast.uncertainty[lang]}</p>
                 </> : <p>{en ? "No validated forecast available." : "No hay un pronóstico validado disponible."}</p>}
                 {alerts.length ? alerts.map((alert) => <article className="territorial-alert" data-severity={alert.severity} key={alert.id}>
-                  <strong>{alert.severity === "warning" ? (en ? "Warning" : "Advertencia") : alert.severity === "watch" ? (en ? "Watch" : "Vigilancia") : (en ? "Information" : "Información")}{data.mode === "demo" ? " · DEMO" : ""}</strong>
+                  <strong>{alert.severity === "warning" ? (en ? "Warning" : "Advertencia") : alert.severity === "watch" ? (en ? "Watch" : "Vigilancia") : (en ? "Information" : "Información")}</strong>
                   <p>{alert.message[lang]}</p><p>{alert.action[lang]}</p><small>{alert.source} · {alert.issuedAt} → {alert.expiresAt}</small>
                 </article>) : <p>{en ? "No current notices received. This does not establish safe conditions." : "Sin avisos vigentes recibidos. Esto no determina condiciones seguras."}</p>}
               </details>

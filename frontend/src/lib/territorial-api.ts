@@ -135,13 +135,20 @@ export function parseAssessment(value: unknown, zoneId: string): TerritorialAsse
 }
 
 export async function loadAssessment(zoneId: string, signal: AbortSignal): Promise<TerritorialAssessment | null> {
+  const fallback = demoAssessments.find((item) => item.zoneId === zoneId) ?? null;
   const base = process.env.NEXT_PUBLIC_SAROS_API;
-  if (!base) return demoAssessments.find((item) => item.zoneId === zoneId) ?? null;
-  const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/regions/${encodeURIComponent(zoneId)}/assessment`, {
-    signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]), cache: "no-store",
-  });
-  if (response.status === 404 || response.status === 204) return null;
-  if (!response.ok) throw new Error(`Assessment HTTP ${response.status}`);
-  const payload: unknown = await response.json();
-  return parseAssessment(payload, zoneId);
+  if (!base) return fallback;
+  try {
+    const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/regions/${encodeURIComponent(zoneId)}/assessment`, {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]), cache: "no-store",
+    });
+    if (response.status === 404 || response.status === 204) return fallback;
+    if (!response.ok) throw new Error(`Assessment HTTP ${response.status}`);
+    const payload: unknown = await response.json();
+    return parseAssessment(payload, zoneId);
+  } catch (error) {
+    // No ocultar cancelaciones de navegación; para caídas reales del servicio, usar el respaldo local.
+    if (signal.aborted) throw error;
+    return fallback;
+  }
 }
