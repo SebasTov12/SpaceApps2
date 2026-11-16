@@ -2903,6 +2903,11 @@ html body .zone-panel .zs .zs-lead{font-size:12px;line-height:1.5;color:#9aa6c6}
 /* ---------- Propuesta: Saro, guía animado ---------- */
 .saro{position:absolute;z-index:8;left:22px;bottom:70px;display:flex;align-items:flex-end;gap:6px;pointer-events:none;flex-direction:row-reverse;justify-content:flex-end}
 .saro.in-zone{bottom:150px}
+/* Keep Saru above the MapLibre canvas and terrain view while retaining map controls. */
+html body .earth-stage[data-mapview="true"] .saro,
+html body .earth-stage:has(.zone-stage-map) .saro{z-index:30!important;visibility:visible!important;opacity:1!important;pointer-events:none}
+html body .earth-stage[data-mapview="true"] .saro-avatar,
+html body .earth-stage:has(.zone-stage-map) .saro-avatar{pointer-events:auto}
 .saro-avatar{pointer-events:auto;width:92px;height:108px;padding:0;border:0;background:transparent;cursor:pointer;filter:drop-shadow(0 12px 22px rgba(0,0,0,.45))}
 .saro-fig{width:100%;height:100%;overflow:visible}
 .saro-bob{animation:saro-bob 3.2s ease-in-out infinite}

@@ -333,7 +333,6 @@ export default function CountryLayer() {
     selectCountry(code);
   };
 
-  const fmt = (n: number) => n.toLocaleString(es ? "es-CO" : "en-US");
   return (
     <group>
       {activePin && globeState.zoom === 0 && activeAnchors.map(({ view, lat, lon }) => (
@@ -343,7 +342,6 @@ export default function CountryLayer() {
             <div className="cy-country-callout" role="status" aria-live="polite"
               ref={view === "desktop" ? desktopCallout : mobileCallout}>
               <strong>{countryName(activePin.code, es ? "es" : "en")}</strong>
-              <span>{activePin.zones.toLocaleString(es ? "es-CO" : "en-US")} {es ? "Zonas" : "Zones"}</span>
             </div>
           </Html>
         </group>
@@ -367,15 +365,10 @@ export default function CountryLayer() {
               <circleGeometry args={[size * 1.6, 12]} />
             </mesh>
             <Html center zIndexRange={[20, 10]} position={[0, 0, 0.004]} style={{ pointerEvents: "none" }}>
-              <button type="button" className="cy-pin" aria-label={`${countryName(pin.code, es ? "es" : "en")}: ${pin.zones} ${es ? "Zonas" : "Zones"}`}
+              <button type="button" className="cy-pin" aria-label={countryName(pin.code, es ? "es" : "en")}
                 onClick={(event) => { if (event.detail === 0 || globeState.user.moved <= 8) selectCountry(pin.code); }}
                 ref={(el) => { if (el) labelsRef.current.set(pin.code, el); else labelsRef.current.delete(pin.code); }}>
                 <strong>{countryName(pin.code, es ? "es" : "en")}</strong>
-                <span>
-                  {pin.records > 0 && <>{fmt(pin.records)} {es ? "registros" : "records"}</>}
-                  {pin.records > 0 && pin.zones > 0 && " · "}
-                  {pin.zones > 0 && <>{pin.zones} {pin.zones === 1 ? (es ? "zona" : "zone") : (es ? "zonas" : "zones")}</>}
-                </span>
               </button>
             </Html>
           </group>

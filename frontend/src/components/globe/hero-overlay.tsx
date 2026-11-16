@@ -9,7 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import { riskKindLabel, riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
 import { loadSites, type SiteSummary } from "@/lib/sites";
 import LanguageModal from "@/components/language-modal";
-import { HAZARDS_EVENT, type HazardPoints } from "@/lib/hazard-points";
+import { HAZARD_POINT_SELECT, HAZARDS_EVENT, hazardKind, hazardPointId, loadHazardPoints, type HazardPoint, type HazardPoints } from "@/lib/hazard-points";
 import { COUNTRY_EVENT, KIND_FILTER_EVENT, closeCountry, focusZone, globeState, toggleKind, UI_REVEAL } from "./globe-state";
 import { countryOf } from "@/lib/emergency";
 import { hazardKind, pointCountry } from "@/lib/hazard-points";
@@ -59,6 +59,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
   useEffect(() => {
     const onData = (event: Event) => setHazards((event as CustomEvent<HazardPoints>).detail);
     window.addEventListener(HAZARDS_EVENT, onData);
+    loadHazardPoints().then((data) => { if (data) setHazards(data); });
     return () => window.removeEventListener(HAZARDS_EVENT, onData);
   }, []);
   useEffect(() => {
@@ -136,12 +137,20 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
     const list = riskZones.filter(match);
     return [...list.filter((z) => z.country === "CO"), ...list.filter((z) => z.country !== "CO")];
   }, [query]);
+  const recordResults = useMemo(() => (hazards?.points ?? []).filter((point) => {
+    const q = fold(query.trim());
+    return !q || [point.place, point.type, hazardKind(point.kind).es, hazardKind(point.kind).en, pointCountry(point)].some((v) => fold(v ?? "").includes(q));
+  }), [hazards, query]);
   const sitesById = useMemo(() => new Map(sites.map((site) => [site.id, site])), [sites]);
 
   const choose = (zone: RiskZone) => {
     setOpen(false);
     setQuery("");
     focusZone(zone.id);
+  };
+  const chooseRecord = (point: HazardPoint) => {
+    setOpen(false); setQuery("");
+    window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: point }));
   };
 
   return (
@@ -203,15 +212,15 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
                 <input ref={input} value={query} placeholder={c.placeholder} aria-label={c.search}
                   onChange={(event) => { setQuery(event.target.value); setCursor(0); }}
                   onKeyDown={(event) => {
-                    if (event.key === "ArrowDown") { event.preventDefault(); setCursor((i) => Math.min(results.length - 1, i + 1)); }
+                    if (event.key === "ArrowDown") { event.preventDefault(); setCursor((i) => Math.min(results.length + recordResults.length - 1, i + 1)); }
                     if (event.key === "ArrowUp") { event.preventDefault(); setCursor((i) => Math.max(0, i - 1)); }
-                    if (event.key === "Enter" && results[cursor]) choose(results[cursor]);
+                    if (event.key === "Enter") { if (results[cursor]) choose(results[cursor]); else if (recordResults[cursor - results.length]) chooseRecord(recordResults[cursor - results.length]); }
                     if (event.key === "Escape") setOpen(false);
                   }} />
                 <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar"><X size={16} /></button>
               </div>
               <ul className="search-results" role="listbox">
-                {results.length === 0 && <li className="search-empty">{c.none}</li>}
+                {results.length === 0 && recordResults.length === 0 && <li className="search-empty">{c.none}</li>}
                 {results.map((zone, index) => {
                   const site = zone.siteId ? sitesById.get(zone.siteId) : undefined;
                   const firstWorld = index > 0 && zone.country !== "CO" && results[index - 1].country === "CO";
@@ -227,6 +236,18 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
                       </button>
                     </li>
                   );
+                })}
+                {recordResults.length > 0 && <li><p className="search-group">{lang === "es" ? "Registros" : "Records"}</p></li>}
+                {recordResults.map((point, index) => {
+                  const kind = hazardKind(point.kind);
+                  const cursorIndex = results.length + index;
+                  return <li key={`record-${hazardPointId(point)}`} role="option" aria-selected={cursorIndex === cursor}>
+                    <button type="button" className={cursorIndex === cursor ? "is-active" : undefined} onMouseEnter={() => setCursor(cursorIndex)} onClick={() => chooseRecord(point)}>
+                      <i style={{ background: kind.color }} />
+                      <span><strong>{point.place || point.type || kind[lang]}</strong><small>{pointCountry(point)} · {point.n.toLocaleString(lang === "es" ? "es-CO" : "en-US")} {lang === "es" ? "registros" : "records"}</small></span>
+                      <em>{kind[lang]}</em>
+                    </button>
+                  </li>;
                 })}
               </ul>
             </motion.div>
