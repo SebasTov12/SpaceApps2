@@ -324,6 +324,7 @@ export default function SaroGuide() {
   // El primer HTML debe coincidir en servidor y navegador; activa escritura tras hidratar.
   const [hydrated, setHydrated] = useState(false);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const [panelSaru, setPanelSaru] = useState(false);
   const [minimized, setMinimized] = useState(false);
   // Saru llega cuando se baja con el scroll (o al abrir una zona); arriba del todo no está
   const [arrived, setArrived] = useState(false);
@@ -335,7 +336,15 @@ export default function SaroGuide() {
   }, []);
   useEffect(() => {
     if (!hydrated) return;
-    if (!zoneId) {
+    const media = window.matchMedia("(max-width: 900px)");
+    const update = () => setPanelSaru(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, [hydrated]);
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!zoneId || !panelSaru) {
       const frame = requestAnimationFrame(() => setPortalRoot(document.body));
       return () => cancelAnimationFrame(frame);
     }
@@ -349,7 +358,7 @@ export default function SaroGuide() {
     };
     frame = requestAnimationFrame(attachToPanel);
     return () => cancelAnimationFrame(frame);
-  }, [hydrated, zoneId]);
+  }, [hydrated, zoneId, panelSaru]);
   useEffect(() => {
     const onReveal = (event: Event) => {
       const on = Boolean((event as CustomEvent<boolean>).detail);

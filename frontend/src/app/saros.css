@@ -3362,3 +3362,10 @@ html body .zone-saru-slot .saru-avatar{width:68px;height:78px}
 html body .zone-saru-slot .saru-chat-reveal{width:100%;max-width:100%;flex:1 0 100%;order:2}
 html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:100%;max-width:100%;margin:8px 0 0}
 @media(max-width:900px){html body .zone-saru-slot{min-height:72px;margin:6px 0 10px}html body .zone-saru-slot .saru-avatar{width:62px;height:72px}html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{width:100%;max-width:100%}}
+@media(min-width:901px){
+  html body .zone-saru-slot{display:none}
+  html body .saro.in-zone{left:22px;right:auto;top:auto;bottom:96px;align-items:flex-end}
+  html body .saro.in-zone .saru-caption{margin-bottom:54px}
+  html body .saro.in-zone .saru-bubble{margin:0 0 58px}
+  html body .saro.in-zone .saru-bubble::after{top:auto;bottom:12px}
+}
