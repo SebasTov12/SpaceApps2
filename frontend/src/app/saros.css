@@ -3352,25 +3352,36 @@ html body .kind-filter{pointer-events:auto;overscroll-behavior:contain;touch-act
 .orientation-guard.is-active svg{color:#b888ff;filter:drop-shadow(0 0 12px rgba(178,118,255,.7))}
 .orientation-guard.is-active p{max-width:320px;margin:0;font-size:16px;line-height:1.5}
 
-/* En ubicaciones, Saru se integra en la cabecera de la ficha; el diálogo extenso es opcional. */
-html body .zone-saru-slot{position:absolute;top:64px;left:20px;z-index:10;width:min(340px,calc(100% - 580px));min-height:72px;margin:0;display:flex;align-items:flex-start;justify-content:flex-start;pointer-events:none}
+/* En las ubicaciones, Saru y sus controles orbitan sobre el mapa 3D. */
+html body .zone-saru-slot{position:absolute;top:72px;left:72px;z-index:10;width:min(340px,calc(100% - 580px));min-height:72px;margin:0;display:flex;align-items:flex-start;justify-content:flex-start;pointer-events:none}
 html body .zone-saru-slot>.saro.in-zone{position:relative!important;inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:100%;min-height:72px;display:flex;align-items:flex-start;justify-content:flex-start;z-index:2!important;pointer-events:auto}
 html body .zone-saru-slot .saru-row{width:100%;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-start;gap:10px}
-html body .zone-saru-slot .saru-caption{display:block!important;flex:1;min-width:0;width:auto;max-width:none;margin:0!important;border-radius:16px 16px 16px 5px}
+html body .zone-saru-slot .saru-caption{display:block!important;flex:1;min-width:0;width:auto;max-width:none;max-height:min(220px,32vh);margin:0!important;padding:8px 10px 6px;border-radius:16px 16px 16px 5px;overflow:hidden}
+html body .zone-saru-slot .saru-caption .saru-text{max-height:140px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(167,139,250,.62) transparent;scroll-behavior:smooth}
+html body .zone-saru-slot .saru-reading-progress{display:flex;align-items:center;gap:9px;margin:0 0 6px;color:#c9b7ff;font-size:9px;letter-spacing:.05em}
+html body .zone-saru-slot .saru-reading-progress>span{flex:none}
+html body .zone-saru-slot .saru-reading-progress i{font-style:normal;color:#8f9bb9}
+html body .zone-saru-slot .saru-reading-progress>div{height:3px;flex:1;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.12)}
+html body .zone-saru-slot .saru-reading-progress b{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#8b5cf6,#5ef0ff);box-shadow:0 0 8px rgba(167,139,250,.7);transition:width .55s cubic-bezier(.22,1,.36,1)}
 html body .zone-saru-slot .saru-avatar{width:62px;height:72px;flex:none}
+html body .zone-saru-slot .saru-avatar-anchor{perspective:320px;transform-style:preserve-3d}
 html body .zone-saru-slot .saru-chat-reveal{width:100%;max-width:100%;flex:1 0 100%;order:2}
 html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:100%;max-width:100%;margin:8px 0 0}
-html body .zone-saru-slot .saru-zone-invite{position:absolute;left:calc(100% + 9px);top:50%;transform:translateY(-50%);white-space:nowrap;padding:8px 11px;border:1px solid rgba(167,139,250,.24);border-radius:12px 12px 12px 4px;background:rgba(11,14,32,.66);color:#c9a6ff;font-size:12px;line-height:1.3;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.2);cursor:pointer}
-html body .zone-saru-slot .saru-zone-menu{position:absolute;left:calc(100% + 7px);top:50%;margin-top:-76px;z-index:5;width:52px;height:152px;display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:5px;border:1px solid rgba(104,25,147,.58);border-radius:999px;background:linear-gradient(135deg,rgba(16,11,35,.94),rgba(7,11,24,.94));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 12px 34px rgba(0,0,0,.45),0 0 20px rgba(104,25,147,.3)}
-html body .zone-saru-slot .saru-zone-menu button{display:grid;place-items:center;width:40px;height:40px;flex:none;padding:0;border:0;border-radius:999px;background:transparent;color:var(--saros-analysis,#a78bfa);filter:drop-shadow(0 0 5px rgba(139,92,246,.72));cursor:pointer;transition:background .25s,color .25s,filter .25s}
-html body .zone-saru-slot .saru-zone-menu button svg{animation:saru-menu-orbit 3.8s ease-in-out infinite;transform-origin:center}
-html body .zone-saru-slot .saru-zone-menu button:nth-child(2) svg{animation-delay:-1.25s}
-html body .zone-saru-slot .saru-zone-menu button:nth-child(3) svg{animation-delay:-2.5s}
-html body .zone-saru-slot .saru-zone-menu button:hover,html body .zone-saru-slot .saru-zone-menu button:focus-visible{background:rgba(104,25,147,.3);color:#fff;filter:drop-shadow(0 0 8px rgba(167,139,250,.9));outline:none}
-@keyframes saru-menu-orbit{0%,100%{transform:translateX(0) rotate(0)}50%{transform:translateX(2px) rotate(5deg)}}
-html body .zone-saru-slot .saru-avatar-anchor.is-menu-open::after{content:"";position:absolute;z-index:0;left:-13px;top:-13px;width:88px;height:88px;border:1px solid rgba(167,139,250,.28);border-right-color:rgba(94,240,255,.62);border-radius:50%;pointer-events:none;animation:saru-menu-ring 7s linear infinite}
+html body .zone-saru-slot .saru-zone-invite{position:absolute;left:calc(100% - 2px);top:-24px;z-index:3;max-width:240px;white-space:nowrap;padding:7px 10px;border:1px solid rgba(167,139,250,.3);border-radius:13px 13px 13px 4px;background:rgba(11,14,32,.78);color:#d5baff;font-size:11.5px;line-height:1.3;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.25);cursor:pointer}
+html body .zone-saru-slot .saru-zone-invite::after{content:"";position:absolute;left:9px;bottom:-4px;width:7px;height:7px;border-right:1px solid rgba(167,139,250,.3);border-bottom:1px solid rgba(167,139,250,.3);background:rgba(11,14,32,.9);transform:rotate(45deg)}
+html body .zone-saru-slot .saru-zone-orbit{position:absolute;left:50%;top:50%;z-index:5;width:126px;height:126px;margin:-63px 0 0 -63px;pointer-events:none;transform-style:preserve-3d;perspective:320px}
+html body .zone-saru-slot .saru-zone-orbit-plane{position:absolute;inset:0;transform:perspective(220px) rotateX(58deg);transform-style:preserve-3d;rotate:0deg;animation:saru-orbit-turn 17s linear infinite}
+html body .zone-saru-slot .saru-zone-orbit-plane::before{content:"";position:absolute;inset:8px;border:1px solid rgba(167,139,250,.32);border-right-color:rgba(94,240,255,.65);border-bottom-color:rgba(94,240,255,.42);border-radius:50%;box-shadow:0 0 12px rgba(139,92,246,.2);pointer-events:none}
+html body .zone-saru-slot .saru-zone-orbit-plane button{position:absolute;display:grid;place-items:center;width:34px;height:34px;padding:0;border:1px solid rgba(183,139,255,.68);border-radius:50%;background:radial-gradient(circle at 35% 28%,rgba(125,72,194,.82),rgba(27,17,55,.94) 72%);color:#c59bff;box-shadow:0 0 0 3px rgba(88,48,147,.16),0 0 17px rgba(139,92,246,.62),inset 0 1px rgba(255,255,255,.2);transform:rotateX(-58deg);transform-style:preserve-3d;pointer-events:auto;cursor:pointer;backdrop-filter:blur(8px);transition:background .25s,box-shadow .25s,color .25s}
+html body .zone-saru-slot .saru-zone-orbit-plane button svg{display:block}
+html body .zone-saru-slot .saru-zone-orbit-plane .orbit-transcript{top:0;left:50%;margin-left:-17px}
+html body .zone-saru-slot .saru-zone-orbit-plane .orbit-pause{top:72%;left:83%;margin:-17px 0 0 -17px}
+html body .zone-saru-slot .saru-zone-orbit-plane .orbit-chat{top:72%;left:17%;margin:-17px 0 0 -17px}
+html body .zone-saru-slot .saru-zone-orbit-plane button:hover,html body .zone-saru-slot .saru-zone-orbit-plane button:focus-visible{background:radial-gradient(circle at 35% 28%,rgba(170,112,255,.95),rgba(57,30,111,.96) 72%);color:#fff;box-shadow:0 0 0 4px rgba(139,92,246,.2),0 0 24px rgba(167,139,250,.9),inset 0 1px rgba(255,255,255,.35);outline:none}
+@keyframes saru-orbit-turn{to{rotate:360deg}}
+html body .zone-saru-slot .saru-avatar-anchor.is-menu-open::after{content:"";position:absolute;z-index:0;left:-34px;top:-29px;width:130px;height:130px;border:1px solid rgba(167,139,250,.2);border-right-color:rgba(94,240,255,.72);border-bottom-color:rgba(94,240,255,.4);border-radius:50%;pointer-events:none;animation:saru-menu-ring 17s linear infinite}
 html body .zone-saru-slot .saru-avatar-anchor .saro-avatar{z-index:1}
 @keyframes saru-menu-ring{to{transform:rotate(360deg)}}
 html body .zone-saru-slot .zone-transcript-bar{opacity:1}
-@media(max-width:900px){html body .zone-stage-map .zone-saru-slot{top:56px;left:12px;width:min(290px,calc(100% - 24px));min-height:72px}html body .zone-saru-slot .saru-avatar{width:62px;height:72px}html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{width:100%;max-width:100%}html body .zone-saru-slot .saru-zone-invite{max-width:calc(100vw - 150px);white-space:normal;font-size:11px;padding:7px 9px}}
-@media(prefers-reduced-motion:reduce){html body .zone-saru-slot .saru-zone-menu button svg,html body .zone-saru-slot .saru-avatar-anchor.is-menu-open::after{animation:none}}
+@media(max-width:900px){html body .zone-stage-map .zone-saru-slot{top:72px;left:72px;width:min(260px,calc(100% - 84px));min-height:72px}html body .zone-saru-slot .saru-avatar{width:62px;height:72px}html body .zone-saru-slot .saru-caption{max-height:min(200px,30vh)}html body .zone-saru-slot .saru-caption .saru-text{max-height:126px}html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{width:100%;max-width:100%}html body .zone-saru-slot .saru-zone-invite{max-width:calc(100vw - 170px);white-space:normal;font-size:11px;padding:7px 9px}}
+@media(prefers-reduced-motion:reduce){html body .zone-saru-slot .saru-zone-orbit-plane,html body .zone-saru-slot .saru-avatar-anchor.is-menu-open::after{animation:none}}
