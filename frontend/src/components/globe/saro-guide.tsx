@@ -266,8 +266,8 @@ function scriptFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "
   const es = lang === "es";
   if (!zone) {
     return es
-      ? ["Soy Saru. Toca un punto para ver sus datos y el análisis disponible."]
-      : ["I'm Saru. Tap a point to see its data and available analysis."];
+      ? ["Hola.", "Soy Saru. Toca un punto para ver sus datos y el análisis disponible."]
+      : ["Hello.", "I'm Saru. Tap a point to see its data and available analysis."];
   }
   const name = zone.name[lang];
   const a = m?.assessment;
@@ -312,7 +312,7 @@ export async function collectSaroLines(lang: "es" | "en" = "es") {
 }
 
 /** Saru: guía animado. Narra solo cada zona, señala en el mapa, responde preguntas y habla con voz neuronal. */
-export default function SaroGuide() {
+export default function SaroGuide({ sceneReady }: { sceneReady: boolean }) {
   const { lang, globalLang } = useI18n();
   const reduce = useReducedMotion();
   // con traducción automática el texto sale completo: escribir letra a letra obligaría a retraducir sin parar
@@ -337,6 +337,9 @@ export default function SaroGuide() {
   const [arrived, setArrived] = useState(false);
   const [arrivals, setArrivals] = useState(0);
   const arrivedRef = useRef(false);
+  const hasLandedRef = useRef(false);
+  const homeGreetingDismissedRef = useRef(false);
+  const [narrationReady, setNarrationReady] = useState(false);
   useEffect(() => {
     const frame = requestAnimationFrame(() => setHydrated(true));
     return () => cancelAnimationFrame(frame);
@@ -362,15 +365,30 @@ export default function SaroGuide() {
     return () => cancelAnimationFrame(frame);
   }, [hydrated, zoneId]);
   useEffect(() => {
+    if (!sceneReady || zoneId || hasLandedRef.current) return;
+    hasLandedRef.current = true;
+    arrivedRef.current = true;
+    setArrived(true);
+    setArrivals((n) => n + 1);
+  }, [sceneReady, zoneId]);
+  useEffect(() => {
+    if (!sceneReady || (!arrived && !zoneId)) { setNarrationReady(false); return; }
+    setNarrationReady(false);
+    const timer = window.setTimeout(() => setNarrationReady(true), reduce ? 0 : 1600);
+    return () => window.clearTimeout(timer);
+  }, [sceneReady, zoneId, arrivals, arrived, reduce]);
+  useEffect(() => {
     const onReveal = (event: Event) => {
       const on = Boolean((event as CustomEvent<boolean>).detail);
       if (on && !arrivedRef.current) setArrivals((n) => n + 1);
+      if (!on && hasLandedRef.current) return;
       arrivedRef.current = on;
       setArrived(on);
     };
     window.addEventListener(UI_REVEAL, onReveal);
     const frame = requestAnimationFrame(() => {
       const on = globeState.uiRevealed;
+      if (!on && hasLandedRef.current) return;
       if (on && !arrivedRef.current) setArrivals((n) => n + 1);
       arrivedRef.current = on;
       setArrived(on);
@@ -382,7 +400,7 @@ export default function SaroGuide() {
   }, []);
   const away = !arrived && !zoneId;
   const [voice, setVoice] = useState(true);
-  const [unlocked, setUnlocked] = useState(false);
+  const unlocked = true;
   const [playing, setPlaying] = useState(true);
   const [speaking, setSpeaking] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -407,7 +425,7 @@ export default function SaroGuide() {
   const steps = useMemo(() => selectedHazard && zone ? stepsForHazard(selectedHazard, zone, lang) : stepsFor(zone, manifest, lang), [selectedHazard, zone, manifest, lang]);
   const lines = useMemo(() => steps.map((s) => s.text), [steps]);
   const current = steps[Math.min(step, steps.length - 1)];
-  const lineText = current?.text ?? "";
+  const lineText = !zoneId && homeGreetingDismissedRef.current ? "" : current?.text ?? "";
   const text = reply ?? aside ?? lineText;
 
   // Idiomas del traductor automático: todas las frases de Saru para esta zona se dejan en un bloque
@@ -445,14 +463,6 @@ export default function SaroGuide() {
     w.__saroReplies = () => allReplySentences((id) => loadManifest(id).catch(() => null));
   }, []);
 
-  // el navegador solo deja sonar audio después del primer toque: en ese momento Saru empieza a hablar
-  useEffect(() => {
-    const unlock = () => setUnlocked(true);
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
-    return () => { window.removeEventListener("pointerdown", unlock); window.removeEventListener("keydown", unlock); };
-  }, []);
-
   // zona abierta / cerrada y reacción a los sectores
   useEffect(() => {
     const onSelect = (event: Event) => {
@@ -463,7 +473,11 @@ export default function SaroGuide() {
       setStep(0);
       setAside(null);
       setReply(null);
-      if (id) setArrivals((n) => n + 1);
+      if (id) {
+        setNarrationReady(false);
+        homeGreetingDismissedRef.current = true;
+        setArrivals((n) => n + 1);
+      }
       // The home greeting is only narrated on initial page load. Closing a
       // selected location returns Saru to idle instead of replaying it.
       setPlaying(Boolean(id));
@@ -508,7 +522,7 @@ export default function SaroGuide() {
   useEffect(() => {
     // Start the typewriter when Saru enters the scene, so mobile doesn't finish
     // transcribing while the avatar is still hidden below the reveal.
-    if (!hydrated || speechDriven || away) return;
+    if (!hydrated || speechDriven || away || !narrationReady) return;
     const id = window.setInterval(() => {
       setProg((p) => {
         const next = (p.text === displayText ? p.n : 0) + 3;
@@ -517,7 +531,7 @@ export default function SaroGuide() {
       });
     }, 28);
     return () => window.clearInterval(id);
-  }, [displayText, hydrated, speechDriven, away]);
+  }, [displayText, hydrated, speechDriven, away, narrationReady]);
 
   // ---------- voz: neuronal pregrabada (frase completa o frase por frase) y, si falta, la del navegador ----------
   const [recorded, setRecorded] = useState<Set<string> | null>(null);
@@ -557,6 +571,7 @@ export default function SaroGuide() {
           searchFrom = startAt + part.length;
           return startAt;
         });
+        let nativeFallbackStarted = false;
         const playAt = (i: number) => {
           if (my !== token.current) return;
           if (i >= keys.length) { done(); return; }
@@ -578,10 +593,37 @@ export default function SaroGuide() {
             playAt(i + 1);
           };
           a.onerror = () => {
+            if (nativeFallbackStarted) return;
             setSpeechProgress((p) => p.text === t && p.n > endAt ? p : { text: t, n: endAt });
             playAt(i + 1);
           };
-          a.play().catch(() => { setSpeaking(false); });
+          a.play().catch(() => {
+            if (my !== token.current || nativeFallbackStarted) return;
+            nativeFallbackStarted = true;
+            setSpeaking(false);
+            if ("speechSynthesis" in window) {
+              window.speechSynthesis.cancel();
+              const fallback = new SpeechSynthesisUtterance(t);
+              fallback.lang = voices[0]?.lang ?? (es ? "es-CO" : "en-US");
+              if (voices[0]) fallback.voice = voices[0];
+              fallback.rate = prosody[mood].rate;
+              fallback.onstart = () => { setSpeaking(true); setSpeechProgress({ text: t, n: 0 }); };
+              fallback.onboundary = (event) => {
+                if (event.name !== "word") return;
+                const offset = event.charIndex;
+                const remaining = t.slice(offset);
+                const spaceAt = remaining.search(/\s/);
+                const wordEnd = spaceAt < 0 ? t.length : offset + spaceAt;
+                setSpeechProgress((p) => p.text === t && p.n > wordEnd ? p : { text: t, n: wordEnd });
+              };
+              fallback.onend = () => { setSpeechProgress({ text: t, n: t.length }); done(); };
+              fallback.onerror = () => { setSpeechProgress({ text: t, n: t.length }); done(); };
+              window.speechSynthesis.speak(fallback);
+            } else {
+              setSpeechProgress({ text: t, n: t.length });
+              done();
+            }
+          });
         };
         playAt(0);
         return;
@@ -614,7 +656,10 @@ export default function SaroGuide() {
           setSpeechProgress((p) => p.text === said && p.n > endAt ? p : { text: said, n: endAt });
           if (i === parts.length - 1) done();
         };
-        u.onerror = () => { if (i === parts.length - 1) done(); };
+        u.onerror = () => {
+          setSpeechProgress((p) => p.text === said && p.n > endAt ? p : { text: said, n: endAt });
+          if (i === parts.length - 1) done();
+        };
         window.speechSynthesis.speak(u);
       });
     };
@@ -654,7 +699,7 @@ export default function SaroGuide() {
   }, [aside, lines.length, setAside]);
   const autoNext = playing && !chatOpen && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
   useEffect(() => {
-    if (away || minimized || thinking || (chatOpen && !reply) || (!playing && !reply && !aside)) { stopAll(); return; }   // fuera, en pausa o pensando: calla
+    if (!narrationReady || away || minimized || thinking || (chatOpen && !reply) || (!playing && !reply && !aside)) { stopAll(); return; }   // espera a que termine el aterrizaje
     const canSpeak = voice && unlocked;
     if (canSpeak) {
       speak(text, () => { if (autoNext) window.setTimeout(advance, 650); });
@@ -667,14 +712,12 @@ export default function SaroGuide() {
     const wait = Math.max(2600, text.length * 55);
     const id = window.setTimeout(advance, wait);
     return () => window.clearTimeout(id);
-  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away, chatOpen]);
+  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away, chatOpen, narrationReady]);
 
   const talking = hydrated && (typed.length < displayText.length || (voice && unlocked && speaking));
-  // Keep Saru's caption visible for a selected point even while the browser waits
-  // for its first user gesture to allow audio playback.
-  // El saludo aparece con el planeta/Saru, aunque el navegador aún no permita
-  // reproducir audio. El texto se anima sin esperar el primer toque del usuario.
-  const showCaption = Boolean(zone) || !voice || !playing || transcriptOpen || (arrived && typed.length > 0);
+  // La transcripción empieza al terminar la entrada de Saru; el navegador puede
+  // bloquear el audio automático, así que el typewriter mantiene visible el guion.
+  const showCaption = transcriptOpen || (narrationReady && (Boolean(zone) || (arrived && typed.length > 0)));
   const narrationProgress = lines.length ? Math.round(((step + (displayText.length ? typed.length / displayText.length : 0)) / lines.length) * 100) : 0;
   useEffect(() => {
     if ((zone && !transcriptOpen) || !transcriptTextRef.current) return;
@@ -762,25 +805,21 @@ export default function SaroGuide() {
     requestAnimationFrame(() => avatarRef.current?.focus({ preventScroll: true }));
   };
   const toggleZoneMenu = () => {
-    if (chatOpen) { closeChat(); return; }
+    if (chatOpen) { closeChat(); setZoneMenuOpen(false); return; }
     setMinimized(false);
     setTranscriptOpen(false);
     setZoneMenuOpen((open) => !open);
   };
   const toggleHomeOrbit = () => {
-    if (chatOpen) { closeChat(); return; }
+    if (chatOpen) { closeChat(); setHomeOrbitOpen(false); return; }
     setMinimized(false);
     setTranscriptOpen(false);
     setHomeOrbitOpen((open) => !open);
   };
   const openTranscript = () => {
     setTranscriptOpen(true);
-    if (zone) setZoneMenuOpen(false);
-    else setHomeOrbitOpen(false);
   };
   const openZoneChat = () => {
-    setZoneMenuOpen(false);
-    setHomeOrbitOpen(false);
     setTranscriptOpen(false);
     setMinimized(false);
     setShowHistory(true);
@@ -808,15 +847,12 @@ export default function SaroGuide() {
                 <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={narrationProgress}><b style={{ width: `${narrationProgress}%` }} /></div>
               </div>}
               <p ref={transcriptTextRef} className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
-              {!zone && <p className="saru-chat-invite">{es ? "Haz clic sobre mí para interactuar conmigo." : "Click on me to interact with me."}</p>}
               <div className={`saru-bar${zone ? " zone-transcript-bar" : ""}`}>
                 <span className="saru-name notranslate" translate="no">Saru</span>
                 {!reply && !aside && lines.length > 1 && (
                   <span className="saru-dots">{lines.map((_, i) => <button key={i} type="button" className={i === step ? "on" : i < step ? "seen" : undefined} onClick={() => { setAside(null); setStep(i); }} aria-label={`${es ? "Frase" : "Line"} ${i + 1}`} />)}</span>
                 )}
-                {(!zone || transcriptOpen) && (reply
-                  ? <button type="button" className="saru-btn saru-btn-text" onClick={resumeTour}>{es ? "Seguir el recorrido" : "Resume tour"}</button>
-                  : <button type="button" className="saru-btn" onClick={() => setPlaying((p) => !p)} aria-label={playing ? (es ? "Pausar" : "Pause") : (es ? "Reanudar" : "Resume")}>{playing ? <Pause size={13} /> : <Play size={13} />}</button>)}
+                {(!zone || transcriptOpen) && reply && <button type="button" className="saru-btn saru-btn-text" onClick={resumeTour}>{es ? "Seguir el recorrido" : "Resume tour"}</button>}
                 {zone && transcriptOpen && <button type="button" className={`saru-btn${voice ? " on" : ""}`} onClick={() => setVoice((v) => !v)} aria-pressed={voice} aria-label={voice ? (es ? "Silenciar a Saru" : "Mute Saru") : (es ? "Activar voz de Saru" : "Enable Saru voice")}>{voice ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>}
                 {!zone && <>
                   <button type="button" className={`saru-btn${voice ? " on" : ""}`} onClick={() => setVoice((v) => !v)} aria-pressed={voice} aria-label={es ? "Voz" : "Voice"}>{voice ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>
@@ -839,9 +875,8 @@ export default function SaroGuide() {
           </span>
           <SaroFigure mood={mood} talking={talking} />
         </button>
-        {!chatOpen && !transcriptOpen && (
-          <AnimatePresence initial={false}>
-            {(zone ? zoneMenuOpen : homeOrbitOpen) && <motion.div key={zone ? "zone-orbit" : "home-orbit"} className="saru-zone-orbit" role="group" aria-label={es ? "Acciones de Saru" : "Saru actions"}
+        <AnimatePresence initial={false}>
+          {(zone ? zoneMenuOpen : homeOrbitOpen) && <motion.div key={zone ? "zone-orbit" : "home-orbit"} className="saru-zone-orbit" role="group" aria-label={es ? "Acciones de Saru" : "Saru actions"}
               initial={{ opacity: 0, scale: 0.35 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.3 }} transition={chatTransition}>
               <div className="saru-zone-orbit-plane">
                 <button className="orbit-transcript" type="button" onClick={openTranscript} aria-label={es ? "Abrir transcripción" : "Open transcript"} title={es ? "Transcripción" : "Transcript"}><FileText size={14} /></button>
@@ -849,8 +884,7 @@ export default function SaroGuide() {
                 <button className="orbit-chat" type="button" onClick={openZoneChat} aria-label={es ? "Abrir chat con Saru" : "Open chat with Saru"} title={es ? "Chat" : "Chat"}><MessageCircle size={14} /></button>
               </div>
             </motion.div>}
-          </AnimatePresence>
-        )}
+        </AnimatePresence>
         </motion.div>
         </motion.div>
 

@@ -19,7 +19,6 @@
   --text: #e8f1ff;
   --muted: #93a4c3;
 }
-
 html body {
   font-family: var(--font-ui);
   background: var(--saros-space)
@@ -557,14 +556,31 @@ html body .review-card {
 .wordmark-title span {
   position: relative;
   display: inline-block;
-  background: linear-gradient(115deg, #8195ad 8%, #e4edf5 30%, #fff 43%, #b7cddd 54%, #7188a2 82%);
-  background-size: 240% 100%;
+  background: linear-gradient(115deg, #8490ad 5%, #dce5f5 25%, #fff 39%, #c8b3ff 48%, #f2fbff 53%, #9bb2cf 70%, #d4b5ff 91%);
+  background-size: 320% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   animation: saros-letter 2.4s cubic-bezier(.16, 1, .3, 1) both, saros-sheen 4.8s ease-out both;
   animation-delay: calc(.15s + var(--letter-index)*.13s);
-  text-shadow: 0 0 35px #b1daf520
+  text-shadow: 0 0 22px rgba(194, 161, 255, .2), 0 0 38px rgba(105, 211, 255, .12)
+}
+
+.wordmark-title {
+  filter: drop-shadow(0 0 18px rgba(140, 105, 255, .16));
+}
+
+.wordmark-title::after {
+  content: "";
+  position: absolute;
+  inset: 4% 0 8%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(106deg, transparent 0%, transparent 43%, rgba(207, 190, 255, .18) 46%, rgba(238, 250, 255, .9) 49%, rgba(191, 151, 255, .5) 52%, transparent 57%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translateX(-105%);
+  animation: saros-title-reflection 1.15s cubic-bezier(.18, .72, .22, 1) .85s both;
 }
 
 .wordmark-horizon {
@@ -698,13 +714,27 @@ html body .review-card {
 }
 
 @keyframes saros-sheen {
-  from {
-    background-position: 100% 0
+  0% {
+    background-position: 112% 0;
+    filter: brightness(.82)
   }
 
-  to {
-    background-position: 0 0
+  44% {
+    background-position: 50% 0;
+    filter: brightness(1.28)
   }
+
+  100% {
+    background-position: -18% 0;
+    filter: brightness(1)
+  }
+}
+
+@keyframes saros-title-reflection {
+  0% { opacity: 0; transform: translateX(-105%) }
+  16% { opacity: .9 }
+  82% { opacity: .78 }
+  100% { opacity: 0; transform: translateX(105%) }
 }
 
 @keyframes saros-horizon {
@@ -3096,7 +3126,7 @@ html body .saro.in-zone .saru-caption{margin:26px 0 0;border-radius:5px 16px 16p
 /* ---------- SARU: chat pegado debajo, recorrido punto por punto y panel guiado ---------- */
 html body .saro{flex-direction:column;align-items:flex-start;gap:8px;bottom:62px}
 html body .saro.in-zone{top:74px;bottom:auto}
-.saru-row{position:relative;display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-end;gap:4px}
+.saru-row{position:relative;display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-end;gap:40px}
 .saru-avatar-anchor{flex:none;position:relative;line-height:0}
 .saru-chat-reveal{overflow:hidden;max-width:100%;pointer-events:auto;padding:1px}
 .saru-chat-pending{margin:4px 8px 10px;color:#c7a5f4;font-size:12px}
@@ -3220,7 +3250,7 @@ html body .saru-pool{position:fixed;left:0;top:0;width:320px;height:1px;overflow
   html body .hero-lang-btn{left:max(4px,calc(env(safe-area-inset-left) + 4px))}
   html body .hero-search-btn{right:max(4px,calc(env(safe-area-inset-right) + 4px))}
   html body .saro:not(.in-zone){left:clamp(34px,6vw,44px);right:10px;bottom:calc(50px + env(safe-area-inset-bottom));gap:4px}
-  html body .saro:not(.in-zone) .saru-row{width:100%;gap:6px}
+  html body .saro:not(.in-zone) .saru-row{width:100%;gap:24px}
   html body .saro:not(.in-zone) .saru-caption{width:auto;flex:1;min-width:0;margin:0 0 8px;padding:10px 11px 8px}
   html body .saro:not(.in-zone) .saru-text{max-height:min(18dvh,120px);font-size:12px;line-height:1.5}
   html body .saro .saru-ask{width:calc(100vw - 22px);max-width:100%}
@@ -3318,7 +3348,6 @@ html body .kind-filter{pointer-events:auto}
 }
 @media(max-width:720px){html body .kind-filter{display:none}}
 
-.saru-chat-invite{margin:6px 0 0;color:#c9a6ff;font-size:11px;line-height:1.35}
 
 .earth-stage[data-scene-ready="false"]>:not(.space-backdrop):not(.space-dust):not(.scene-prelude):not(.earth-orbit){visibility:hidden;pointer-events:none}
 .earth-stage[data-scene-ready="false"] .earth-orbit>.orbit-line,
@@ -3332,7 +3361,7 @@ html body .kind-filter{pointer-events:auto}
 /* En las ubicaciones, Saru y sus controles orbitan sobre el mapa 3D. */
 html body .zone-saru-slot{position:absolute;top:82px;left:82px;z-index:10;width:min(340px,calc(100% - 580px));min-height:72px;margin:0;display:flex;align-items:flex-start;justify-content:flex-start;pointer-events:none}
 html body .zone-saru-slot>.saro.in-zone{position:relative!important;inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:100%;min-height:72px;display:flex;align-items:flex-start;justify-content:flex-start;z-index:2!important;pointer-events:auto}
-html body .zone-saru-slot .saru-row{width:100%;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-start;gap:10px}
+html body .zone-saru-slot .saru-row{width:100%;flex-direction:row-reverse;justify-content:flex-end;align-items:flex-start;gap:28px}
 html body .zone-saru-slot .saru-caption{display:block!important;flex:1;min-width:0;width:auto;max-width:none;max-height:min(220px,32vh);margin:0!important;padding:8px 10px 6px;border-radius:16px 16px 16px 5px;overflow:hidden}
 html body .zone-saru-slot .saru-caption .saru-text{max-height:140px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(167,139,250,.62) transparent;scroll-behavior:smooth}
 html body .zone-saru-slot .saru-reading-progress{display:flex;align-items:center;gap:9px;margin:0 0 6px;color:#c9b7ff;font-size:9px;letter-spacing:.05em}
@@ -3359,3 +3388,21 @@ html body .saro.in-zone .zone-transcript-bar{opacity:1}
 @media(min-width:901px){html body .saro:not(.in-zone) .saru-zone-orbit{width:136px;height:136px;margin:-68px 0 0 -68px}}
 @media(max-width:900px){html body .zone-stage-map .zone-saru-slot{top:82px;left:82px;width:min(260px,calc(100% - 94px));min-height:72px}html body .zone-saru-slot .saru-avatar{width:62px;height:72px}html body .zone-saru-slot .saru-caption{max-height:min(200px,30vh)}html body .zone-saru-slot .saru-caption .saru-text{max-height:126px}html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{width:100%;max-width:100%}html body .saro:not(.in-zone) .saru-zone-orbit{left:50%;width:108px;height:108px;margin:-54px 0 0 -54px}}
 @media(prefers-reduced-motion:reduce){html body .saro .saru-zone-orbit-plane,html body .saro .saru-zone-orbit-plane button svg{animation:none}}
+
+/* El wordmark hace un destello de entrada discreto, respetando el brillo espacial en ambos tamaños. */
+@media(prefers-reduced-motion:reduce){
+  .wordmark-title::after{animation:none;opacity:0}
+}
+
+/* En móvil, ancla idioma y búsqueda al viewport visible y deja aire sobre el ticker inferior para la órbita de Saru. */
+@media(max-width:720px){
+  html body .hero-overlay{z-index:8}
+  html body .hero-overlay .hero-lang-btn,
+  html body .hero-overlay .hero-search-btn{
+    position:fixed!important;
+    top:max(8px,calc(env(safe-area-inset-top, 0px) + 8px))!important;
+  }
+  html body .hero-overlay .hero-lang-btn{left:max(8px,calc(env(safe-area-inset-left, 0px) + 8px))!important}
+  html body .hero-overlay .hero-search-btn{right:max(8px,calc(env(safe-area-inset-right, 0px) + 8px))!important}
+  html body .saro:not(.in-zone){bottom:calc(68px + env(safe-area-inset-bottom, 0px))}
+}

@@ -164,7 +164,7 @@ export default function EarthHero() {
         {/* Zona elegida: acercamiento y panel con su información */}
         <ZoneView />
         {/* Saro: guía animado que explica cada zona */}
-        <SaroGuide />
+        <SaroGuide sceneReady={sceneReady} />
         {/* Último evento, cifras y buscador de zonas */}
         <HeroOverlay progress={progress} mobileMode={mobileMode} />
         {/* Cintillo de titulares (arriba → abajo con el scroll) */}
