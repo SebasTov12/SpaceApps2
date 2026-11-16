@@ -1,4 +1,4 @@
-import type { TerritorialAssessment } from "./socioeconomic";
+import { demoAssessments, type TerritorialAssessment } from "./socioeconomic";
 
 export type MunicipalProfile = {
   divipola: string;
@@ -136,8 +136,7 @@ export function parseAssessment(value: unknown, zoneId: string): TerritorialAsse
 
 export async function loadAssessment(zoneId: string, signal: AbortSignal): Promise<TerritorialAssessment | null> {
   const base = process.env.NEXT_PUBLIC_SAROS_API;
-  // Sin backend no hay evaluación: no rellenar la interfaz con métricas sintéticas.
-  if (!base) return null;
+  if (!base) return demoAssessments.find((item) => item.zoneId === zoneId) ?? null;
   const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/regions/${encodeURIComponent(zoneId)}/assessment`, {
     signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]), cache: "no-store",
   });

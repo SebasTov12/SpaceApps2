@@ -204,11 +204,20 @@ export default function CountryLayer() {
   }), []);
   useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats]);
 
-  // Un país aparece solo si el backend entregó registros georreferenciados.
+  // un punto por país: zonas curadas + registros de la base
   const pins = useMemo<Pin[]>(() => {
-    return Array.from(records.entries()).filter(([, count]) => count > 0).map(([code, count]) => {
-      const center = CENTERS[code] ?? [0, 0];
-      return { code, lat: center[0], lon: center[1], zones: 0, records: count };
+    const by = new Map<string, { lat: number; lon: number; zones: number }>();
+    for (const z of riskZones) {
+      const code = countryOf(z);
+      if (!code) continue;
+      const cur = by.get(code) ?? { lat: 0, lon: 0, zones: 0 };
+      cur.lat += z.lat; cur.lon += z.lon; cur.zones += 1;
+      by.set(code, cur);
+    }
+    for (const code of records.keys()) if (!by.has(code)) by.set(code, { lat: 0, lon: 0, zones: 0 });
+    return Array.from(by.entries()).map(([code, v]) => {
+      const center = CENTERS[code] ?? (v.zones ? [v.lat / v.zones, v.lon / v.zones] : [0, 0]);
+      return { code, lat: center[0], lon: center[1], zones: v.zones, records: records.get(code) ?? 0 };
     });
   }, [records]);
 
