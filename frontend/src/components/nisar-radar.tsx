@@ -65,8 +65,8 @@ export default function NisarRadar({ apex, playing, progress }: {
 
   useFrame((_, delta) => {
     if (playing) elapsed.current += Math.min(delta, 0.1);
-    // El detector de NISAR emite barridos de radar activos y pulsos continuos a medida que orbita
-    const operationalPulse = 0.55 + 0.35 * Math.sin(elapsed.current * 1.6);
+    // El haz permanece encendido: la onda animada representa el barrido que recorre la franja.
+    const operationalPulse = 0.9 + 0.05 * Math.sin(elapsed.current * 1.6);
     const scrollFactor = 0.85 + Math.min(1, Math.max(0, progress.get())) * 0.15;
     const reveal = Math.min(1, Math.max(globeState.beam, operationalPulse) * scrollFactor);
     const visibility = reveal * reveal * (3 - 2 * reveal);
@@ -92,9 +92,10 @@ export default function NisarRadar({ apex, playing, progress }: {
             uniform float time;
             uniform float visibility;
             void main() {
-              float pulse = pow(max(0.0, 1.0 - abs(fract(radarUv.y - time * 0.55) - 0.5) * 2.0), 16.0);
+              float wave = pow(max(0.0, 1.0 - abs(fract(radarUv.y * 1.25 - time * 0.42) - 0.5) * 2.0), 22.0);
+              float core = pow(max(0.0, 1.0 - abs(radarUv.x * 2.0 - 1.0)), 5.0);
               float edge = pow(abs(radarUv.x * 2.0 - 1.0), 8.0);
-              float alpha = (0.055 + pulse * 0.18 + edge * 0.045) * radarUv.y * visibility;
+              float alpha = (0.07 + wave * 0.2 + core * 0.07 + edge * 0.035) * radarUv.y * visibility;
               gl_FragColor = vec4(0.38, 0.82, 0.86, alpha);
             }
           `} />

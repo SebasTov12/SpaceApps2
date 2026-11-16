@@ -7,9 +7,10 @@ import { useReducedMotion } from "framer-motion";
 import { AdditiveBlending, DoubleSide, Vector3, type Group, type MeshBasicMaterial } from "three";
 import { globeState, SCAN_INTERVAL, SCAN_DURATION, SCAN_FADE } from "./globe-state";
 
-const PASS_INTERVAL = 35;
+const PASS_INTERVAL_MIN = 34;
+const PASS_INTERVAL_VARIANCE = 8;
 const PASS_DURATION = 4.4;
-type DetectionSchedule = { active: number; startedAt: number; nextAt: number[]; inView: boolean[] };
+type DetectionSchedule = { activeUntil: number[]; nextAt: number[]; inView: boolean[] };
 
 type Orbit = { radius: number; tilt: [number, number, number]; speed: number; phase: number; color: string; scale: number };
 
@@ -82,10 +83,12 @@ function Companion({ orbit, playing, reducedMotion, passDuration, index, schedul
       camera.getWorldPosition(viewDirection).sub(centerPosition);
       onVisibilityChange(index, satellitePosition.sub(centerPosition).dot(viewDirection) > 0.25);
     }
-    const active = playing && schedule.current.active === index;
+    const now = performance.now() / 1000;
+    const active = playing && now < (schedule.current.activeUntil[index] ?? 0);
     if (detector.current) detector.current.visible = active;
     if (!active) return;
-    const progress = Math.min(1, Math.max(0, (performance.now() / 1000 - schedule.current.startedAt) / passDuration));
+    const startedAt = (schedule.current.activeUntil[index] ?? now) - passDuration;
+    const progress = Math.min(1, Math.max(0, (now - startedAt) / passDuration));
     const glow = Math.sin(progress * Math.PI) ** 2;
     if (beam.current) beam.current.opacity = glow * 0.34;
     if (footprint.current) footprint.current.opacity = glow * 0.58;
@@ -118,9 +121,10 @@ function Companion({ orbit, playing, reducedMotion, passDuration, index, schedul
 export default function CompanionSats({ playing }: { playing: boolean }) {
   const reducedMotion = useReducedMotion();
   const passDuration = reducedMotion ? PASS_DURATION * 1.4 : PASS_DURATION;
-  const schedule = useRef<DetectionSchedule>({ active: -1, startedAt: 0, nextAt: [], inView: [false, false] });
+  const schedule = useRef<DetectionSchedule>({ activeUntil: [0, 0], nextAt: [], inView: [false, false] });
   const onVisibilityChange = useCallback((index: number, visible: boolean) => { schedule.current.inView[index] = visible; }, []);
-  // Se evalúa antes de dibujar los dos satélites: un único turno evita solapamientos.
+  // Cada satélite tiene su propio intervalo; los desfases evitan pulsos sincronizados frecuentes,
+  // pero la variación permite coincidencias ocasionales y naturales.
   useFrame(() => {
     const state = schedule.current;
     const now = performance.now() / 1000;
@@ -129,19 +133,16 @@ export default function CompanionSats({ playing }: { playing: boolean }) {
     const clear = scanAt >= 0 && elapsed > SCAN_DURATION + SCAN_FADE + 0.4
       && elapsed < SCAN_INTERVAL - 0.5 && globeState.beam < 0.001;
     if (!playing || globeState.zoom > 0.05 || !clear) {
-      state.active = -1;
+      state.activeUntil = [0, 0];
       return;
     }
     if (!state.nextAt.length) state.nextAt = [now + 1, now + 18.5];
-    if (state.active >= 0 && now - state.startedAt >= passDuration) state.active = -1;
-    if (state.active >= 0 || elapsed + passDuration >= SCAN_INTERVAL - 0.5) return;
-    // Si hay dos turnos pendientes, sale primero el que más ha esperado.
-    const eligible = [0, 1].filter((i) => now >= state.nextAt[i] && state.inView[i]);
-    if (!eligible.length) return;
-    const next = eligible.reduce((a, b) => state.nextAt[a] <= state.nextAt[b] ? a : b);
-    state.active = next;
-    state.startedAt = now;
-    state.nextAt[next] = now + PASS_INTERVAL;
+    if (elapsed + passDuration >= SCAN_INTERVAL - 0.5) return;
+    for (const i of [0, 1]) {
+      if (now < state.nextAt[i] || !state.inView[i] || now < state.activeUntil[i]) continue;
+      state.activeUntil[i] = now + passDuration;
+      state.nextAt[i] = now + PASS_INTERVAL_MIN + Math.random() * PASS_INTERVAL_VARIANCE;
+    }
   }, -1);
   return (
     <group>
