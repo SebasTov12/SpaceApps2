@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
-import { demoAssessments, exposureScenarios, type TerritorialAssessment } from "@/lib/socioeconomic";
+import { exposureScenarios, type TerritorialAssessment } from "@/lib/socioeconomic";
 import { loadAssessment, loadMunicipalProfile, type MunicipalProfile } from "@/lib/territorial-api";
 
 /** Embedded disclosure in the existing region view, opened by selecting the globe. */

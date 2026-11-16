@@ -323,6 +323,7 @@ export default function SaroGuide() {
   const [prog, setProg] = useState({ text: "", n: 0 });
   // El primer HTML debe coincidir en servidor y navegador; activa escritura tras hidratar.
   const [hydrated, setHydrated] = useState(false);
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [minimized, setMinimized] = useState(false);
   // Saru llega cuando se baja con el scroll (o al abrir una zona); arriba del todo no está
   const [arrived, setArrived] = useState(false);
@@ -332,6 +333,23 @@ export default function SaroGuide() {
     const frame = requestAnimationFrame(() => setHydrated(true));
     return () => cancelAnimationFrame(frame);
   }, []);
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!zoneId) {
+      const frame = requestAnimationFrame(() => setPortalRoot(document.body));
+      return () => cancelAnimationFrame(frame);
+    }
+    let frame = 0;
+    let attempts = 0;
+    const attachToPanel = () => {
+      const slot = document.querySelector<HTMLElement>(".zone-panel .zone-saru-slot");
+      if (slot) setPortalRoot(slot);
+      else if (attempts++ < 30) frame = requestAnimationFrame(attachToPanel);
+      else setPortalRoot(document.body);
+    };
+    frame = requestAnimationFrame(attachToPanel);
+    return () => cancelAnimationFrame(frame);
+  }, [hydrated, zoneId]);
   useEffect(() => {
     const onReveal = (event: Event) => {
       const on = Boolean((event as CustomEvent<boolean>).detail);
@@ -681,7 +699,7 @@ export default function SaroGuide() {
       <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}`} aria-hidden={away || undefined}>
         <motion.div layout="position" transition={chatTransition} className="saru-row">
         <AnimatePresence initial={false} mode="popLayout">
-          {!minimized && !chatOpen && showCaption && (
+          {!zone && !minimized && !chatOpen && showCaption && (
             <motion.div layout="position" key="caption" className="saru-caption" role="status" aria-live="polite"
               initial={{ opacity: 0, y: 18, scale: 0.96, filter: "blur(5px)" }} animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, y: 10, scale: 0.98, filter: "blur(3px)" }}
               transition={{ ...chatTransition, duration: reduce ? 0 : 0.55 }}>
@@ -747,5 +765,5 @@ export default function SaroGuide() {
       </AnimatePresence>
       </div>
     </>
-  ), document.body);
+  ), portalRoot ?? document.body);
 }

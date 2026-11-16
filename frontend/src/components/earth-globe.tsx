@@ -28,7 +28,8 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
     "/earth-height.png",
   ], (textures) => {
     textures[0].colorSpace = SRGBColorSpace;
-    for (const texture of textures) texture.anisotropy = 8;
+    const anisotropy = quality === "compact" ? 4 : 8;
+    for (const texture of textures) texture.anisotropy = anisotropy;
   });
 
   const userGroup = useRef<Group>(null);
@@ -272,10 +273,17 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
   const showScene = useCallback(() => { setReady(true); onReady(); }, [onReady]);
   // con el mapa de una zona a pantalla completa el planeta queda oculto: no se dibuja (ahorra GPU y batería)
   const [hidden, setHidden] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
   useEffect(() => {
     const onView = (event: Event) => setHidden(Boolean((event as CustomEvent<boolean>).detail));
+    const onVisibility = () => setPageVisible(document.visibilityState === "visible");
     window.addEventListener("saros:mapview", onView);
-    return () => window.removeEventListener("saros:mapview", onView);
+    document.addEventListener("visibilitychange", onVisibility);
+    onVisibility();
+    return () => {
+      window.removeEventListener("saros:mapview", onView);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   // Girar el planeta arrastrando. Se escucha en window para no robar los clics de R3F.
@@ -318,8 +326,8 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
         <Canvas style={compact
           ? { position: "absolute", inset: "-20%", width: "140%", height: "140%", overflow: "visible" }
           : { position: "absolute", inset: "-35%", width: "170%", height: "170%", overflow: "visible" }}
-          camera={{ position: [0, 0, compact ? 2.9 : 3.5], fov: 58 }} dpr={compact ? [1.1, 1.35] : [1, 1.6]}
-          frameloop={playing && !hidden ? "always" : "demand"}
+          camera={{ position: [0, 0, compact ? 2.9 : 3.5], fov: 58 }} dpr={compact ? [1.15, 1.5] : [1, 1.6]}
+          frameloop={playing && !hidden && pageVisible ? "always" : "demand"}
           fallback={<NoWebGL onReady={showScene} />}
           resize={{ offsetSize: true }}
           gl={{ antialias: quality === "full", alpha: true, powerPreference: "high-performance" }}>

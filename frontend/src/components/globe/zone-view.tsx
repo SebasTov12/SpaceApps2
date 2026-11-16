@@ -488,6 +488,7 @@ export default function ZoneView() {
             </header>
             <h2 className="zone-title">{zone.name[lang]}</h2>
             <p className="zone-place"><MapPin size={13} /> {zone.place[lang] !== zone.name[lang] ? `${zone.place[lang]} · ` : ""}{formatCoord(zone.lat, zone.lon)}</p>
+            <div className="zone-saru-slot" aria-label={lang === "es" ? "Saru, guía de la ubicación" : "Saru, location guide"} />
             <TerritorialImpact key={zone.id} zoneId={zone.id} lat={zone.lat} lon={zone.lon} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
             <div className="zone-level" data-tour="level" style={{ "--level": modelAssessment ? levelInfo[level].color : "#8993ad" } as React.CSSProperties}>
               <i />{modelAssessment ? `${modelAssessment.priority} · ${lang === "es" ? "prioridad exploratoria" : "exploratory priority"}` : (lang === "es" ? "Sin evaluación del modelo" : "No model assessment")}

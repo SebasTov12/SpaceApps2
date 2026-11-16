@@ -1764,7 +1764,7 @@ html body .space-stars {
 
 .hero-search-btn {
   position: absolute;
-  top: 52px;
+  top: 28px;
   right: 20px;
   display: grid;
   place-items: center;
@@ -1805,7 +1805,7 @@ html body .space-stars {
 /* ---------- Botón de idioma en esquina superior izquierda (simétrico a la lupita) ---------- */
 .hero-lang-btn {
   position: absolute;
-  top: 52px;
+  top: 28px;
   left: 20px;
   display: grid;
   place-items: center;
@@ -2216,7 +2216,7 @@ font {
 
 .search-panel {
   width: min(620px, 100%);
-  max-height: 70vh;
+  max-height: min(70vh, calc(100dvh - 24px));
   display: flex;
   flex-direction: column;
   border: 1px solid rgba(104, 25, 147, .55);
@@ -2315,6 +2315,28 @@ font {
   box-shadow: inset 0 0 12px rgba(104, 25, 147, .25)
 }
 
+.search-load-more {
+  padding: 8px 0 4px;
+  content-visibility: auto;
+}
+
+.search-load-more button {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(192, 132, 252, .25);
+  border-radius: 10px;
+  background: rgba(104, 25, 147, .16);
+  color: #d8b4fe;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.search-load-more button:hover {
+  background: rgba(104, 25, 147, .3);
+}
+
 .search-results i {
   width: 10px;
   height: 10px;
@@ -2386,8 +2408,10 @@ font {
   }
 
   .search-backdrop {
-    padding: 8vh 10px 10px
+    align-items:flex-start;
+    padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))
   }
+  .search-panel{max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px)}
 
   .search-results em {
     display: none
@@ -2821,7 +2845,7 @@ html body .hero-latest {
 .zone-watch .watch-cross .is-bad{color:#fda4af;font-weight:600}
 .zone-watch .watch-cross .is-warn{color:#fcd34d;font-weight:600}
 .zone-watch .watch-notify{margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#d6def3}
-.mode-switch{position:absolute;left:50%;top:54px;translate:-50% 0;z-index:7;display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(9,13,30,.72);border:1px solid rgba(104,25,147,.55);backdrop-filter:blur(12px);pointer-events:auto;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.mode-switch{position:absolute;left:50%;top:28px;translate:-50% 0;z-index:7;display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(9,13,30,.72);border:1px solid rgba(104,25,147,.55);backdrop-filter:blur(12px);pointer-events:auto;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .mode-switch button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#cfd8f0;font-size:12.5px;font-weight:500;transition:background .3s,color .3s}
 .mode-switch button.is-active{background:linear-gradient(90deg,#681993,#3b4bd8);color:#fff}
 .mode-switch .mode-dot{width:8px;height:8px;border-radius:50%;background:#e0b341;box-shadow:0 0 8px #e0b341}
@@ -3210,11 +3234,11 @@ html body .saru-pool{position:fixed;left:0;top:0;width:320px;height:1px;overflow
 /* Mobile: controls share the top row; Saru stays above the news ticker. */
 @media(max-width:720px){
   .earth-render.is-draggable{touch-action:none}
-  html body .mode-switch{top:max(12px,env(safe-area-inset-top));bottom:auto;left:58px;right:58px;translate:none;min-width:0;min-height:44px;padding:3px;gap:2px;display:grid;grid-template-columns:.7fr 1fr 1.6fr;border-radius:20px}
+  html body .mode-switch{top:max(4px,env(safe-area-inset-top));bottom:auto;left:58px;right:58px;translate:none;min-width:0;min-height:44px;padding:3px;gap:2px;display:grid;grid-template-columns:.7fr 1fr 1.6fr;border-radius:20px}
   html body .mode-switch button{min-width:0;min-height:38px;padding:4px 3px;justify-content:center;font-size:clamp(9px,2.4vw,11.5px);line-height:1.15;gap:2px;text-align:center}
   html body .mode-switch .mode-label{overflow-wrap:anywhere}
   html body .mode-switch .mode-dot{display:none}
-  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(12px,env(safe-area-inset-top))}
+  html body .hero-lang-btn,html body .hero-search-btn{width:44px;height:44px;min-width:44px;min-height:44px;aspect-ratio:1;flex:0 0 44px;box-sizing:border-box;top:max(4px,env(safe-area-inset-top))}
   html body .earth-orbit{top:46%}
   html body .hero-lang-btn{left:8px}
   html body .hero-search-btn{right:8px}
@@ -3324,8 +3348,17 @@ html body .kind-filter{pointer-events:auto;overscroll-behavior:contain;touch-act
 .earth-stage[data-scene-ready="false"] .earth-orbit>.orbit-line-two{visibility:hidden}
 
 .orientation-guard{display:none}
-@media (orientation:landscape) and (hover:none) and (pointer:coarse) and (max-height:1024px){
-  .orientation-guard{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;background:radial-gradient(circle at 50% 40%,#272052,#090c1d 68%);color:#e9e4ff;text-align:center;touch-action:none}
-  .orientation-guard svg{color:#b888ff;filter:drop-shadow(0 0 12px rgba(178,118,255,.7))}
-  .orientation-guard p{max-width:320px;margin:0;font-size:16px;line-height:1.5}
-}
+.orientation-guard.is-active{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;background:radial-gradient(circle at 50% 40%,#272052,#090c1d 68%);color:#e9e4ff;text-align:center;touch-action:none}
+.orientation-guard.is-active svg{color:#b888ff;filter:drop-shadow(0 0 12px rgba(178,118,255,.7))}
+.orientation-guard.is-active p{max-width:320px;margin:0;font-size:16px;line-height:1.5}
+
+/* Saru ocupa un hueco propio en la ficha; el diálogo inicial queda oculto,
+   y al tocarlo el chat se despliega dentro del mismo panel desplazable. */
+html body .zone-saru-slot{min-height:82px;margin:8px 0 12px;display:flex;align-items:center;justify-content:flex-end;pointer-events:auto}
+html body .zone-saru-slot>.saro.in-zone{position:relative!important;inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:100%;min-height:72px;display:flex;align-items:center;justify-content:flex-end;z-index:2!important;pointer-events:auto}
+html body .zone-saru-slot .saru-row{width:100%;justify-content:flex-end;align-items:center}
+html body .zone-saru-slot .saru-caption{display:none!important}
+html body .zone-saru-slot .saru-avatar{width:68px;height:78px}
+html body .zone-saru-slot .saru-chat-reveal{width:100%;max-width:100%;flex:1 0 100%;order:2}
+html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:100%;max-width:100%;margin:8px 0 0}
+@media(max-width:900px){html body .zone-saru-slot{min-height:72px;margin:6px 0 10px}html body .zone-saru-slot .saru-avatar{width:62px;height:72px}html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{width:100%;max-width:100%}}

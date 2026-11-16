@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useTransform } from "framer-motion";
 import { Globe2, Leaf, Search, TriangleAlert, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { MotionValue } from "framer-motion";
 import { levelInfo } from "@/lib/insights";
 import { useI18n } from "@/lib/i18n";
@@ -34,6 +34,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
   const { lang, globalLang } = useI18n();
   const c = copy[lang];
   const [sites, setSites] = useState<SiteSummary[]>([]);
+  const [sitesLoaded, setSitesLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [shown, setShown] = useState(false);
   // resumen de los registros reales de la base que se dibujan en el planeta
@@ -100,20 +101,31 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
     const hz = hazardKind(kind);
     return { color: zone?.color ?? hz.color, label: zone ? zone[lang === "es" ? "es" : "en"] : hz[lang === "es" ? "es" : "en"] };
   };
-  const changeMode = (next: "all" | "risk" | "watch") => setMode(next);
+  const changeMode = (next: "all" | "risk" | "watch") => {
+    setMode(next);
+    setVisibleResultLimit(80);
+    setCursor(0);
+  };
   useEffect(() => {
     globeState.mode = mode;
   }, [mode]);
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [cursor, setCursor] = useState(0);
+  const [visibleResultLimit, setVisibleResultLimit] = useState(80);
   const input = useRef<HTMLInputElement>(null);
   const searchButtonY = useTransform(() => mobileMode.get()
     ? 0
     : -42 * Math.max(0, Math.min(1, progress.get() / 0.2)));
 
   useEffect(() => {
-    loadSites().then(setSites).catch(() => setSites([]));
-  }, []);
+    if (!open || sitesLoaded) return;
+    let active = true;
+    loadSites().then((loaded) => {
+      if (active) { setSites(loaded); setSitesLoaded(true); }
+    }).catch(() => { if (active) setSites([]); });
+    return () => { active = false; };
+  }, [open, sitesLoaded]);
 
   // atajos: "/" o Ctrl+K abren el buscador
   useEffect(() => {
@@ -132,18 +144,17 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
   }, [open]);
 
   const results = useMemo(() => {
-    const q = fold(query.trim());
+    const q = fold(deferredQuery.trim());
     const match = (z: RiskZone) => !hidden.has(z.kind) && (mode === "all" || (mode === "watch" ? watchKinds.has(z.kind) : !watchKinds.has(z.kind))) && (!q || [z.name.es, z.name.en, z.place.es, z.place.en, riskKinds[z.kind].es, riskKinds[z.kind].en].some((v) => fold(v).includes(q)));
     const list = riskZones.filter(match);
     return [...list.filter((z) => z.country === "CO"), ...list.filter((z) => z.country !== "CO")];
-  }, [query, hidden, mode]);
-  const recordResults = useMemo(() => {
-    const q = fold(query.trim());
+  }, [deferredQuery, hidden, mode]);
+  const groupedRecords = useMemo(() => {
     const filtered = (hazards?.points ?? []).filter((point) => {
       if (point.kind === "model_assessment" || hidden.has(point.kind)) return false;
       if (mode === "risk" && watchKinds.has(point.kind as RiskZone["kind"])) return false;
       if (mode === "watch" && !watchKinds.has(point.kind as RiskZone["kind"])) return false;
-      return !q || [point.place, point.type, hazardKind(point.kind).es, hazardKind(point.kind).en, pointCountry(point)].some((v) => fold(v ?? "").includes(q));
+      return true;
     });
     const groups = new Map<string, HazardPoint>();
     for (const point of filtered) {
@@ -162,8 +173,19 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
       current.events = [...(current.events ?? []), ...(point.events ?? [])];
     }
     return Array.from(groups.values()).sort((a, b) => pointCountry(a).localeCompare(pointCountry(b)) || a.place.localeCompare(b.place));
-  }, [hazards, query, hidden, mode]);
+  }, [hazards, hidden, mode]);
+  const recordSearchIndex = useMemo(() => groupedRecords.map((point) => ({
+    point,
+    searchText: fold([point.place, point.type, hazardKind(point.kind).es, hazardKind(point.kind).en, pointCountry(point)].join(" ")),
+  })), [groupedRecords]);
+  const recordResults = useMemo(() => {
+    const q = fold(deferredQuery.trim());
+    return q ? recordSearchIndex.filter((entry) => entry.searchText.includes(q)).map((entry) => entry.point) : groupedRecords;
+  }, [groupedRecords, recordSearchIndex, deferredQuery]);
   const sitesById = useMemo(() => new Map(sites.map((site) => [site.id, site])), [sites]);
+  const visibleRecords = recordResults.slice(0, visibleResultLimit);
+  const visibleZones = results.slice(0, Math.max(0, visibleResultLimit - visibleRecords.length));
+  const hasMoreResults = visibleRecords.length < recordResults.length || visibleZones.length < results.length;
 
   const choose = (zone: RiskZone) => {
     setOpen(false);
@@ -232,7 +254,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
               <div className="search-input">
                 <Search size={18} />
                 <input ref={input} value={query} placeholder={c.placeholder} aria-label={c.search}
-                  onChange={(event) => { setQuery(event.target.value); setCursor(0); }}
+                  onChange={(event) => { setQuery(event.target.value); setCursor(0); setVisibleResultLimit(80); }}
                   onKeyDown={(event) => {
                     if (event.key === "ArrowDown") { event.preventDefault(); setCursor((i) => Math.min(results.length + recordResults.length - 1, i + 1)); }
                     if (event.key === "ArrowUp") { event.preventDefault(); setCursor((i) => Math.max(0, i - 1)); }
@@ -243,7 +265,7 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
               </div>
               <ul className="search-results" role="listbox">
                 {results.length === 0 && recordResults.length === 0 && <li className="search-empty">{c.none}</li>}
-                {recordResults.map((point, index) => {
+                {visibleRecords.map((point, index) => {
                   const kind = hazardKind(point.kind);
                   const cursorIndex = index;
                   const country = pointCountry(point);
@@ -258,8 +280,8 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
                     </button>
                   </li>;
                 })}
-                {results.length > 0 && <li><p className="search-group">{lang === "es" ? "Registros complementarios" : "Additional records"}</p></li>}
-                {results.map((zone, index) => {
+                {visibleZones.length > 0 && <li><p className="search-group">{lang === "es" ? "Registros complementarios" : "Additional records"}</p></li>}
+                {visibleZones.map((zone, index) => {
                   const site = zone.siteId ? sitesById.get(zone.siteId) : undefined;
                   const cursorIndex = recordResults.length + index;
                   const firstWorld = index > 0 && zone.country !== "CO" && results[index - 1].country === "CO";
@@ -276,6 +298,13 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
                     </li>
                   );
                 })}
+                {hasMoreResults && (
+                  <li className="search-load-more">
+                    <button type="button" onClick={() => setVisibleResultLimit((limit) => limit + 80)}>
+                      {lang === "es" ? "Cargar más resultados" : "Load more results"}
+                    </button>
+                  </li>
+                )}
               </ul>
             </motion.div>
           </motion.div>
