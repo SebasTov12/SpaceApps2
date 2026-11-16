@@ -47,7 +47,7 @@ export default function HazardPoints() {
     const pos = new Vector3(...spherePosition(p.lat, p.lon, RADIUS));
     const quat = new Quaternion().setFromUnitVectors(up, pos.clone().normalize());
     const size = 0.0019 + 0.0016 * Math.log10(p.n + 1);
-    return { country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color(hazardKind(p.kind).color) };
+    return { country: pointCountry(p), kind: p.kind, pos, quat, size, color: new Color("#f2bd68") };
   }), [points]);
 
   const geometry = useMemo(() => new CircleGeometry(1, 14), []);
@@ -83,7 +83,7 @@ export default function HazardPoints() {
     for (let i = 0; i < layout.length; i++) {
       const item = layout[i];
       const k = Math.min(1, Math.max(0, (since - (i % 60) * 0.012) / 0.5));
-      const here = item.country === globeState.country && !globeState.hiddenKinds.has(item.kind) ? 1 : 0;
+      const here = item.country === globeState.country ? 1 : 0;
       const scale = here * item.size * (k < 1 ? k * (1.4 - 0.4 * k) : 1) * (i === active ? 3 : 1);
       dummy.position.copy(item.pos);
       dummy.quaternion.copy(item.quat);

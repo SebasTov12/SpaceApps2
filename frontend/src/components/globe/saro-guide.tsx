@@ -553,6 +553,7 @@ export default function SaroGuide() {
   const chatTransition = { duration: reduce ? 0 : 0.8, ease: [0.22, 1, 0.36, 1] as const };
   const closeChat = () => {
     setChatOpen(false);
+    setPlaying(false);
     setMinimized(false);
     requestAnimationFrame(() => avatarRef.current?.focus({ preventScroll: true }));
   };

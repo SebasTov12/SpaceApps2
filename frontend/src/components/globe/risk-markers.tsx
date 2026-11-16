@@ -78,7 +78,7 @@ function Marker({ zone, selected, index, terrain }: { zone: RiskZone; selected: 
   const cameraLocal = useMemo(() => new Vector3(), []);
   const [hover, setHover] = useState(false);
 
-  const color = riskKinds[zone.kind].color;
+  const color = "#f2bd68";
   const position = useMemo(() => spherePosition(zone.lat, zone.lon, 1.002 + RELIEF * terrain), [zone.lat, zone.lon, terrain]);
   
   // Orbe apoyado sobre el terreno; toda la baliza comparte la rotación de la superficie.
