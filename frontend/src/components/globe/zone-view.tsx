@@ -212,7 +212,7 @@ export default function ZoneView() {
       if (!point) return;
       const id = hazardPointId(point);
       globeState.hazardFocus = {
-        id, lat: point.lat, lon: point.lon, kind: point.kind,
+        ...point, id,
         place: point.place || point.type || `${point.lat.toFixed(3)}, ${point.lon.toFixed(3)}`,
         country: pointCountry(point),
       };
@@ -355,6 +355,10 @@ export default function ZoneView() {
       if (!key || !panel) return;
       const el = panel.querySelector<HTMLElement>(`[data-tour="${key}"]`);
       if (!el) return;
+      const panelBounds = panel.getBoundingClientRect();
+      const itemBounds = el.getBoundingClientRect();
+      if (itemBounds.top < panelBounds.top + 12) panel.scrollBy({ top: itemBounds.top - panelBounds.top - 24, behavior: "smooth" });
+      else if (itemBounds.bottom > panelBounds.bottom - 12) panel.scrollBy({ top: itemBounds.bottom - panelBounds.bottom + 24, behavior: "smooth" });
       el.classList.add("is-tour");
       clearTimeout(timer);
       timer = setTimeout(() => el.classList.remove("is-tour"), 5200);
@@ -475,7 +479,7 @@ export default function ZoneView() {
               </div>
             </header>
             <h2 className="zone-title">{zone.name[lang]}</h2>
-            <p className="zone-place"><MapPin size={13} /> {zone.place[lang]} · {formatCoord(zone.lat, zone.lon)}</p>
+            <p className="zone-place"><MapPin size={13} /> {zone.place[lang] !== zone.name[lang] ? `${zone.place[lang]} · ` : ""}{formatCoord(zone.lat, zone.lon)}</p>
             <TerritorialImpact key={zone.id} zoneId={zone.id} lat={zone.lat} lon={zone.lon} observation={active ? { date: active.dates[dateIndex], value: currentValue ?? null, unit, demo: isDemo } : undefined} />
             <div className="zone-level" data-tour="level" style={{ "--level": modelAssessment ? levelInfo[level].color : "#8993ad" } as React.CSSProperties}>
               <i />{modelAssessment ? `${modelAssessment.priority} · ${lang === "es" ? "prioridad exploratoria" : "exploratory priority"}` : (lang === "es" ? "Sin evaluación del modelo" : "No model assessment")}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, CalendarDays, ChartNoAxesCombined, Database, LoaderCircle, MapPin, X } from "lucide-react";
+import { CalendarDays, ChartNoAxesCombined, Database, MapPin, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { formatCoord } from "@/lib/sites";
@@ -19,9 +19,6 @@ const impactLabels: Record<string, { es: string; en: string }> = {
 export default function HazardPointDetail({ point, lang, onClose }: Props) {
   const es = lang === "es";
   const [tab, setTab] = useState<"simple" | "analysis">("simple");
-  const [saruAnswer, setSaruAnswer] = useState("");
-  const [saruError, setSaruError] = useState("");
-  const [askingSaru, setAskingSaru] = useState(false);
   const kind = HAZARD_KINDS[point.kind] ?? HAZARD_KINDS.other;
   const model = point.model_assessment ?? null;
   const records = (point.events ?? []).filter((event) => event.date);
@@ -31,27 +28,6 @@ export default function HazardPointDetail({ point, lang, onClose }: Props) {
     return es ? ({ municipality: "municipio", department: "departamento", national: "nacional" }[scope])
       : ({ municipality: "municipality", department: "department", national: "national" }[scope]);
   };
-  async function askSaru() {
-    if (!point.id || askingSaru) return;
-    setAskingSaru(true);
-    setSaruError("");
-    try {
-      const response = await fetch("/api/assistant", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ point_id: point.id, messages: [{ role: "user", content: es
-          ? `Responde en 2 frases breves. Di explícitamente: qué datos reales hay (fuente y fecha), qué dato no está disponible, y una acción preventiva prudente. No uses “demo”. No llames movimiento a una escena NISAR sin medición LOS procesada ni presentes contexto histórico del modelo como predicción.`
-          : `Answer in 2 short sentences. State explicitly which real data are available (source and date), which data are unavailable, and one prudent preventive action. Do not say “demo”. Do not call a NISAR scene movement without a processed LOS measurement or present historical model context as a forecast.` }] }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "assistant_unavailable");
-      setSaruAnswer(result.answer);
-    } catch (error) {
-      setSaruError(error instanceof Error && error.message === "assistant_not_configured"
-        ? (es ? "Saru no está configurada en el servidor." : "Saru is not configured on the server.")
-        : (es ? "No se pudo consultar a Saru." : "Could not reach Saru."));
-    } finally { setAskingSaru(false); }
-  }
-
   return (
     <motion.aside className="zone-panel hz-point-panel" role="dialog" aria-modal="false" aria-labelledby="hz-point-title"
       initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }}>
@@ -129,12 +105,6 @@ export default function HazardPointDetail({ point, lang, onClose }: Props) {
           </section>
         </div>
       )}
-      <section className="zs-card hz-saru-card">
-        <button type="button" className="hz-ask-saru" onClick={askSaru} disabled={askingSaru}>
-          {askingSaru ? <LoaderCircle size={15} className="animate-spin" /> : <Bot size={15} />}{askingSaru ? (es ? "Consultando a Saru…" : "Asking Saru…") : (es ? "Saru, recomienda para este punto" : "Ask Saru about this point")}
-        </button>
-        {saruAnswer && <p className="hz-saru-answer">🤖 {saruAnswer}</p>}{saruError && <p className="zone-muted" role="status">{saruError}</p>}
-      </section>
       <footer className="zone-source"><span>{Array.from(new Set(point.sources.map(sourceName))).join(" · ")}</span><span>{es ? "Actualizado" : "Updated"}: {point.last ?? "—"}</span></footer>
     </motion.aside>
   );

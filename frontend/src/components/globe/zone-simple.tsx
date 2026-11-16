@@ -12,7 +12,7 @@ import { adviceNote, levelInfo, recommendations } from "@/lib/insights";
 import { riskKindInfo, type RiskZone } from "@/lib/risk-zones";
 import { sectorNames, type SectorImpact, type SectorKey } from "@/lib/sector-impacts";
 import { longDate, type AttentionLevel, type SiteManifest } from "@/lib/sites";
-import { HAZARD_POINT_SELECT, type HazardPoint } from "@/lib/hazard-points";
+import { HAZARD_POINT_SELECT, hazardPointId, type HazardPoint } from "@/lib/hazard-points";
 
 const sectorIcons: Record<SectorKey, LucideIcon> = {
   agriculture: Wheat, livestock: Beef, mining: Pickaxe, housing: House, roads: Route, forest: Trees, water: Droplets,
@@ -166,7 +166,7 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
         )}
       </motion.section>
 
-      <motion.section className="zs-card" variants={item}>
+      <motion.section className="zs-card" data-tour="model" variants={item}>
         <SectionHead icon={Sparkles} title={c.model} sub={c.modelSub} tone="#a78bfa" />
         {modelAssessment ? <>
           <p><b>{modelAssessment.priority}</b> · {lang === "es" ? "prioridad exploratoria" : "exploratory priority"} · {modelAssessment.anomaly_index.toFixed(1)} / 100</p>
@@ -175,15 +175,16 @@ export default function ZoneSimple({ zone, active, level, colombia, siteId, lang
         </> : <p className="zone-muted">{c.noModel}</p>}
       </motion.section>
 
-      <motion.section className="zs-card" variants={item}>
+      <motion.section className="zs-card" data-tour="records" variants={item}>
         <SectionHead icon={Database} title={lang === "es" ? "Registros oficiales cercanos" : "Nearby official records"}
           sub={lang === "es" ? "Datos de la base UNGRD / SGC; no son mediciones satelitales" : "UNGRD / SGC database records; not satellite measurements"} tone="#38bdf8" />
         {nearbyHazards.length ? <div className="zs-nearby-records">
-          {nearbyHazards.map(({ point, distanceKm }) => <article key={point.id} className="zs-nearby-record">
+          {nearbyHazards.map(({ point, distanceKm }) => <article key={hazardPointId(point)} className="zs-nearby-record">
             <strong>{point.place || point.type || (lang === "es" ? "Evento reportado" : "Reported event")}</strong>
             <small>{point.type} · {point.n.toLocaleString(lang === "es" ? "es-CO" : "en-US")} {lang === "es" ? "registros" : "records"} · {distanceKm.toFixed(1)} km</small>
             <small>{Array.from(new Set(point.sources)).join(" · ")} · {point.first ?? "—"}{point.last && point.last !== point.first ? ` – ${point.last}` : ""}</small>
             {(point.affected > 0 || point.homes > 0) && <small>{point.affected > 0 ? `${point.affected.toLocaleString(lang === "es" ? "es-CO" : "en-US")} ${lang === "es" ? "personas reportadas" : "people reported"}` : ""}{point.affected > 0 && point.homes > 0 ? " · " : ""}{point.homes > 0 ? `${point.homes.toLocaleString(lang === "es" ? "es-CO" : "en-US")} ${lang === "es" ? "viviendas reportadas" : "homes reported"}` : ""}</small>}
+            {point.events?.filter((event) => event.date).slice(0, 3).map((event, index) => <small key={`${event.date}-${index}`}>{event.date} · {event.type}{event.affected ? ` · ${event.affected.toLocaleString(lang === "es" ? "es-CO" : "en-US")} ${lang === "es" ? "personas reportadas" : "people reported"}` : ""}</small>)}
             <button type="button" onClick={() => window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: point }))}>
               {lang === "es" ? "Abrir análisis del registro →" : "Open record analysis →"}
             </button>

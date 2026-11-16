@@ -4,7 +4,9 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { History, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isAutoLang, ProtectedTerms, useI18n, type Lang } from "@/lib/i18n";
-import { riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
+import { riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
+import { recommendations } from "@/lib/insights";
+import { hazardPointId, pointCountry, type HazardPoint } from "@/lib/hazard-points";
 import { sectorImpacts, sectorNames, type SectorKey } from "@/lib/sector-impacts";
 import { loadManifest, type AttentionLevel, type SiteManifest } from "@/lib/sites";
 import { OPEN_SECTOR_EVENT, QUICK_QUESTIONS, TOUR_EVENT, allReplySentences, answer, sentences, type SaroAction, type TourKey } from "@/lib/saro-brain";
@@ -68,6 +70,94 @@ function stepsFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "e
     else steps.push({ text });
   }
   return steps;
+}
+
+function riskZoneForHazard(point: HazardPoint): RiskZone {
+  const kind = Object.prototype.hasOwnProperty.call(riskKinds, point.kind) ? point.kind as RiskZone["kind"]
+    : point.kind === "flood" || point.kind === "storm" ? "flood"
+      : point.kind === "volcano" ? "volcano"
+        : point.kind === "earthquake" ? "earthquake"
+          : point.kind === "wildfire" || point.kind === "drought" ? "wildfire"
+            : point.kind === "deforestation" ? "deforestation"
+              : point.kind === "mining" ? "mining"
+                : point.kind === "subsidence" ? "subsidence"
+                  : point.kind === "glacier" ? "glacier" : "landslide";
+  const place = point.place || point.type || `${point.lat.toFixed(3)}, ${point.lon.toFixed(3)}`;
+  return { id: hazardPointId(point), kind, lat: point.lat, lon: point.lon, country: pointCountry(point), name: { es: place, en: place }, place: { es: place, en: place } };
+}
+
+function stepsForHazard(point: HazardPoint, zone: RiskZone, lang: "es" | "en"): TourStep[] {
+  const es = lang === "es";
+  const number = (value: number) => value.toLocaleString(es ? "es-CO" : "en-US", { maximumFractionDigits: 1 });
+  const kind = point.type || (es ? "evento reportado" : "reported event");
+  const period = point.first && point.last && point.first !== point.last ? `${point.first} – ${point.last}` : point.last ?? point.first;
+  const sources = Array.from(new Set(point.sources)).join(es ? " y " : " and ");
+  const lines: TourStep[] = [{
+    text: es
+      ? `Este punto reúne ${number(point.n)} registros de ${kind.toLowerCase()} en ${zone.place.es}${period ? `, entre ${period}` : ""}${sources ? `. La fuente es ${sources}` : ""}. Son reportes del inventario, no una medición NISAR del evento.`
+      : `This point groups ${number(point.n)} ${kind.toLowerCase()} records in ${zone.place.en}${period ? `, from ${period}` : ""}${sources ? `. Source: ${sources}` : ""}. These are inventory reports, not a NISAR measurement of the event.`,
+    tour: "now",
+  }];
+  const impacts = [
+    point.affected > 0 ? `${number(point.affected)} ${es ? "personas reportadas" : "people reported"}` : "",
+    point.homes > 0 ? `${number(point.homes)} ${es ? "viviendas reportadas" : "homes reported"}` : "",
+    point.deaths > 0 ? `${number(point.deaths)} ${es ? "fallecimientos reportados" : "deaths reported"}` : "",
+  ].filter(Boolean);
+  if (impacts.length) lines.push({
+    text: es
+      ? `La base registra ${impacts.join(" y ")}. Son cifras reportadas por las fuentes; no se deben atribuir a un cambio satelital sin evaluación específica.`
+      : `The database records ${impacts.join(" and ")}. These are source-reported figures; they should not be attributed to satellite change without a specific assessment.`,
+    tour: "records",
+  });
+  const events = (point.events ?? []).filter((event) => event.date).slice(0, 3);
+  for (const event of events) lines.push({
+    text: es
+      ? `En el historial, el ${event.date}: ${event.type}${event.source ? `, reportado por ${event.source}` : ""}${event.affected ? `, con ${number(event.affected)} personas afectadas reportadas` : ""}.`
+      : `In the history, on ${event.date}: ${event.type}${event.source ? `, reported by ${event.source}` : ""}${event.affected ? `, with ${number(event.affected)} people reported affected` : ""}.`,
+    tour: "records",
+  });
+  if (point.model_assessment) lines.push({
+    text: es
+      ? `La evaluación exploratoria del modelo asigna prioridad ${point.model_assessment.priority} e índice ${number(point.model_assessment.anomaly_index)} de 100. Es una priorización para revisión, no una probabilidad, alerta ni pronóstico.`
+      : `The model's exploratory assessment assigns priority ${point.model_assessment.priority} and an index of ${number(point.model_assessment.anomaly_index)} out of 100. This prioritizes review; it is not a probability, warning, or forecast.`,
+    tour: "model",
+  });
+  if (point.model_assessment?.recommendation) lines.push({
+    text: es
+      ? `La recomendación exploratoria asociada es: ${point.model_assessment.recommendation} Debe revisarla un equipo técnico; no sustituye una alerta oficial.`
+      : `The associated exploratory recommendation is: ${point.model_assessment.recommendation} A technical team should review it; it does not replace an official warning.`,
+    tour: "model",
+  });
+  if (!point.model_assessment) lines.push({ text: es ? "No hay una evaluación de movimiento NISAR para este punto; los registros históricos por sí solos no permiten calcularla." : "There is no point-specific NISAR motion assessment here; historical reports alone cannot provide one.", tour: "model" });
+  if (point.model_context) {
+    const estimates = Object.entries(point.model_context.estimated_historical_impacts ?? {}).slice(0, 3)
+      .map(([key, value]) => `${number(value)} ${key.replaceAll("_", " ")}`).join(es ? ", " : ", ");
+    lines.push({
+      text: es
+        ? `El modelo incluye contexto socioeconómico histórico del municipio${estimates ? `, como ${estimates}` : ""}. Son estimaciones agregadas, no daños de este evento ni una predicción local.`
+        : `The model includes historical socioeconomic context for the municipality${estimates ? `, such as ${estimates}` : ""}. These are aggregated estimates, not damage from this event or a local prediction.`,
+      tour: "model",
+    });
+  }
+  const sectors = sectorImpacts(zone.id, zone.kind);
+  if (sectors.length) lines.push({
+    text: es
+      ? `Ahora reviso los sectores que podrían ser sensibles a este tipo de cambio: ${sectors.slice(0, 3).map((item) => sectorNames[item.sector].es.toLowerCase()).join(", ")}. Es orientación general; el panel no confirma daños en esos sectores.`
+      : `Now I will review sectors that could be sensitive to this type of change: ${sectors.slice(0, 3).map((item) => sectorNames[item.sector].en.toLowerCase()).join(", ")}. This is general guidance; the panel does not confirm damage in those sectors.`,
+    tour: "sectors",
+  });
+  const advice = recommendations(zone.kind, "baja", zone.country === "CO", lang).filter((item) => !/123|emergency/i.test(item)).slice(0, 2);
+  lines.push({
+    text: es
+      ? `Como prevención general para ${zone.place.es}, no como orden de emergencia: ${advice.join(" Además, ")}`
+      : `As general prevention for ${zone.place.en}, not as an emergency order: ${advice.join(" Also, ")}`,
+    tour: "todo",
+  });
+  lines.push({
+    text: es ? "Si notas una emergencia, sigue las indicaciones oficiales y usa el contacto del panel. El registro por sí solo no indica una amenaza activa." : "If you notice an emergency, follow official instructions and use the contact in the panel. This record alone does not indicate an active threat.",
+    tour: "call",
+  });
+  return lines;
 }
 const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
 
@@ -274,8 +364,9 @@ export default function SaroGuide() {
   const [role, setRole] = useState<SectorKey | null>(null);
   const zoneRef = useRef<string | null>(null);
   const manifestRef = useRef<SiteManifest | null>(null);
-  const zone = riskZones.find((z) => z.id === zoneId) ?? null;
-  const steps = useMemo(() => stepsFor(zone, manifest, lang), [zone, manifest, lang]);
+  const selectedHazard = globeState.hazardFocus?.id === zoneId ? globeState.hazardFocus : null;
+  const zone = useMemo(() => riskZones.find((item) => item.id === zoneId) ?? (selectedHazard ? riskZoneForHazard(selectedHazard) : null), [zoneId, selectedHazard]);
+  const steps = useMemo(() => selectedHazard && zone ? stepsForHazard(selectedHazard, zone, lang) : stepsFor(zone, manifest, lang), [selectedHazard, zone, manifest, lang]);
   const lines = useMemo(() => steps.map((s) => s.text), [steps]);
   const current = steps[Math.min(step, steps.length - 1)];
   const lineText = current?.text ?? "";
@@ -303,7 +394,8 @@ export default function SaroGuide() {
     return () => window.clearInterval(id);
   }, [auto, text, translated, translatedOf, translationKey]);
   const shownText = auto ? translated[translationKey] ?? text : text;
-  const mood: Mood = zone ? moodFor(manifest?.assessment?.level ?? (zone.siteId ? undefined : "baja")) : "happy";
+  const hazardLevel = selectedHazard?.model_assessment?.priority === "P1" ? "alta" : selectedHazard?.model_assessment?.priority === "P2" ? "moderada" : undefined;
+  const mood: Mood = zone ? moodFor(manifest?.assessment?.level ?? hazardLevel ?? (zone.siteId ? undefined : "baja")) : "happy";
   const watch = zone ? watchKinds.has(zone.kind) : false;
 
   // en desarrollo: frases para pregrabar la voz
@@ -333,13 +425,15 @@ export default function SaroGuide() {
       setAside(null);
       setReply(null);
       setPlaying(true);
+      if (id) { setMinimized(false); setChatOpen(false); }
       manifestRef.current = null;
       const z = riskZones.find((r) => r.id === id);
       if (z?.siteId) loadManifest(z.siteId).then((mf) => { manifestRef.current = mf; setManifest(mf); }).catch(() => setManifest(null));
     };
     const onSector = (event: Event) => {
       const key = (event as CustomEvent<SectorKey | null>).detail;
-      const z = riskZones.find((r) => r.id === zoneRef.current);
+      const hazard = globeState.hazardFocus?.id === zoneRef.current ? globeState.hazardFocus : null;
+      const z = riskZones.find((r) => r.id === zoneRef.current) ?? (hazard ? riskZoneForHazard(hazard) : null);
       setReply(null);
       setAside(z && key ? asideFor(z, key, lang) : null);
     };
@@ -491,7 +585,8 @@ export default function SaroGuide() {
   const ask = useCallback(async (question: string) => {
     const q = question.trim();
     if (!q || thinking) return;
-    const z = riskZones.find((r) => r.id === zoneRef.current) ?? null;
+    const hazard = globeState.hazardFocus?.id === zoneRef.current ? globeState.hazardFocus : null;
+    const z = riskZones.find((r) => r.id === zoneRef.current) ?? (hazard ? riskZoneForHazard(hazard) : null);
     // Saru entiende la pregunta para mover el mapa (abrir zona, señalar puntos, explicar colores)
     const local = answer(q, { zone: z, manifest: manifestRef.current, role });
     if (local.role) setRole(local.role);
@@ -508,7 +603,8 @@ export default function SaroGuide() {
     // la respuesta la da el asistente SAROS (Groq, con la evidencia de la base); Saru la muestra y la lee
     setThinking(true);
     setReply(es ? "Déjame revisar los datos…" : "Let me check the data…");
-    const context = z ? `Estoy viendo la zona «${z.name.es}» (${z.place.es}). ` : "";
+    const reportContext = hazard ? `Registro seleccionado: tipo ${hazard.type}; lugar ${hazard.place}; periodo ${hazard.first ?? "sin fecha inicial"} a ${hazard.last ?? "sin fecha final"}; ${hazard.n} registros; fuente ${hazard.sources.join(", ")}; ${hazard.affected} personas y ${hazard.homes} viviendas reportadas. Son datos del inventario, no necesariamente daños causados por una medición NISAR. ` : "";
+    const context = z ? `Estoy viendo la zona «${z.name.es}» (${z.place.es}). ${reportContext}` : "";
     const messages = [
       ...past.slice(-6).map((m) => ({ role: m.from === "user" ? "user" : "assistant", content: m.text.slice(0, 1400) })),
       { role: "user", content: (context + q).slice(0, 1450) },

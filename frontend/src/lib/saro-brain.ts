@@ -11,7 +11,7 @@ import type { SiteManifest } from "./sites";
 
 export type LegendKind = "deformation" | "forest" | "mining" | "flood" | "velocity";
 /** Partes del panel que Saru puede resaltar mientras habla. */
-export type TourKey = "level" | "now" | "watch" | "sectors" | "event" | "todo" | "call";
+export type TourKey = "level" | "now" | "watch" | "model" | "records" | "sectors" | "event" | "todo" | "call";
 /** Evento para resaltar una parte del panel (y desplazarlo hasta ella). */
 export const TOUR_EVENT = "saros:tour";
 /** Evento para abrir la ficha de un sector desde el recorrido. */

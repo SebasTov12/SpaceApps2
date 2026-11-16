@@ -1,4 +1,5 @@
 import { Vector3, type Object3D } from "three";
+import type { HazardPoint } from "@/lib/hazard-points";
 
 /** Relieve exagerado del planeta (fracción del radio). Montañas y casquetes sobresalen hasta este valor. */
 export const RELIEF = 0.04;
@@ -26,7 +27,7 @@ export const globeState = {
   markers: new Map<string, Object3D>(),
   /** Puntos georreferenciados del backend para enfoque/selección, sin contarlos como zonas curadas. */
   hazardMarkers: new Map<string, Object3D>(),
-  hazardFocus: null as { id: string; lat: number; lon: number; kind: string; place: string; country: string } | null,
+  hazardFocus: null as (HazardPoint & { id: string; country: string }) | null,
   /** Reconocimiento inicial: 0 = no empezó, 0–1 = en curso, 1 = terminado. */
   scan: { progress: 0, origin: new Vector3(0, 0, 1), startedAt: -1, originCapturedAt: -1 },
   /** Zonas ya descubiertas por el reconocimiento. */
