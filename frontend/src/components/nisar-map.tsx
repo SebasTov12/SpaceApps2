@@ -103,7 +103,7 @@ const SKY = {
   "sky-horizon-blend": 0.55, "horizon-fog-blend": 0.7, "fog-ground-blend": 0.35, "atmosphere-blend": 0.6,
 } as never;
 
-/** Capas de la vista 3D: sombreado del relieve y edificios (solo se cargan la primera vez que se usan). */
+/** Capas 3D compartidas por todos los registros: relieve, edificios y coberturas forestales cartografiadas. */
 function prepare3D(map: MapLibreMap) {
   if (!map.getSource("dem-shade")) {
     map.addSource("dem-shade", { type: "raster-dem", tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"], encoding: "terrarium", tileSize: 256, maxzoom: 14 });
@@ -124,6 +124,12 @@ function prepare3D(map: MapLibreMap) {
         "fill-extrusion-opacity": 0.66,
         "fill-extrusion-vertical-gradient": true,
       },
+    }, "hotspots-glow");
+    map.addLayer({
+      id: "forest-cover-3d", type: "fill", source: "omt", "source-layer": "landcover", minzoom: 6,
+      filter: ["any", ["==", ["get", "class"], "wood"], ["in", ["get", "subclass"], ["literal", ["forest", "wood", "mangrove"]]]],
+      layout: { visibility: "none" },
+      paint: { "fill-color": "#2f7048", "fill-opacity": 0.42, "fill-outline-color": "#83bd82" },
     }, "hotspots-glow");
   }
 }
@@ -361,6 +367,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
         m.setTerrain(terrain ? { source: "dem", exaggeration: scene.exaggeration } : null);
         m.setLayoutProperty("hillshade", "visibility", terrain ? "visible" : "none");
         if (m.getLayer("buildings")) m.setLayoutProperty("buildings", "visibility", terrain ? "visible" : "none");
+        if (m.getLayer("forest-cover-3d")) m.setLayoutProperty("forest-cover-3d", "visibility", terrain ? "visible" : "none");
         m.setSky(terrain ? SKY : { "atmosphere-blend": 0 } as never);
       } catch {
         /* sin relieve: la vista inclinada sigue funcionando */
