@@ -99,6 +99,14 @@ function stepsForHazard(point: HazardPoint, zone: RiskZone, lang: "es" | "en"): 
       : `This point groups ${number(point.n)} ${kind.toLowerCase()} records in ${zone.place.en}${period ? `, from ${period}` : ""}${sources ? `. Source: ${sources}` : ""}. These are inventory reports, not a NISAR measurement of the event.`,
     tour: "now",
   }];
+  const hotspots = point.model_assessment?.hotspots ?? [];
+  if (hotspots.length) {
+    lines.push({ text: es ? `Te mostraré ${hotspots.length} puntos de cambio de esta evaluación, uno por uno.` : `I will show ${hotspots.length} change points from this assessment, one by one.`, action: { type: "hotspots", label: es ? "Punto evaluado" : "Assessed point" } });
+    hotspots.slice(0, 4).forEach((hotspot, index) => lines.push({
+      text: es ? `Punto ${index + 1}: el modelo reporta un valor de ${number(hotspot.value)}. Es una señal exploratoria para revisión.` : `Point ${index + 1}: the model reports a value of ${number(hotspot.value)}. This is an exploratory signal for review.`,
+      action: { type: "point", index, label: es ? `Punto ${index + 1}` : `Point ${index + 1}`, sub: number(hotspot.value) },
+    }));
+  }
   const impacts = [
     point.affected > 0 ? `${number(point.affected)} ${es ? "personas reportadas" : "people reported"}` : "",
     point.homes > 0 ? `${number(point.homes)} ${es ? "viviendas reportadas" : "homes reported"}` : "",
@@ -613,7 +621,9 @@ export default function SaroGuide() {
   const talking = hydrated && (typed.length < text.length || (voice && unlocked && speaking));
   // Keep Saru's caption visible for a selected point even while the browser waits
   // for its first user gesture to allow audio playback.
-  const showCaption = Boolean(zone) || !voice || !playing || (unlocked && (speaking || typed.length > 0));
+  // El saludo aparece con el planeta/Saru, aunque el navegador aún no permita
+  // reproducir audio. El texto se anima sin esperar el primer toque del usuario.
+  const showCaption = Boolean(zone) || !voice || !playing || (arrived && typed.length > 0);
   // mientras señala algo en el mapa, Saru se inclina hacia él
   const pointing = !reply && !aside && (current?.action?.type === "point" || current?.action?.type === "hotspots");
 
@@ -708,7 +718,7 @@ export default function SaroGuide() {
       <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}`} aria-hidden={away || undefined}>
         <motion.div layout="position" transition={chatTransition} className="saru-row">
         <AnimatePresence initial={false} mode="popLayout">
-          {!zone && !minimized && !chatOpen && showCaption && (
+          {!minimized && !chatOpen && showCaption && (
             <motion.div layout="position" key="caption" className="saru-caption" role="status" aria-live="polite"
               initial={{ opacity: 0, y: 18, scale: 0.96, filter: "blur(5px)" }} animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, y: 10, scale: 0.98, filter: "blur(3px)" }}
               transition={{ ...chatTransition, duration: reduce ? 0 : 0.55 }}>

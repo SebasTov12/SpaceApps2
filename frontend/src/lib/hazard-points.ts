@@ -31,6 +31,8 @@ export type HazardPoint = {
     priority_score: number;
     estimated_historical_impacts: Record<string, number>;
     recommendation: string;
+    /** Hotspots georreferenciados entregados por una evaluación de modelo, si existen. */
+    hotspots?: { lat: number; lon: number; value: number }[];
     created_at: string;
     data_mode: "real_exploratory";
   } | null;

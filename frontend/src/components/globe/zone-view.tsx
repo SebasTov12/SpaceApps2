@@ -324,35 +324,37 @@ export default function ZoneView() {
       const action = (event as CustomEvent<SaroAction | null>).detail;
       if (!action) return;
       const m = activeRef.current;
+      const selected = globeState.hazardFocus?.id === zoneId ? globeState.hazardFocus : null;
+      const hotspots = m?.assessment?.hotspots ?? selected?.model_assessment?.hotspots ?? [];
       if (action.type === "legend") setExplain({ nonce: Date.now(), kind: action.kind });
-      if (action.type === "point" && m?.assessment?.hotspots.length) {
-        const unit = m.assessment.rate.unit.replace(/\/mes$/, "");
-        const showValue = m.change === "deformation" && m.extraction?.kind !== "mining";
+      if (action.type === "point" && hotspots.length) {
+        const unit = m?.assessment?.rate.unit.replace(/\/mes$/, "") ?? "";
+        const showValue = m ? m.change === "deformation" && m.extraction?.kind !== "mining" : true;
         setAnnotate((prev) => ({
           nonce: prev?.nonce ?? Date.now(),
           active: action.index,
-          points: m.assessment!.hotspots.map((h, i) => ({
+          points: hotspots.map((h, i) => ({
             lat: h.lat, lon: h.lon,
             label: i === action.index ? action.label : `Punto ${i + 1}`,
-            sub: i === action.index ? action.sub : (showValue ? `${m.assessment!.rate.recent < 0 ? "−" : "+"}${Math.abs(h.value).toFixed(1)} ${unit}` : undefined),
+            sub: i === action.index ? action.sub : (showValue ? `${h.value < 0 ? "−" : "+"}${Math.abs(h.value).toFixed(1)} ${unit}` : undefined),
           })),
         }));
       }
-      if (action.type === "hotspots" && m?.assessment?.hotspots.length) {
-        const unit = m.assessment.rate.unit.replace(/\/mes$/, "");
-        const showValue = m.change === "deformation";
+      if (action.type === "hotspots" && hotspots.length) {
+        const unit = m?.assessment?.rate.unit.replace(/\/mes$/, "") ?? "";
+        const showValue = m ? m.change === "deformation" : true;
         setAnnotate({
           nonce: Date.now(),
-          points: m.assessment.hotspots.map((h) => ({
+          points: hotspots.map((h) => ({
             lat: h.lat, lon: h.lon, label: action.label,
-            sub: showValue ? `${m.assessment!.rate.recent < 0 ? "−" : "+"}${Math.abs(h.value).toFixed(1)} ${unit} recientes` : action.sub,
+            sub: showValue ? `${h.value < 0 ? "−" : "+"}${Math.abs(h.value).toFixed(1)} ${unit}` : action.sub,
           })),
         });
       }
     };
     window.addEventListener(POINT_EVENT, onPoint);
     return () => window.removeEventListener(POINT_EVENT, onPoint);
-  }, []);
+  }, [zoneId]);
   // Saru resalta la parte del panel de la que habla: la desplaza a la vista y la ilumina
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -429,7 +431,7 @@ export default function ZoneView() {
               reveal={mapReady}
               terrain={terrain}
               scene={activeScene}
-              hotspots={assessment?.hotspots}
+              hotspots={assessment?.hotspots ?? selectedHazard?.model_assessment?.hotspots}
               annotate={annotate}
               onZoomOut={closeZone}
               splitValue={split}
