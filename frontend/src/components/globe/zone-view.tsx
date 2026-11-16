@@ -276,6 +276,14 @@ export default function ZoneView() {
     .filter(({ distanceKm }) => distanceKm <= 25)
     .sort((a, b) => a.distanceKm - b.distanceKm)
     .slice(0, 3) : [];
+  // El modo 3D funciona para cualquier punto backend. Aumenta el detalle al
+  // nivel de ciudad cuando la coordenada es precisa; conserva más contexto
+  // cuando el punto es un centroide administrativo aproximado.
+  const selectedHazard = globeState.hazardFocus?.id === zoneId ? globeState.hazardFocus : null;
+  const activeScene = selectedHazard
+    ? { exaggeration: 1.25, pitch: selectedHazard.location_precision === "municipality_centroid" ? 58 : 66,
+        zoom: selectedHazard.location_precision === "municipality_centroid" ? 14.6 : 15.2 }
+    : zone ? sceneFor(zone.kind) : sceneFor("landslide");
   const level: AttentionLevel = modelAssessment?.priority === "P1" ? "alta" : modelAssessment?.priority === "P2" ? "moderada" : "baja";
   const colombia = zone?.country === "CO";
   // El mapa ya tiene imagen: la cámara se zambulle, sube la bruma y en su punto máximo aparece el mapa
@@ -420,7 +428,7 @@ export default function ZoneView() {
               onReady={onMapReady}
               reveal={mapReady}
               terrain={terrain}
-              scene={sceneFor(zone.kind)}
+              scene={activeScene}
               hotspots={assessment?.hotspots}
               annotate={annotate}
               onZoomOut={closeZone}

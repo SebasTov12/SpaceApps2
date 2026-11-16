@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { createPortal } from "react-dom";
 import { History, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isAutoLang, ProtectedTerms, useI18n, type Lang } from "@/lib/i18n";
@@ -669,7 +670,8 @@ export default function SaroGuide() {
   };
   const avatarRef = useRef<HTMLButtonElement>(null);
 
-  return (
+  if (!hydrated) return null;
+  return createPortal((
     <>
       {auto && (
         <div key={globalLang} className="saru-pool" ref={poolRef} data-language={globalLang} aria-hidden="true">
@@ -745,5 +747,5 @@ export default function SaroGuide() {
       </AnimatePresence>
       </div>
     </>
-  );
+  ), document.body);
 }

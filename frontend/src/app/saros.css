@@ -2901,13 +2901,10 @@ html body .zone-panel .zs .zs-bubble .zs-u{display:inline;margin-left:3px;font-f
 html body .zone-panel .zs .zs-lead{font-size:12px;line-height:1.5;color:#9aa6c6}
 
 /* ---------- Propuesta: Saro, guía animado ---------- */
-.saro{position:absolute;z-index:8;left:22px;bottom:70px;display:flex;align-items:flex-end;gap:6px;pointer-events:none;flex-direction:row-reverse;justify-content:flex-end}
+.saro{position:fixed!important;z-index:10000!important;left:22px;bottom:70px;display:flex;align-items:flex-end;gap:6px;pointer-events:none;flex-direction:row-reverse;justify-content:flex-end}
 .saro.in-zone{bottom:150px}
 /* Keep Saru above the MapLibre canvas and terrain view while retaining map controls. */
-html body .earth-stage[data-mapview="true"] .saro,
-html body .earth-stage:has(.zone-stage-map) .saro{z-index:30!important;visibility:visible!important;opacity:1!important;pointer-events:none}
-html body .earth-stage[data-mapview="true"] .saro-avatar,
-html body .earth-stage:has(.zone-stage-map) .saro-avatar{pointer-events:auto}
+html body .saro.in-zone{z-index:10000!important;visibility:visible;opacity:1}
 .saro-avatar{pointer-events:auto;width:92px;height:108px;padding:0;border:0;background:transparent;cursor:pointer;filter:drop-shadow(0 12px 22px rgba(0,0,0,.45))}
 .saro-fig{width:100%;height:100%;overflow:visible}
 .saro-bob{animation:saro-bob 3.2s ease-in-out infinite}
@@ -3144,7 +3141,7 @@ html body .hero-overlay.ui-shown .hero-search-btn{opacity:1;transform:none;point
 html body .saro{transition:opacity .4s ease,visibility 0s}
 html body .saro.is-away{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .35s ease,visibility 0s .35s}
 /* Los diálogos cubren toda la escena y ocultan a Saru mientras están abiertos. */
-.earth-stage:has(.search-backdrop, .lang-backdrop) .saro{visibility:hidden;opacity:0;pointer-events:none}
+body:has(.search-backdrop, .lang-backdrop) .saro{visibility:hidden;opacity:0;pointer-events:none}
 html body .saru-enter{animation:saru-fly 1.6s cubic-bezier(.22,1.2,.36,1) both}
 @keyframes saru-fly{
   0%{opacity:0;transform:translate(-280px,240px) rotate(-38deg) scale(.35)}
