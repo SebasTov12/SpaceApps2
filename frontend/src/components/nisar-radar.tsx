@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { AdditiveBlending, DoubleSide, type MeshBasicMaterial, type ShaderMaterial } from "three";
+import { AdditiveBlending, DoubleSide, Vector3, type LineBasicMaterial, type ShaderMaterial } from "three";
 import type { MotionValue } from "framer-motion";
 import { FOOTPRINT_LOCAL, OVER_RELIEF, SCAN_GRID_DEGREES, globeState } from "./globe/globe-state";
 
@@ -10,37 +10,37 @@ import { FOOTPRINT_LOCAL, OVER_RELIEF, SCAN_GRID_DEGREES, globeState } from "./g
 // The surface is sampled on a sphere so the swath never becomes a flat decal.
 const SHELL = OVER_RELIEF;
 const HALF_CELL = SCAN_GRID_DEGREES * Math.PI / 360;
-const CENTER_LAT = Math.asin(FOOTPRINT_LOCAL.z / SHELL);
-const ACROSS_MIN = SHELL * Math.sin(CENTER_LAT - HALF_CELL);
-const ACROSS_MAX = SHELL * Math.sin(CENTER_LAT + HALF_CELL);
-function surface(along: number, across: number): [number, number, number] {
-  const radius = Math.sqrt(SHELL * SHELL - across * across);
-  return [radius * Math.cos(along), radius * Math.sin(along), across];
-}
-
+const FOOTPRINT_RADIUS = HALF_CELL * 0.78;
+const FOOTPRINT_CENTER = FOOTPRINT_LOCAL.clone().setLength(SHELL);
+const FOOTPRINT_NORMAL = FOOTPRINT_CENTER.clone().normalize();
+const FOOTPRINT_U = new Vector3(0, 1, 0);
+const FOOTPRINT_V = new Vector3().crossVectors(FOOTPRINT_NORMAL, FOOTPRINT_U).normalize();
 function makeGeometry(apex: [number, number, number]) {
-  const corners = [surface(-HALF_CELL, ACROSS_MIN), surface(HALF_CELL, ACROSS_MIN), surface(HALF_CELL, ACROSS_MAX), surface(-HALF_CELL, ACROSS_MAX)];
+  const segments = 96;
+  const ring = Array.from({ length: segments }, (_, index) => {
+    const angle = index / segments * Math.PI * 2;
+    return FOOTPRINT_CENTER.clone().multiplyScalar(Math.cos(FOOTPRINT_RADIUS))
+      .addScaledVector(FOOTPRINT_U, Math.sin(FOOTPRINT_RADIUS) * Math.cos(angle))
+      .addScaledVector(FOOTPRINT_V, Math.sin(FOOTPRINT_RADIUS) * Math.sin(angle)).toArray();
+  });
   const beam: number[] = [];
   const beamUv: number[] = [];
-  for (let index = 0; index < 4; index++) {
-    // el haz nace en la apertura de la antena del satélite
-    beam.push(...apex, ...corners[index], ...corners[(index + 1) % 4]);
-    beamUv.push(0.5, 0, 0, 1, 1, 1);
-  }
-  const swath: number[] = [];
-  const swathUv: number[] = [];
-  for (let index = 0; index < 36; index++) {
-    const a = -0.42 + index * (0.42 + HALF_CELL) / 36;
-    const b = -0.42 + (index + 1) * (0.42 + HALF_CELL) / 36;
-    swath.push(...surface(a, ACROSS_MIN), ...surface(b, ACROSS_MIN), ...surface(b, ACROSS_MAX),
-      ...surface(a, ACROSS_MIN), ...surface(b, ACROSS_MAX), ...surface(a, ACROSS_MAX));
-    const u = index / 36;
-    const v = (index + 1) / 36;
-    swathUv.push(0, u, 0, v, 1, v, 0, u, 1, v, 1, u);
+  const disk: number[] = [];
+  const diskUv: number[] = [];
+  for (let index = 0; index < segments; index++) {
+    const next = (index + 1) % segments;
+    const angle = index / segments * Math.PI * 2;
+    const nextAngle = (index + 1) / segments * Math.PI * 2;
+    // El cono y su área de detección terminan en un círculo sobre la esfera.
+    beam.push(...apex, ...ring[index], ...ring[next]);
+    beamUv.push(0.5, 0, 0.5 + 0.5 * Math.cos(angle), 1, 0.5 + 0.5 * Math.cos(nextAngle), 1);
+    disk.push(...FOOTPRINT_CENTER.toArray(), ...ring[index], ...ring[next]);
+    const a = angle;
+    const b = nextAngle;
+    diskUv.push(0.5, 0.5, 0.5 + 0.5 * Math.cos(a), 0.5 + 0.5 * Math.sin(a), 0.5 + 0.5 * Math.cos(b), 0.5 + 0.5 * Math.sin(b));
   }
   return { beam: new Float32Array(beam), beamUv: new Float32Array(beamUv),
-    swath: new Float32Array(swath), swathUv: new Float32Array(swathUv),
-    footprint: new Float32Array([...corners[0], ...corners[1], ...corners[2], ...corners[0], ...corners[2], ...corners[3]]) };
+    disk: new Float32Array(disk), diskUv: new Float32Array(diskUv), edge: new Float32Array(ring.flat()) };
 }
 
 const vertex = `
@@ -52,16 +52,16 @@ const vertex = `
 `;
 
 export default function NisarRadar({ apex, playing, progress }: {
-  radius: number; apex: [number, number, number]; playing: boolean; progress: MotionValue<number>;
+  apex: [number, number, number]; playing: boolean; progress: MotionValue<number>;
 }) {
   const beam = useRef<ShaderMaterial>(null);
   const swath = useRef<ShaderMaterial>(null);
-  const footprint = useRef<MeshBasicMaterial>(null);
+  const footprint = useRef<LineBasicMaterial>(null);
   const elapsed = useRef(0);
   const [ax, ay, az] = apex;
   const geometry = useMemo(() => makeGeometry([ax, ay, az]), [ax, ay, az]);
   const beamUniforms = useMemo(() => ({ time: { value: 0 }, visibility: { value: 0 } }), []);
-  const swathUniforms = useMemo(() => ({ visibility: { value: 0 } }), []);
+  const swathUniforms = useMemo(() => ({ time: { value: 0 }, visibility: { value: 0 } }), []);
 
   useFrame((_, delta) => {
     if (playing) elapsed.current += Math.min(delta, 0.1);
@@ -74,8 +74,11 @@ export default function NisarRadar({ apex, playing, progress }: {
       beam.current.uniforms.time.value = elapsed.current;
       beam.current.uniforms.visibility.value = visibility;
     }
-    if (swath.current) swath.current.uniforms.visibility.value = visibility;
-    if (footprint.current) footprint.current.opacity = visibility * 0.24;
+    if (swath.current) {
+      swath.current.uniforms.time.value = elapsed.current;
+      swath.current.uniforms.visibility.value = visibility;
+    }
+    if (footprint.current) footprint.current.opacity = visibility * 0.68;
   });
 
   return (
@@ -94,7 +97,7 @@ export default function NisarRadar({ apex, playing, progress }: {
             void main() {
               float wave = pow(max(0.0, 1.0 - abs(fract(radarUv.y * 1.25 - time * 0.42) - 0.5) * 2.0), 22.0);
               float core = pow(max(0.0, 1.0 - abs(radarUv.x * 2.0 - 1.0)), 5.0);
-              float edge = pow(abs(radarUv.x * 2.0 - 1.0), 8.0);
+              float edge = smoothstep(0.74, 1.0, radarUv.y);
               float alpha = (0.07 + wave * 0.2 + core * 0.07 + edge * 0.035) * radarUv.y * visibility;
               gl_FragColor = vec4(0.38, 0.82, 0.86, alpha);
             }
@@ -102,26 +105,29 @@ export default function NisarRadar({ apex, playing, progress }: {
       </mesh>
       <mesh>
         <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[geometry.swath, 3]} />
-          <bufferAttribute attach="attributes-uv" args={[geometry.swathUv, 2]} />
+          <bufferAttribute attach="attributes-position" args={[geometry.disk, 3]} />
+          <bufferAttribute attach="attributes-uv" args={[geometry.diskUv, 2]} />
         </bufferGeometry>
         <shaderMaterial ref={swath} uniforms={swathUniforms} transparent depthWrite={false}
           side={DoubleSide} blending={AdditiveBlending} vertexShader={vertex}
           fragmentShader={`
             varying vec2 radarUv;
+            uniform float time;
             uniform float visibility;
             void main() {
-              float edge = smoothstep(0.0, 0.08, radarUv.x) * smoothstep(0.0, 0.08, 1.0 - radarUv.x);
-              float tail = pow(radarUv.y, 2.0);
-              gl_FragColor = vec4(0.27, 0.74, 0.78, edge * tail * visibility * 0.20);
+              float radius = length((radarUv - 0.5) * 2.0);
+              float fill = 1.0 - smoothstep(0.72, 1.0, radius);
+              float wave = exp(-pow((radius - fract(time * 0.16)) * 24.0, 2.0));
+              float alpha = (fill * 0.14 + wave * 0.13) * visibility;
+              gl_FragColor = vec4(0.27, 0.74, 0.78, alpha);
             }
           `} />
       </mesh>
-      <mesh>
-        <bufferGeometry><bufferAttribute attach="attributes-position" args={[geometry.footprint, 3]} /></bufferGeometry>
-        <meshBasicMaterial ref={footprint} color="#8ce4df" transparent opacity={0}
-          side={DoubleSide} blending={AdditiveBlending} depthWrite={false} />
-      </mesh>
+      <lineLoop>
+        <bufferGeometry><bufferAttribute attach="attributes-position" args={[geometry.edge, 3]} /></bufferGeometry>
+        <lineBasicMaterial ref={footprint} color="#8ce4df" transparent opacity={0}
+          blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </lineLoop>
     </group>
   );
 }

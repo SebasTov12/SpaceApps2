@@ -24,6 +24,7 @@ export default function EarthHero() {
   const section = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
   const [sceneReady, setSceneReady] = useState(false);
+  const [planetDiscovered, setPlanetDiscovered] = useState(false);
   const [exploreLocked, setExploreLocked] = useState(false);
   const mobileMode = useMotionValue(false);
   const mobileProgress = useMotionValue(0);
@@ -101,6 +102,15 @@ export default function EarthHero() {
   const desktopProgress = useSpring(scrollYProgress, { stiffness: 85, damping: 28, mass: 0.5 });
   // Mobile uses a one-way animation, independent of page scroll and scroll restoration.
   const progress = useTransform(() => mobileMode.get() ? mobileProgress.get() : desktopProgress.get());
+  useMotionValueEvent(progress, "change", (value) => {
+    if (value >= 0.78) setPlanetDiscovered(true);
+  });
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      if (progress.get() >= 0.78) setPlanetDiscovered(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [progress]);
   // arriba del todo solo el planeta, el título y el cintillo; al bajar aparecen puntos, barra de modos y Saru
   const setReveal = useCallback((value: number) => {
     const next = globeState.uiRevealed ? value > 0.12 : value > 0.3;
@@ -164,7 +174,7 @@ export default function EarthHero() {
         {/* Zona elegida: acercamiento y panel con su información */}
         <ZoneView />
         {/* Saro: guía animado que explica cada zona */}
-        <SaroGuide sceneReady={sceneReady} />
+        <SaroGuide sceneReady={sceneReady} planetRevealed={planetDiscovered} />
         {/* Último evento, cifras y buscador de zonas */}
         <HeroOverlay progress={progress} mobileMode={mobileMode} />
         {/* Cintillo de titulares (arriba → abajo con el scroll) */}

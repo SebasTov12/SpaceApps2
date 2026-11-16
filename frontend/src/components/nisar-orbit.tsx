@@ -90,7 +90,7 @@ export default function NisarOrbit({ playing, progress }: { playing: boolean; pr
     <group ref={plane}>
       <Line points={orbit} color="#7fd8ff" lineWidth={0.65} transparent opacity={0.12} depthWrite={false} />
       <group ref={moving} rotation={[0, 0, 2.2]}>
-        <NisarRadar radius={RADIUS} apex={ANTENNA_LOCAL} playing={playing} progress={progress} />
+        <NisarRadar apex={ANTENNA_LOCAL} playing={playing} progress={progress} />
         {trail.map((points, index) => (
           <Line key={index} points={points} color="#c8e3f2" lineWidth={1.15}
             transparent opacity={0.025 + (index / 15) ** 2 * 0.5} depthWrite={false} />

@@ -312,7 +312,7 @@ export async function collectSaroLines(lang: "es" | "en" = "es") {
 }
 
 /** Saru: guía animado. Narra solo cada zona, señala en el mapa, responde preguntas y habla con voz neuronal. */
-export default function SaroGuide({ sceneReady }: { sceneReady: boolean }) {
+export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: boolean; planetRevealed: boolean }) {
   const { lang, globalLang } = useI18n();
   const reduce = useReducedMotion();
   // con traducción automática el texto sale completo: escribir letra a letra obligaría a retraducir sin parar
@@ -338,8 +338,8 @@ export default function SaroGuide({ sceneReady }: { sceneReady: boolean }) {
   const [arrivals, setArrivals] = useState(0);
   const arrivedRef = useRef(false);
   const hasLandedRef = useRef(false);
-  const homeGreetingDismissedRef = useRef(false);
-  const [narrationReady, setNarrationReady] = useState(false);
+  const [homeGreetingDismissed, setHomeGreetingDismissed] = useState(false);
+  const [narrationReadyKey, setNarrationReadyKey] = useState("");
   useEffect(() => {
     const frame = requestAnimationFrame(() => setHydrated(true));
     return () => cancelAnimationFrame(frame);
@@ -365,18 +365,19 @@ export default function SaroGuide({ sceneReady }: { sceneReady: boolean }) {
     return () => cancelAnimationFrame(frame);
   }, [hydrated, zoneId]);
   useEffect(() => {
-    if (!sceneReady || zoneId || hasLandedRef.current) return;
+    if (!sceneReady || !planetRevealed || zoneId || hasLandedRef.current) return;
     hasLandedRef.current = true;
     arrivedRef.current = true;
     setArrived(true);
     setArrivals((n) => n + 1);
-  }, [sceneReady, zoneId]);
+  }, [sceneReady, planetRevealed, zoneId]);
+  const narrationKey = `${sceneReady}:${planetRevealed}:${zoneId ?? "home"}:${arrivals}:${arrived}`;
+  const narrationReady = narrationReadyKey === narrationKey && sceneReady && (planetRevealed || Boolean(zoneId)) && (arrived || Boolean(zoneId));
   useEffect(() => {
-    if (!sceneReady || (!arrived && !zoneId)) { setNarrationReady(false); return; }
-    setNarrationReady(false);
-    const timer = window.setTimeout(() => setNarrationReady(true), reduce ? 0 : 1600);
+    if (!sceneReady || (!planetRevealed && !zoneId) || (!arrived && !zoneId)) return;
+    const timer = window.setTimeout(() => setNarrationReadyKey(narrationKey), reduce ? 0 : 1600);
     return () => window.clearTimeout(timer);
-  }, [sceneReady, zoneId, arrivals, arrived, reduce]);
+  }, [sceneReady, planetRevealed, zoneId, arrivals, arrived, reduce, narrationKey]);
   useEffect(() => {
     const onReveal = (event: Event) => {
       const on = Boolean((event as CustomEvent<boolean>).detail);
@@ -398,7 +399,7 @@ export default function SaroGuide({ sceneReady }: { sceneReady: boolean }) {
       window.removeEventListener(UI_REVEAL, onReveal);
     };
   }, []);
-  const away = !arrived && !zoneId;
+  const away = !planetRevealed && !zoneId;
   const [voice, setVoice] = useState(true);
   const unlocked = true;
   const [playing, setPlaying] = useState(true);
@@ -425,7 +426,7 @@ export default function SaroGuide({ sceneReady }: { sceneReady: boolean }) {
   const steps = useMemo(() => selectedHazard && zone ? stepsForHazard(selectedHazard, zone, lang) : stepsFor(zone, manifest, lang), [selectedHazard, zone, manifest, lang]);
   const lines = useMemo(() => steps.map((s) => s.text), [steps]);
   const current = steps[Math.min(step, steps.length - 1)];
-  const lineText = !zoneId && homeGreetingDismissedRef.current ? "" : current?.text ?? "";
+  const lineText = !zoneId && homeGreetingDismissed ? "" : current?.text ?? "";
   const text = reply ?? aside ?? lineText;
 
   // Idiomas del traductor automático: todas las frases de Saru para esta zona se dejan en un bloque
@@ -474,8 +475,7 @@ export default function SaroGuide({ sceneReady }: { sceneReady: boolean }) {
       setAside(null);
       setReply(null);
       if (id) {
-        setNarrationReady(false);
-        homeGreetingDismissedRef.current = true;
+        setHomeGreetingDismissed(true);
         setArrivals((n) => n + 1);
       }
       // The home greeting is only narrated on initial page load. Closing a

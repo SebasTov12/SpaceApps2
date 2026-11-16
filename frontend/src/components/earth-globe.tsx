@@ -16,7 +16,7 @@ import CameraRig from "@/components/globe/camera-rig";
 import { useI18n } from "@/lib/i18n";
 import { AdditiveBlending, BackSide, SRGBColorSpace, Vector2, type AmbientLight, type DirectionalLight, type Group } from "three";
 
-type SceneQuality = "compact" | "full";
+type SceneQuality = "compact" | "mobile" | "full";
 
 function Planet({ playing, quality, children }: { playing: boolean; quality: SceneQuality; children?: ReactNode }) {
   const surface = useRef<Group>(null);
@@ -28,7 +28,7 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
     "/earth-height.png",
   ], (textures) => {
     textures[0].colorSpace = SRGBColorSpace;
-    const anisotropy = quality === "compact" ? 4 : 8;
+    const anisotropy = quality === "compact" ? 4 : quality === "mobile" ? 8 : 12;
     for (const texture of textures) texture.anisotropy = anisotropy;
   });
 
@@ -58,8 +58,9 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
     if (clouds.current) clouds.current.rotation.y += step * 0.006;
   });
   // más subdivisiones para que el relieve desplazado se vea sobresalir
-  const earthSegments: [number, number] = quality === "compact" ? [320, 160] : [480, 240];
-  const shellSegments: [number, number] = quality === "compact" ? [64, 32] : [96, 48];
+  const earthSegments: [number, number] = quality === "compact" ? [320, 160] : quality === "mobile" ? [384, 192] : [512, 256];
+  const shellSegments: [number, number] = quality === "compact" ? [64, 32] : quality === "mobile" ? [80, 40] : [112, 56];
+  const normalStrength = quality === "compact" ? 0.58 : quality === "mobile" ? 0.68 : 0.76;
   return (
     <group ref={userGroup}>
     <group rotation={[-0.25, 0, -0.08]}>
@@ -67,7 +68,7 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
       <group ref={surface} rotation={[0, -Math.PI / 2, 0]}>
         <mesh>
           <sphereGeometry args={[1, ...earthSegments]} />
-          <meshPhongMaterial map={day} normalMap={normal} normalScale={new Vector2(0.55, 0.55)}
+          <meshPhongMaterial map={day} normalMap={normal} normalScale={new Vector2(normalStrength, normalStrength)}
             displacementMap={height} displacementScale={RELIEF}
             specularMap={specular} specular="#263b4e" shininess={55}
             emissive="#163a66" emissiveIntensity={0.42} />
@@ -218,7 +219,9 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
     const cores = navigator.hardwareConcurrency || 4;
     const saveData = Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
-    return window.matchMedia("(max-width: 760px)").matches || memory <= 4 || cores <= 4 || saveData ? "compact" : "full";
+    const lowResources = memory <= 4 || cores <= 4 || saveData;
+    if (lowResources) return "compact";
+    return window.matchMedia("(max-width: 760px)").matches ? "mobile" : "full";
   });
   const compact = quality === "compact";
   const renderRef = useRef<HTMLDivElement>(null);
@@ -327,8 +330,10 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
       <SceneBoundary onFailure={showScene}>
         <Canvas style={compact
           ? { position: "absolute", inset: "-20%", width: "140%", height: "140%", overflow: "visible" }
-          : { position: "absolute", inset: "-35%", width: "170%", height: "170%", overflow: "visible" }}
-          camera={{ position: [0, 0, compact ? 2.9 : 3.5], fov: 58 }} dpr={compact ? [1.15, 1.5] : [1, 1.6]}
+          : quality === "mobile"
+            ? { position: "absolute", inset: "-25%", width: "150%", height: "150%", overflow: "visible" }
+            : { position: "absolute", inset: "-35%", width: "170%", height: "170%", overflow: "visible" }}
+          camera={{ position: [0, 0, compact ? 2.9 : 3.5], fov: 58 }} dpr={compact ? [1.15, 1.5] : quality === "mobile" ? [1.15, 1.65] : [1, 1.6]}
           frameloop={playing && !hidden && pageVisible ? "always" : "demand"}
           fallback={<NoWebGL onReady={showScene} />}
           resize={{ offsetSize: true }}
