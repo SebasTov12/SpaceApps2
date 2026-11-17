@@ -800,6 +800,16 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     rec.start();
   };
   const chatTransition = { duration: reduce ? 0 : 0.8, ease: [0.22, 1, 0.36, 1] as const };
+  const homePanelActive = !zone && (showCaption || chatOpen);
+  const [repositioning, setRepositioning] = useState(false);
+  const previousHomePanel = useRef(homePanelActive);
+  useEffect(() => {
+    if (previousHomePanel.current === homePanelActive) return;
+    previousHomePanel.current = homePanelActive;
+    setRepositioning(true);
+    const timer = window.setTimeout(() => setRepositioning(false), reduce ? 0 : 900);
+    return () => window.clearTimeout(timer);
+  }, [homePanelActive, reduce]);
   const toggleTranscript = () => {
     const visible = transcriptOpen || showCaption;
     const next = !visible;
@@ -848,7 +858,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
           {pool.map((t) => <p key={voiceKey(t)} data-k={voiceKey(t)}><ProtectedTerms text={t} /></p>)}
         </div>
       )}
-      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}${transcriptOpen || showCaption ? " is-transcript-open" : ""}${chatOpen ? " is-chat-open" : ""}`} aria-hidden={away || undefined}>
+      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}${transcriptOpen || showCaption ? " is-transcript-open" : ""}${chatOpen ? " is-chat-open" : ""}${repositioning ? " is-repositioning" : ""}`} aria-hidden={away || undefined}>
         <motion.div layout="position" transition={chatTransition} className="saru-row">
         <AnimatePresence initial={false} mode="popLayout">
           {!minimized && !chatOpen && (zone ? transcriptOpen : showCaption) && (
