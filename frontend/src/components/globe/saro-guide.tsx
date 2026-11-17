@@ -392,6 +392,11 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     const timer = window.setTimeout(() => setInitialLanding(false), 1900);
     return () => window.clearTimeout(timer);
   }, [initialLanding]);
+  useEffect(() => {
+    const onZoneArrival = () => setInitialLanding(true);
+    window.addEventListener("saros:saru-arrival", onZoneArrival);
+    return () => window.removeEventListener("saros:saru-arrival", onZoneArrival);
+  }, []);
   const narrationKey = `${sceneReady}:${planetRevealed}:${zoneId ?? "home"}:${arrivals}:${arrived}`;
   const narrationReady = narrationReadyKey === narrationKey && sceneReady && (planetRevealed || Boolean(zoneId)) && (arrived || Boolean(zoneId));
   useEffect(() => {

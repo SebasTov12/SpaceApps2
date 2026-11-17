@@ -181,6 +181,10 @@ export default function ZoneView() {
       setTab("simple");
       setMapVisible(false);
       setMapReady(false);
+      if (id) {
+        // Reutiliza la llegada de Saru al entrar en la zona, sin mover el scroll del planeta.
+        window.dispatchEvent(new CustomEvent("saros:saru-arrival"));
+      }
       setDiving(false);
       setTerrain(false);
       setPick(null);
@@ -201,11 +205,6 @@ export default function ZoneView() {
         window.dispatchEvent(new CustomEvent("saros:mapview", { detail: false }));
       }
       if (id) {
-        const hero = document.getElementById("inicio");
-        if (hero) {
-          const target = hero.offsetTop + (hero.offsetHeight - window.innerHeight) * 0.92;
-          if (window.scrollY < target - 4) window.scrollTo({ top: target, behavior: "smooth" });
-        }
         timer = setTimeout(() => setMapVisible(true), MAP_DELAY);
       }
     };
