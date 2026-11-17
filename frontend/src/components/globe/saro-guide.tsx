@@ -559,8 +559,11 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   }, [lang]);
   const audio = useRef<HTMLAudioElement | null>(null);
   const token = useRef(0);
+  const advanceTimer = useRef<number | null>(null);
   const stopAll = useCallback(() => {
     token.current++;
+    if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
+    advanceTimer.current = null;
     audio.current?.pause();
     audio.current = null;
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
@@ -713,10 +716,18 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     playingRef.current = playing;
   }, [playing, reply, minimized, step, lines.length, aside]);
   useEffect(() => {
-    if (!narrationReady || away || minimized || thinking || (!playingRef.current && !reply && !aside)) { stopAll(); return; }   // espera a que termine el aterrizaje
+    if (!narrationReady || away || minimized || thinking) { stopAll(); return; }   // espera a que termine el aterrizaje
+    if (!playingRef.current && !reply && !aside) {
+      audio.current?.pause();
+      if ("speechSynthesis" in window) window.speechSynthesis.pause();
+      return;
+    }
     const canSpeak = voice && unlocked;
     if (canSpeak) {
-      speak(text, () => { if (playingRef.current && autoNextRef.current) window.setTimeout(advance, 650); });
+      speak(text, () => {
+        if (!playingRef.current || !autoNextRef.current) return;
+        advanceTimer.current = window.setTimeout(() => { advanceTimer.current = null; advance(); }, 650);
+      });
       return stopAll;
     }
     // con voz pero sin el primer toque todavía: espera en esta frase para no perderse nada
@@ -834,9 +845,13 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     playingRef.current = resume;
     setPlaying(resume);
     if (resume) {
-      if (audio.current) void audio.current.play().catch(() => undefined);
+      if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
+      if (audio.current?.paused) void audio.current.play().catch(() => undefined);
       if ("speechSynthesis" in window) window.speechSynthesis.resume();
     } else {
+      if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
       audio.current?.pause();
       if ("speechSynthesis" in window) window.speechSynthesis.pause();
     }

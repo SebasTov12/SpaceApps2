@@ -43,7 +43,6 @@ function SpaceComets() {
     if (!comets) return;
     comets.forEach((comet) => {
       const xDirection = Math.random() < 0.5 ? -1 : 1;
-      const yDirection = Math.random() < 0.5 ? -1 : 1;
       const period = 38 + Math.random() * 24;
       comet.style.left = `${Math.random() * 92}%`;
       comet.style.top = `${5 + Math.random() * 88}%`;
@@ -51,9 +50,7 @@ function SpaceComets() {
       comet.style.setProperty("--comet-period", `${period.toFixed(1)}s`);
       comet.style.setProperty("--comet-delay", `${(Math.random() * 24).toFixed(1)}s`);
       comet.style.setProperty("--comet-x", `${(xDirection * (22 + Math.random() * 34)).toFixed(1)}vw`);
-      comet.style.setProperty("--comet-y", `${(yDirection * (5 + Math.random() * 18)).toFixed(1)}vh`);
-      comet.style.setProperty("--comet-curve-x", `${(xDirection * (8 + Math.random() * 14)).toFixed(1)}vw`);
-      comet.style.setProperty("--comet-curve-y", `${(yDirection * (8 + Math.random() * 18)).toFixed(1)}vh`);
+      comet.style.setProperty("--comet-y", `${(-8 + Math.random() * 16).toFixed(1)}vh`);
     });
   }, []);
   return (
