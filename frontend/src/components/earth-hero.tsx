@@ -103,11 +103,11 @@ export default function EarthHero() {
   // Mobile uses a one-way animation, independent of page scroll and scroll restoration.
   const progress = useTransform(() => mobileMode.get() ? mobileProgress.get() : desktopProgress.get());
   useMotionValueEvent(progress, "change", (value) => {
-    if (value >= 0.78) setPlanetDiscovered(true);
+    setPlanetDiscovered(value >= 0.78);
   });
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      if (progress.get() >= 0.78) setPlanetDiscovered(true);
+      setPlanetDiscovered(progress.get() >= 0.78);
     });
     return () => cancelAnimationFrame(frame);
   }, [progress]);

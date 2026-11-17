@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { createPortal } from "react-dom";
-import { FileText, History, MessageCircle, Mic, Minus, Pause, Play, Send, Volume2, VolumeX, X } from "lucide-react";
+import { FileText, History, MessageCircle, Mic, Minus, Pause, Play, Send, Volume2, VolumeX } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isAutoLang, ProtectedTerms, useI18n, type Lang } from "@/lib/i18n";
 import { riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
@@ -403,11 +403,14 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   const [voice, setVoice] = useState(true);
   const unlocked = true;
   const [playing, setPlaying] = useState(true);
+  const playingRef = useRef(playing);
+  const autoNextRef = useRef(false);
   const [speaking, setSpeaking] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [zoneMenuOpen, setZoneMenuOpen] = useState(true);
   const [homeOrbitOpen, setHomeOrbitOpen] = useState(true);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [transcriptDismissed, setTranscriptDismissed] = useState(false);
   const transcriptTextRef = useRef<HTMLParagraphElement>(null);
   const [history, setHistory] = useState<{ from: "user" | "saro"; text: string }[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -484,6 +487,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
       setZoneMenuOpen(true);
       setHomeOrbitOpen(true);
       setTranscriptOpen(false);
+      setTranscriptDismissed(false);
       if (id) { setMinimized(false); setChatOpen(false); }
       manifestRef.current = null;
       const z = riskZones.find((r) => r.id === id);
@@ -522,7 +526,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   useEffect(() => {
     // Start the typewriter when Saru enters the scene, so mobile doesn't finish
     // transcribing while the avatar is still hidden below the reveal.
-    if (!hydrated || speechDriven || away || !narrationReady) return;
+    if (!hydrated || speechDriven || away || !narrationReady || !playing) return;
     const id = window.setInterval(() => {
       setProg((p) => {
         const next = (p.text === displayText ? p.n : 0) + 3;
@@ -531,7 +535,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
       });
     }, 28);
     return () => window.clearInterval(id);
-  }, [displayText, hydrated, speechDriven, away, narrationReady]);
+  }, [displayText, hydrated, speechDriven, away, narrationReady, playing]);
 
   // ---------- voz: neuronal pregrabada (frase completa o frase por frase) y, si falta, la del navegador ----------
   const [recorded, setRecorded] = useState<Set<string> | null>(null);
@@ -697,27 +701,30 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     if (aside) { setAside(null); return; }           // tras reaccionar a un sector, sigue el recorrido
     setStep((s) => (s < lines.length - 1 ? s + 1 : s));
   }, [aside, lines.length, setAside]);
-  const autoNext = playing && !chatOpen && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
   useEffect(() => {
-    if (!narrationReady || away || minimized || thinking || (chatOpen && !reply) || (!playing && !reply && !aside)) { stopAll(); return; }   // espera a que termine el aterrizaje
+    autoNextRef.current = playing && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
+    playingRef.current = playing;
+  }, [playing, reply, minimized, step, lines.length, aside]);
+  useEffect(() => {
+    if (!narrationReady || away || minimized || thinking || (!playingRef.current && !reply && !aside)) { stopAll(); return; }   // espera a que termine el aterrizaje
     const canSpeak = voice && unlocked;
     if (canSpeak) {
-      speak(text, () => { if (autoNext) window.setTimeout(advance, 650); });
+      speak(text, () => { if (playingRef.current && autoNextRef.current) window.setTimeout(advance, 650); });
       return stopAll;
     }
     // con voz pero sin el primer toque todavía: espera en esta frase para no perderse nada
     if (voice && !unlocked) return;
     // sin voz: avanza cuando hubo tiempo de leer
-    if (!autoNext) return;
+    if (!autoNextRef.current) return;
     const wait = Math.max(2600, text.length * 55);
     const id = window.setTimeout(advance, wait);
     return () => window.clearTimeout(id);
-  }, [text, voice, unlocked, minimized, autoNext, speak, stopAll, advance, playing, reply, aside, thinking, away, chatOpen, narrationReady]);
+  }, [text, voice, unlocked, minimized, speak, stopAll, advance, reply, aside, thinking, away, narrationReady]);
 
   const talking = hydrated && (typed.length < displayText.length || (voice && unlocked && speaking));
   // La transcripción empieza al terminar la entrada de Saru; el navegador puede
   // bloquear el audio automático, así que el typewriter mantiene visible el guion.
-  const showCaption = transcriptOpen || (narrationReady && (Boolean(zone) || (arrived && typed.length > 0)));
+  const showCaption = transcriptOpen || (!zone && !transcriptDismissed && narrationReady && arrived && typed.length > 0);
   const narrationProgress = lines.length ? Math.round(((step + (displayText.length ? typed.length / displayText.length : 0)) / lines.length) * 100) : 0;
   useEffect(() => {
     if ((zone && !transcriptOpen) || !transcriptTextRef.current) return;
@@ -795,35 +802,43 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   };
   const resumeTour = () => { setReply(null); setAside(null); setPlaying(true); };
   const chatTransition = { duration: reduce ? 0 : 0.8, ease: [0.22, 1, 0.36, 1] as const };
-  const closeChat = () => {
+  const toggleTranscript = () => {
+    const visible = transcriptOpen || showCaption;
+    const next = !visible;
+    setTranscriptOpen(next);
+    setTranscriptDismissed(!next);
     setChatOpen(false);
-    setZoneMenuOpen(Boolean(zoneRef.current));
-    setHomeOrbitOpen(!zoneRef.current);
-    setTranscriptOpen(false);
-    setPlaying(false);
     setMinimized(false);
-    requestAnimationFrame(() => avatarRef.current?.focus({ preventScroll: true }));
   };
   const toggleZoneMenu = () => {
-    if (chatOpen) { closeChat(); setZoneMenuOpen(false); return; }
+    if (chatOpen || transcriptOpen || showCaption) { setChatOpen(false); setTranscriptOpen(false); setTranscriptDismissed(true); setZoneMenuOpen(false); setHomeOrbitOpen(false); return; }
     setMinimized(false);
-    setTranscriptOpen(false);
     setZoneMenuOpen((open) => !open);
   };
   const toggleHomeOrbit = () => {
-    if (chatOpen) { closeChat(); setHomeOrbitOpen(false); return; }
+    if (chatOpen || transcriptOpen || showCaption) { setChatOpen(false); setTranscriptOpen(false); setTranscriptDismissed(true); setHomeOrbitOpen(false); setZoneMenuOpen(false); return; }
     setMinimized(false);
-    setTranscriptOpen(false);
     setHomeOrbitOpen((open) => !open);
   };
-  const openTranscript = () => {
-    setTranscriptOpen(true);
-  };
   const openZoneChat = () => {
+    if (chatOpen) { setChatOpen(false); setHomeOrbitOpen(!zoneRef.current); setZoneMenuOpen(Boolean(zoneRef.current)); return; }
     setTranscriptOpen(false);
+    setTranscriptDismissed(true);
     setMinimized(false);
     setShowHistory(true);
     setChatOpen(true);
+  };
+  const togglePlayback = () => {
+    const resume = !playingRef.current;
+    playingRef.current = resume;
+    setPlaying(resume);
+    if (resume) {
+      if (audio.current) void audio.current.play().catch(() => undefined);
+      if ("speechSynthesis" in window) window.speechSynthesis.resume();
+    } else {
+      audio.current?.pause();
+      if ("speechSynthesis" in window) window.speechSynthesis.pause();
+    }
   };
   const avatarRef = useRef<HTMLButtonElement>(null);
 
@@ -835,7 +850,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
           {pool.map((t) => <p key={voiceKey(t)} data-k={voiceKey(t)}><ProtectedTerms text={t} /></p>)}
         </div>
       )}
-      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}`} aria-hidden={away || undefined}>
+      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}${transcriptOpen || showCaption ? " is-transcript-open" : ""}${chatOpen ? " is-chat-open" : ""}`} aria-hidden={away || undefined}>
         <motion.div layout="position" transition={chatTransition} className="saru-row">
         <AnimatePresence initial={false} mode="popLayout">
           {!minimized && !chatOpen && (zone ? transcriptOpen : showCaption) && (
@@ -879,8 +894,8 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
           {(zone ? zoneMenuOpen : homeOrbitOpen) && <motion.div key={zone ? "zone-orbit" : "home-orbit"} className="saru-zone-orbit" role="group" aria-label={es ? "Acciones de Saru" : "Saru actions"}
               initial={{ opacity: 0, scale: 0.35 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.3 }} transition={chatTransition}>
               <div className="saru-zone-orbit-plane">
-                <button className="orbit-transcript" type="button" onClick={openTranscript} aria-label={es ? "Abrir transcripción" : "Open transcript"} title={es ? "Transcripción" : "Transcript"}><FileText size={14} /></button>
-                <button className="orbit-pause" type="button" onClick={() => setPlaying((active) => !active)} aria-label={playing ? (es ? "Pausar a Saru" : "Pause Saru") : (es ? "Reanudar a Saru" : "Resume Saru")} title={playing ? (es ? "Pausar" : "Pause") : (es ? "Reanudar" : "Resume")} aria-pressed={!playing}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
+                <button className={`orbit-transcript${transcriptOpen || showCaption ? " is-active" : ""}`} type="button" onClick={toggleTranscript} aria-label={transcriptOpen || showCaption ? (es ? "Cerrar transcripción" : "Close transcript") : (es ? "Abrir transcripción" : "Open transcript")} title={es ? "Transcripción" : "Transcript"}><FileText size={14} /></button>
+                <button className="orbit-pause" type="button" onClick={togglePlayback} aria-label={playing ? (es ? "Pausar a Saru" : "Pause Saru") : (es ? "Reanudar a Saru" : "Resume Saru")} title={playing ? (es ? "Pausar" : "Pause") : (es ? "Reanudar" : "Resume")} aria-pressed={!playing}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
                 <button className="orbit-chat" type="button" onClick={openZoneChat} aria-label={es ? "Abrir chat con Saru" : "Open chat with Saru"} title={es ? "Chat" : "Chat"}><MessageCircle size={14} /></button>
               </div>
             </motion.div>}
@@ -893,7 +908,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
         {chatOpen && (
           <motion.div key="askbar" className="saru-chat-reveal"
             initial={{ height: 0, opacity: 0, y: 28 }} animate={{ height: "auto", opacity: 1, y: 0 }} exit={{ height: 0, opacity: 0, y: 28 }} transition={chatTransition}>
-          <div id="saru-chat" className={`saru-ask${zone ? " in-zone" : ""}`} role="region" aria-label={es ? "Chat con Saru" : "Chat with Saru"} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeChat(); } }}>
+          <div id="saru-chat" className={`saru-ask${zone ? " in-zone" : ""}`} role="region" aria-label={es ? "Chat con Saru" : "Chat with Saru"}>
             <AnimatePresence>
               {showHistory && history.length > 0 && (
                 <motion.div className="saru-history" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
@@ -910,7 +925,6 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
               <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={es ? "Pregúntale a Saru…" : "Ask Saru…"} aria-label={es ? "Pregunta para Saru" : "Question for Saru"} />
               <button type="button" className={`saru-ib${listening ? " rec" : ""}`} onClick={listen} aria-label={es ? "Hablarle a Saru" : "Talk to Saru"}><Mic size={15} /></button>
               <button type="submit" className="saru-ib send" aria-label={es ? "Enviar" : "Send"}><Send size={15} /></button>
-              <button type="button" className="saru-ib" onClick={closeChat} aria-label={es ? "Cerrar" : "Close"}><X size={15} /></button>
             </form>
           </div>
           </motion.div>
