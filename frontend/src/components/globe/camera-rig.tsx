@@ -37,16 +37,18 @@ export default function CameraRig() {
     // la zambullida acelera al final (como una caída), al salir vuelve más despacio
     const diveRate = globeState.dive > dive.current ? 2.4 : 3.2;
     dive.current += (globeState.dive - dive.current) * (1 - Math.exp(-step * diveRate));
-    country.current += (globeState.countryZoom - country.current) * (1 - Math.exp(-step * 2.2));
+    const countryZoomTarget = globeState.country ? globeState.countryZoom : globeState.planetZoom;
+    country.current += (countryZoomTarget - country.current) * (1 - Math.exp(-step * 2.2));
     const near = NEAR + (DIVE - NEAR) * smooth(Math.min(1, dive.current));
     // con un país abierto la cámara parte más cerca; al abrir una zona sigue acercándose desde ahí
-    const countryDistance = Math.min(FAR, 1 + ((globeState.countryDistance || COUNTRY) - 1) / globeState.countryMagnification);
+    const targetCountryDistance = globeState.country
+      ? 1 + ((globeState.countryDistance || COUNTRY) - 1) / globeState.countryMagnification
+      : COUNTRY;
+    const countryDistance = Math.min(FAR, targetCountryDistance);
     distance.current += (countryDistance - distance.current) * (1 - Math.exp(-step * 3));
     const far = FAR + (distance.current - FAR) * smooth(Math.min(1, country.current));
     const zoneDistance = far + (Math.min(near, far) - far) * smooth(Math.min(1, zoom.current));
-    // El zoom manual del pellizco recorre hasta la misma distancia final que abrir un país.
-    const freePlanetZoom = globeState.zoom === 0 && globeState.countryZoom < 0.01 ? globeState.planetZoom : 0;
-    camera.position.z = zoneDistance - freePlanetZoom * (FAR - COUNTRY);
+    camera.position.z = zoneDistance;
     camera.lookAt(0, 0, 0);
 
     // seguir la zona: llevarla al centro del área del mapa

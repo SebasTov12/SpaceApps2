@@ -52,6 +52,8 @@ function SpaceComets() {
       comet.style.setProperty("--comet-delay", `${(Math.random() * 24).toFixed(1)}s`);
       comet.style.setProperty("--comet-x", `${(xDirection * (22 + Math.random() * 34)).toFixed(1)}vw`);
       comet.style.setProperty("--comet-y", `${(yDirection * (5 + Math.random() * 18)).toFixed(1)}vh`);
+      comet.style.setProperty("--comet-curve-x", `${(xDirection * (8 + Math.random() * 14)).toFixed(1)}vw`);
+      comet.style.setProperty("--comet-curve-y", `${(yDirection * (8 + Math.random() * 18)).toFixed(1)}vh`);
     });
   }, []);
   return (
