@@ -52,11 +52,16 @@ function SpaceComets() {
       const period = 42 + Math.random() * 24;
       comet.style.left = `${point.x}%`;
       comet.style.top = `${point.y}%`;
-      comet.style.setProperty("--comet-angle", `${-28 + Math.random() * 56}deg`);
+      const dx = xDirection * (22 + Math.random() * 34);
+      const dy = -8 + Math.random() * 16;
+      // El cuerpo se orienta con el mismo vector que recorre la animación;
+      // así la cabeza avanza y la estela queda detrás siguiendo su curso.
+      const angle = Math.atan2(dy * window.innerHeight, dx * window.innerWidth) * 180 / Math.PI;
+      comet.style.setProperty("--comet-angle", `${angle.toFixed(2)}deg`);
       comet.style.setProperty("--comet-period", `${period.toFixed(1)}s`);
       comet.style.setProperty("--comet-delay", `${(index * 18 + Math.random() * 8).toFixed(1)}s`);
-      comet.style.setProperty("--comet-x", `${(xDirection * (22 + Math.random() * 34)).toFixed(1)}vw`);
-      comet.style.setProperty("--comet-y", `${(-8 + Math.random() * 16).toFixed(1)}vh`);
+      comet.style.setProperty("--comet-x", `${dx.toFixed(1)}vw`);
+      comet.style.setProperty("--comet-y", `${dy.toFixed(1)}vh`);
     });
   }, []);
   return (

@@ -3458,3 +3458,70 @@ html body .saro.in-zone .zone-transcript-bar{opacity:1}
   html body .zone-saru-slot .saru-caption{width:min(260px,calc(100vw - 110px));max-width:260px;max-height:none;padding:9px 11px}
   html body .zone-saru-slot .saru-caption .saru-text{max-height:34vh}
 }
+
+/* Ficha móvil plegable: deja el mapa amplio y conserva controles junto a su borde visible. */
+@media(max-width:900px){
+  html body .zone-stage-map .nisar-map{
+    inset:0 0 52px 0;
+    transition:inset .55s cubic-bezier(.22,1,.36,1);
+  }
+  html body .zone-stage-map[data-sheet-open="true"] .nisar-map{inset:0 0 50dvh 0}
+  html body .zone-panel{
+    top:auto;right:10px;bottom:0;left:10px;width:auto;max-width:calc(100vw - 20px);
+    height:52px;min-height:52px;max-height:52px;padding:4px 12px 2px;
+    overflow:hidden;overflow-x:hidden;overscroll-behavior:contain;box-sizing:border-box;
+    display:flex;flex-direction:column;gap:0;border-radius:18px 18px 0 0;
+    transition:height .48s cubic-bezier(.22,1,.36,1),max-height .48s cubic-bezier(.22,1,.36,1),background .3s;
+  }
+  html body .zone-panel:not(.is-open)>:not(.zone-grab){display:none}
+  html body .zone-panel.is-open{
+    height:50dvh;min-height:0;max-height:50dvh;padding:4px 14px max(14px,env(safe-area-inset-bottom,0px));
+    overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scroll-behavior:smooth;
+  }
+  html body .zone-panel>*{min-width:0;max-width:100%;box-sizing:border-box}
+  html body .zone-panel .zone-grab{
+    position:sticky;top:-4px;z-index:4;display:flex;flex:none;align-items:center;justify-content:center;gap:8px;
+    width:100%;height:40px;min-height:40px;margin:0 0 2px;padding:0;border:0;border-radius:12px;
+    background:linear-gradient(180deg,rgba(19,17,42,.99),rgba(14,15,34,.94));color:#bd8cff;cursor:pointer;touch-action:manipulation;
+  }
+  html body .zone-panel .zone-grab>span{width:38px;height:4px;border-radius:999px;background:rgba(225,218,255,.42);box-shadow:0 0 10px rgba(167,139,250,.25)}
+  html body .zone-panel .zone-grab svg{width:14px;height:14px;filter:drop-shadow(0 0 6px rgba(167,139,250,.55))}
+  html body .zone-panel.is-open .zone-grab{margin-bottom:8px;border-bottom:1px solid rgba(167,139,250,.12)}
+  html body .zone-panel .zone-title{overflow-wrap:anywhere;word-break:normal}
+  html body .zone-panel .zone-head,html body .zone-panel .zone-place,html body .zone-panel .zone-level,
+  html body .zone-panel .zone-tabs,html body .zone-panel .zone-analysis,html body .zone-panel .zs-card{min-width:0;max-width:100%}
+  html body .zone-panel .zone-analysis *,html body .zone-panel .zs-card *,html body .zone-panel .zone-source *{max-width:100%;overflow-wrap:anywhere}
+  html body .zone-panel .zone-level{flex-wrap:wrap}
+  html body .zone-panel .zone-level b{margin-left:0}
+  html body .zone-stage-map .zone-explore{right:12px;bottom:68px;transition:bottom .55s cubic-bezier(.22,1,.36,1)}
+  html body .zone-stage-map[data-sheet-open="true"] .zone-explore{bottom:calc(50dvh + 16px)}
+  html body .zone-stage-map .swipe-dates{right:12px;bottom:68px;transition:bottom .55s cubic-bezier(.22,1,.36,1)}
+  html body .zone-stage-map[data-sheet-open="true"] .swipe-dates{bottom:calc(50dvh + 16px)}
+
+  /* Saru y su órbita quedan dentro de los márgenes incluso en móviles estrechos. */
+  html body .zone-stage-map .zone-saru-slot{
+    top:max(68px,calc(env(safe-area-inset-top,0px) + 58px));left:max(52px,calc(env(safe-area-inset-left,0px) + 44px));
+    width:calc(100% - 64px);max-width:420px;min-height:72px;
+  }
+  html body .zone-saru-slot .saru-row{gap:36px}
+  html body .zone-saru-slot .saru-caption{flex:1 1 0;width:auto;min-width:0;max-width:none;max-height:none;margin:0!important;padding:7px 9px}
+  html body .zone-saru-slot .saru-caption .saru-text{
+    max-height:calc(4 * 1.4em);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;
+    font-size:12px;line-height:1.4;white-space:pre-line;overflow-wrap:anywhere;scrollbar-width:none;
+  }
+  html body .zone-saru-slot .saru-caption.is-zone-full{min-height:calc(4 * 1.4em + 16px)}
+  html body .zone-saru-slot .saru-avatar-anchor{flex:none}
+  html body .zone-saru-slot .saru-avatar{width:62px;height:72px}
+  html body .zone-saru-slot .saru-chat-reveal{order:2;flex:none;width:100%;max-width:100%;margin:22px 0 0}
+  html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{
+    position:relative;left:auto;right:auto;bottom:auto;width:100%;max-width:100%;max-height:32dvh;margin:0;
+    overflow-x:hidden;overflow-y:auto;box-sizing:border-box;
+  }
+}
+
+/* El contenido viaja con la órbita, pero los glifos se contrarrotan desde un nodo estable. */
+html body .saro .saru-zone-orbit-plane button{box-sizing:border-box}
+html body .saro .saru-zone-orbit-plane .orbit-glyph{display:grid;place-items:center;width:14px;height:14px;rotate:0deg;transform-origin:center;animation:saru-orbit-counter 12s linear infinite;will-change:rotate}
+html body .saro .saru-zone-orbit-plane button svg{display:block;width:14px;height:14px;flex:none;rotate:0deg;animation:none!important;transform:none!important}
+html body .saro .saru-zone-orbit-plane .orbit-transcript{top:5px;left:50%;margin-left:-15px;display:grid;place-items:center}
+@media(prefers-reduced-motion:reduce){html body .saro .saru-zone-orbit-plane .orbit-glyph{animation:none}}

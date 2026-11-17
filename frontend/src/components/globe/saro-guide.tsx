@@ -17,6 +17,8 @@ import { GLOBE_SELECT, UI_REVEAL, focusZone, globeState } from "./globe-state";
 export const SECTOR_EVENT = "saros:sector";
 /** Evento con el que Saro pide al mapa señalar puntos o explicar colores. */
 export const POINT_EVENT = "saros:point";
+/** La ficha se pliega cuando se abre el chat de Saru en la vista de zona. */
+export const ZONE_CHAT_OPEN_EVENT = "saros:zone-chat-open";
 
 /** Texto del asistente sin marcas de formato (para mostrarlo y leerlo en voz alta). */
 function plainText(t: string) {
@@ -331,6 +333,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   const [speechProgress, setSpeechProgress] = useState({ text: "", n: 0 });
   // El primer HTML debe coincidir en servidor y navegador; activa escritura tras hidratar.
   const [hydrated, setHydrated] = useState(false);
+  const [mobileView, setMobileView] = useState(false);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [minimized, setMinimized] = useState(false);
   // Saru llega cuando se baja con el scroll (o al abrir una zona); arriba del todo no está
@@ -344,6 +347,13 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setHydrated(true));
     return () => cancelAnimationFrame(frame);
+  }, []);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 900px)");
+    const update = () => setMobileView(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, []);
   useEffect(() => {
     if (!hydrated) return;
@@ -417,6 +427,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   const [zoneMenuOpen, setZoneMenuOpen] = useState(true);
   const [homeOrbitOpen, setHomeOrbitOpen] = useState(true);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [zoneCaptionExpanded, setZoneCaptionExpanded] = useState(false);
   const [transcriptDismissed, setTranscriptDismissed] = useState(false);
   const transcriptTextRef = useRef<HTMLParagraphElement>(null);
   const [history, setHistory] = useState<{ from: "user" | "saro"; text: string }[]>([]);
@@ -493,8 +504,9 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
       setPlaying(Boolean(id));
       setZoneMenuOpen(true);
       setHomeOrbitOpen(true);
-      setTranscriptOpen(false);
+      setTranscriptOpen(Boolean(id) && window.matchMedia("(max-width: 900px)").matches);
       setTranscriptDismissed(false);
+      setZoneCaptionExpanded(false);
       if (id) { setMinimized(false); setChatOpen(false); }
       manifestRef.current = null;
       const z = riskZones.find((r) => r.id === id);
@@ -530,6 +542,13 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     ? (speechProgress.text === displayText ? speechProgress.n : 0)
     : (prog.text === displayText ? prog.n : 0);
   const typed = !hydrated ? displayText : displayText.slice(0, typedCount);
+  const transcriptWindowStart = zoneId && mobileView && typed.length > 96 ? typed.indexOf(" ", typed.length - 96) : -1;
+  const captionText = transcriptWindowStart >= 0 ? typed.slice(transcriptWindowStart + 1) : typed;
+  useEffect(() => {
+    if (!zoneId || !mobileView || typed.length <= 96 || zoneCaptionExpanded) return;
+    const frame = requestAnimationFrame(() => setZoneCaptionExpanded(true));
+    return () => cancelAnimationFrame(frame);
+  }, [zoneId, mobileView, typed.length, zoneCaptionExpanded]);
   useEffect(() => {
     // Start the typewriter when Saru enters the scene, so mobile doesn't finish
     // transcribing while the avatar is still hidden below the reveal.
@@ -560,6 +579,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   const audio = useRef<HTMLAudioElement | null>(null);
   const token = useRef(0);
   const advanceTimer = useRef<number | null>(null);
+  const speechFinishedRef = useRef(false);
   const stopAll = useCallback(() => {
     token.current++;
     if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
@@ -572,7 +592,8 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   const speak = useCallback((t: string, onDone: () => void) => {
     stopAll();
     const my = ++token.current;
-    const done = () => { if (my === token.current) { setSpeaking(false); onDone(); } };
+    speechFinishedRef.current = false;
+    const done = () => { if (my === token.current) { speechFinishedRef.current = true; setSpeaking(false); onDone(); } };
     const key = voiceKey(t);
     if (es && !auto && recorded) {
       const keys = recorded.has(key) ? [key] : sentences(t).map(voiceKey);
@@ -614,6 +635,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
           a.play().catch(() => {
             if (my !== token.current || nativeFallbackStarted) return;
             nativeFallbackStarted = true;
+            audio.current = null;
             setSpeaking(false);
             if ("speechSynthesis" in window) {
               window.speechSynthesis.cancel();
@@ -711,6 +733,10 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     if (aside) { setAside(null); return; }           // tras reaccionar a un sector, sigue el recorrido
     setStep((s) => (s < lines.length - 1 ? s + 1 : s));
   }, [aside, lines.length, setAside]);
+  const speakRef = useRef(speak);
+  const advanceRef = useRef(advance);
+  useEffect(() => { speakRef.current = speak; }, [speak]);
+  useEffect(() => { advanceRef.current = advance; }, [advance]);
   useEffect(() => {
     autoNextRef.current = playing && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
     playingRef.current = playing;
@@ -724,9 +750,9 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     }
     const canSpeak = voice && unlocked;
     if (canSpeak) {
-      speak(text, () => {
+      speakRef.current(text, () => {
         if (!playingRef.current || !autoNextRef.current) return;
-        advanceTimer.current = window.setTimeout(() => { advanceTimer.current = null; advance(); }, 650);
+        advanceTimer.current = window.setTimeout(() => { advanceTimer.current = null; advanceRef.current(); }, 650);
       });
       return stopAll;
     }
@@ -735,11 +761,20 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     // sin voz: avanza cuando hubo tiempo de leer
     if (!autoNextRef.current) return;
     const wait = Math.max(2600, text.length * 55);
-    const id = window.setTimeout(advance, wait);
-    return () => window.clearTimeout(id);
-  }, [text, voice, unlocked, minimized, speak, stopAll, advance, reply, aside, thinking, away, narrationReady]);
+    const id = window.setTimeout(() => {
+      advanceTimer.current = null;
+      advanceRef.current();
+    }, wait);
+    advanceTimer.current = id;
+    return () => {
+      window.clearTimeout(id);
+      if (advanceTimer.current === id) advanceTimer.current = null;
+    };
+  // Una voz o traducción que llega durante la pausa no debe cancelar el audio
+  // que el usuario espera reanudar.
+  }, [text, voice, unlocked, minimized, stopAll, reply, aside, thinking, away, narrationReady]);
 
-  const talking = hydrated && (typed.length < displayText.length || (voice && unlocked && speaking));
+  const talking = hydrated && playing && (typed.length < displayText.length || (voice && unlocked && speaking));
   // La transcripción empieza al terminar la entrada de Saru; el navegador puede
   // bloquear el audio automático, así que el typewriter mantiene visible el guion.
   const showCaption = transcriptOpen || (!zone && !transcriptDismissed && narrationReady && arrived && typed.length > 0);
@@ -834,6 +869,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   };
   const openZoneChat = () => {
     if (chatOpen) { setChatOpen(false); setHomeOrbitOpen(!zoneRef.current); setZoneMenuOpen(Boolean(zoneRef.current)); return; }
+    if (zoneRef.current) window.dispatchEvent(new CustomEvent(ZONE_CHAT_OPEN_EVENT));
     setTranscriptOpen(false);
     setTranscriptDismissed(true);
     setMinimized(false);
@@ -843,17 +879,29 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   const togglePlayback = () => {
     const resume = !playingRef.current;
     playingRef.current = resume;
+    autoNextRef.current = resume && !reply && !minimized && step < lines.length - 1 + (aside ? 1 : 0);
     setPlaying(resume);
     if (resume) {
       if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
       advanceTimer.current = null;
-      if (audio.current?.paused) void audio.current.play().catch(() => undefined);
-      if ("speechSynthesis" in window) window.speechSynthesis.resume();
+      if (speechFinishedRef.current && autoNextRef.current) {
+        advanceTimer.current = window.setTimeout(() => { advanceTimer.current = null; advanceRef.current(); }, 650);
+      } else {
+        const currentAudio = audio.current;
+        if (currentAudio && !currentAudio.ended && currentAudio.paused) {
+          void currentAudio.play().then(() => setSpeaking(true)).catch(() => undefined);
+        }
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.resume();
+          if (window.speechSynthesis.speaking || window.speechSynthesis.pending || window.speechSynthesis.paused) setSpeaking(true);
+        }
+      }
     } else {
       if (advanceTimer.current !== null) window.clearTimeout(advanceTimer.current);
       advanceTimer.current = null;
       audio.current?.pause();
       if ("speechSynthesis" in window) window.speechSynthesis.pause();
+      setSpeaking(false);
     }
   };
   const avatarRef = useRef<HTMLButtonElement>(null);
@@ -870,10 +918,10 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
         <div className="saru-row">
         <AnimatePresence initial={false} mode="popLayout">
           {!minimized && !chatOpen && (zone ? transcriptOpen : showCaption) && (
-            <motion.div layout="position" key="caption" className="saru-caption" role="status" aria-live="polite"
+            <motion.div layout="position" key="caption" className={`saru-caption${zoneId && mobileView && zoneCaptionExpanded ? " is-zone-full" : ""}`} role="status" aria-live="polite"
               initial={{ opacity: 0, y: 18, scale: 0.96, filter: "blur(5px)" }} animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, y: 10, scale: 0.98, filter: "blur(3px)" }}
               transition={{ ...chatTransition, duration: reduce ? 0 : 0.55 }}>
-              <p ref={transcriptTextRef} className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
+              <p ref={transcriptTextRef} className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{captionText}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -894,9 +942,9 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
           {(zone ? zoneMenuOpen : homeOrbitOpen) && <motion.div key={zone ? "zone-orbit" : "home-orbit"} className="saru-zone-orbit" role="group" aria-label={es ? "Acciones de Saru" : "Saru actions"}
               initial={{ opacity: 0, scale: 0.35 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.3 }} transition={chatTransition}>
               <div className="saru-zone-orbit-plane">
-                <button className={`orbit-transcript${transcriptOpen || showCaption ? " is-active" : ""}`} type="button" onClick={toggleTranscript} aria-label={transcriptOpen || showCaption ? (es ? "Cerrar transcripción" : "Close transcript") : (es ? "Abrir transcripción" : "Open transcript")} title={es ? "Transcripción" : "Transcript"}><FileText size={14} /></button>
-                <button className="orbit-pause" type="button" onClick={togglePlayback} aria-label={playing ? (es ? "Pausar a Saru" : "Pause Saru") : (es ? "Reanudar a Saru" : "Resume Saru")} title={playing ? (es ? "Pausar" : "Pause") : (es ? "Reanudar" : "Resume")} aria-pressed={!playing}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
-                <button className={`orbit-chat${chatOpen ? " is-active" : ""}`} type="button" onClick={openZoneChat} aria-label={es ? (chatOpen ? "Cerrar chat con Saru" : "Abrir chat con Saru") : (chatOpen ? "Close Saru chat" : "Open chat with Saru")} title={es ? "Chat" : "Chat"}><MessageCircle size={14} /></button>
+                <button className={`orbit-transcript${transcriptOpen || showCaption ? " is-active" : ""}`} type="button" onClick={toggleTranscript} aria-label={transcriptOpen || showCaption ? (es ? "Cerrar transcripción" : "Close transcript") : (es ? "Abrir transcripción" : "Open transcript")} title={es ? "Transcripción" : "Transcript"}><span className="orbit-glyph"><FileText size={14} /></span></button>
+                <button className="orbit-pause" type="button" onClick={togglePlayback} aria-label={playing ? (es ? "Pausar a Saru" : "Pause Saru") : (es ? "Reanudar a Saru" : "Resume Saru")} title={playing ? (es ? "Pausar" : "Pause") : (es ? "Reanudar" : "Resume")} aria-pressed={!playing}><span className="orbit-glyph">{playing ? <Pause size={14} /> : <Play size={14} />}</span></button>
+                <button className={`orbit-chat${chatOpen ? " is-active" : ""}`} type="button" onClick={openZoneChat} aria-label={es ? (chatOpen ? "Cerrar chat con Saru" : "Abrir chat con Saru") : (chatOpen ? "Close Saru chat" : "Open chat with Saru")} title={es ? "Chat" : "Chat"}><span className="orbit-glyph"><MessageCircle size={14} /></span></button>
               </div>
             </motion.div>}
         </AnimatePresence>

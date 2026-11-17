@@ -1,14 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Box, Database, Info, MapPin, MapPinned, MousePointerClick, Radar, Sparkles, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, ChevronDown, ChevronUp, Database, Info, MapPin, MapPinned, MousePointerClick, Radar, Sparkles, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import ZoneSimple from "./zone-simple";
 import { HAZARD_POINT_SELECT, hazardPointId, loadHazardPoints, pointCountry, type HazardPoint } from "@/lib/hazard-points";
-import { POINT_EVENT } from "./saro-guide";
+import { POINT_EVENT, ZONE_CHAT_OPEN_EVENT } from "./saro-guide";
 import { TOUR_EVENT, type LegendKind, type SaroAction, type TourKey } from "@/lib/saro-brain";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
 import { levelInfo } from "@/lib/insights";
@@ -26,6 +26,7 @@ const NisarMap = dynamic(() => import("@/components/nisar-map"), { ssr: false, l
 const copy = {
   es: {
     back: "Volver al planeta", close: "Cerrar zona", zones: "Zonas de riesgo", zonesHint: "Elige una zona para acercar el planeta",
+    showDetails: "Abrir análisis y datos", hideDetails: "Cerrar análisis y datos",
     simple: "Vista simple", analysis: "Análisis", now: "Qué está pasando", history: "Qué pasó aquí", todo: "Qué hacer",
     watch: (n: number) => `${n} puntos a vigilar marcados en el mapa: allí el cambio reciente es más rápido.`,
     noData: "Zona de interés: aún sin capas NISAR procesadas. La vista muestra la imagen satelital del lugar.",
@@ -47,6 +48,7 @@ const copy = {
   },
   en: {
     back: "Back to the planet", close: "Close zone", zones: "Risk zones", zonesHint: "Pick a zone to zoom the planet",
+    showDetails: "Open analysis and data", hideDetails: "Close analysis and data",
     simple: "Simple view", analysis: "Analysis", now: "What is happening", history: "What happened here", todo: "What to do",
     watch: (n: number) => `${n} watch points on the map: recent change is fastest there.`,
     noData: "Zone of interest: no NISAR layers processed yet. The view shows the satellite image of the place.",
@@ -128,6 +130,7 @@ export default function ZoneView() {
   const [opacity, setOpacity] = useState(0.8);
   const [pick, setPick] = useState<{ lon: number; lat: number } | null>(null);
   const [wide, setWide] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const zone = useMemo(() => {
     const curated = riskZones.find((item) => item.id === zoneId);
@@ -161,6 +164,12 @@ export default function ZoneView() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  useEffect(() => {
+    const closeDetails = () => setDetailsOpen(false);
+    window.addEventListener(ZONE_CHAT_OPEN_EVENT, closeDetails);
+    return () => window.removeEventListener(ZONE_CHAT_OPEN_EVENT, closeDetails);
+  }, []);
+
   // Abrir / cerrar: acercamiento 3D y después el mapa de la zona
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -168,6 +177,7 @@ export default function ZoneView() {
       const id = (event as CustomEvent<string | null>).detail;
       clearTimeout(timer);
       setZoneId(id);
+      setDetailsOpen(false);
       setTab("simple");
       setMapVisible(false);
       setMapReady(false);
@@ -413,7 +423,7 @@ export default function ZoneView() {
       {/* Mapa de la zona: se precarga oculto y aparece cuando ya tiene imagen */}
       <AnimatePresence>
         {zone && mapVisible && mapBbox && (siteId ? active : true) && (
-          <motion.div key={`map-${zone.id}`} className="zone-stage-map" data-ready={mapReady}
+          <motion.div key={`map-${zone.id}`} className="zone-stage-map" data-ready={mapReady} data-sheet-open={detailsOpen}
             initial={{ opacity: 0, scale: 1.08, filter: "blur(18px) saturate(0.6)" }}
             animate={mapReady ? { opacity: 1, scale: 1, filter: "blur(0px) saturate(1)" } : { opacity: 0, scale: 1.08, filter: "blur(18px) saturate(0.6)" }}
             exit={{ opacity: 0, scale: 1.04, filter: "blur(12px) saturate(0.6)", transition: { duration: 0.6 } }}
@@ -475,7 +485,7 @@ export default function ZoneView() {
         {zone && (
           <motion.aside
             key="zone-panel"
-            className="zone-panel"
+            className={`zone-panel${detailsOpen ? " is-open" : ""}`}
             ref={panelRef}
             role="dialog"
             aria-label={`${zone.name[lang]} · ${zone.place[lang]}`}
@@ -483,7 +493,9 @@ export default function ZoneView() {
             animate={{ opacity: 1, x: 0, y: 0, filter: "blur(0px)", transition: { delay: 0.5, duration: 0.7, ease: [0.22, 1, 0.36, 1] } }}
             exit={{ opacity: 0, x: wide ? 60 : 0, y: wide ? 0 : 60, filter: "blur(8px)", transition: { duration: 0.35 } }}
           >
-            <span className="zone-grab" aria-hidden="true" />
+            <button type="button" className="zone-grab" aria-expanded={detailsOpen} aria-label={detailsOpen ? c.hideDetails : c.showDetails} title={detailsOpen ? c.hideDetails : c.showDetails} onClick={() => setDetailsOpen((open) => !open)}>
+              <span aria-hidden="true" />{detailsOpen ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronUp size={14} aria-hidden="true" />}
+            </button>
             <header className="zone-head">
               <span className="zone-kind" translate={zone.kind === "subsidence" && globalLang === "pt" ? "no" : undefined} style={{ color: riskKinds[zone.kind].color }}>{riskKindLabel(zone.kind, lang, globalLang)}</span>
               <div className="zone-head-actions">
