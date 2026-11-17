@@ -41,14 +41,20 @@ function SpaceComets() {
   useEffect(() => {
     const comets = container.current?.querySelectorAll<HTMLElement>(".space-comet");
     if (!comets) return;
-    comets.forEach((comet) => {
+    const starts: Array<{ x: number; y: number }> = [];
+    comets.forEach((comet, index) => {
+      let point = { x: 8 + Math.random() * 84, y: 5 + Math.random() * 88 };
+      for (let attempt = 0; attempt < 24 && starts.some((p) => Math.hypot(p.x - point.x, p.y - point.y) < 34); attempt++) {
+        point = { x: 8 + Math.random() * 84, y: 5 + Math.random() * 88 };
+      }
+      starts.push(point);
       const xDirection = Math.random() < 0.5 ? -1 : 1;
-      const period = 38 + Math.random() * 24;
-      comet.style.left = `${Math.random() * 92}%`;
-      comet.style.top = `${5 + Math.random() * 88}%`;
+      const period = 42 + Math.random() * 24;
+      comet.style.left = `${point.x}%`;
+      comet.style.top = `${point.y}%`;
       comet.style.setProperty("--comet-angle", `${-28 + Math.random() * 56}deg`);
       comet.style.setProperty("--comet-period", `${period.toFixed(1)}s`);
-      comet.style.setProperty("--comet-delay", `${(Math.random() * 24).toFixed(1)}s`);
+      comet.style.setProperty("--comet-delay", `${(index * 18 + Math.random() * 8).toFixed(1)}s`);
       comet.style.setProperty("--comet-x", `${(xDirection * (22 + Math.random() * 34)).toFixed(1)}vw`);
       comet.style.setProperty("--comet-y", `${(-8 + Math.random() * 16).toFixed(1)}vh`);
     });
