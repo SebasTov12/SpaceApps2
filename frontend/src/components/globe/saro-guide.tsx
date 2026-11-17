@@ -336,6 +336,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   // Saru llega cuando se baja con el scroll (o al abrir una zona); arriba del todo no está
   const [arrived, setArrived] = useState(false);
   const [arrivals, setArrivals] = useState(0);
+  const [initialLanding, setInitialLanding] = useState(false);
   const arrivedRef = useRef(false);
   const hasLandedRef = useRef(false);
   const [homeGreetingDismissed, setHomeGreetingDismissed] = useState(false);
@@ -370,7 +371,13 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     arrivedRef.current = true;
     setArrived(true);
     setArrivals((n) => n + 1);
+    setInitialLanding(true);
   }, [sceneReady, planetRevealed, zoneId]);
+  useEffect(() => {
+    if (!initialLanding) return;
+    const timer = window.setTimeout(() => setInitialLanding(false), 1900);
+    return () => window.clearTimeout(timer);
+  }, [initialLanding]);
   const narrationKey = `${sceneReady}:${planetRevealed}:${zoneId ?? "home"}:${arrivals}:${arrived}`;
   const narrationReady = narrationReadyKey === narrationKey && sceneReady && (planetRevealed || Boolean(zoneId)) && (arrived || Boolean(zoneId));
   useEffect(() => {
@@ -800,16 +807,6 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     rec.start();
   };
   const chatTransition = { duration: reduce ? 0 : 0.8, ease: [0.22, 1, 0.36, 1] as const };
-  const homePanelActive = !zone && (showCaption || chatOpen);
-  const [repositioning, setRepositioning] = useState(false);
-  const previousHomePanel = useRef(homePanelActive);
-  useEffect(() => {
-    if (previousHomePanel.current === homePanelActive) return;
-    previousHomePanel.current = homePanelActive;
-    setRepositioning(true);
-    const timer = window.setTimeout(() => setRepositioning(false), reduce ? 0 : 900);
-    return () => window.clearTimeout(timer);
-  }, [homePanelActive, reduce]);
   const toggleTranscript = () => {
     const visible = transcriptOpen || showCaption;
     const next = !visible;
@@ -819,13 +816,9 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     setMinimized(false);
   };
   const toggleZoneMenu = () => {
-    if (chatOpen || transcriptOpen || showCaption) { setChatOpen(false); setTranscriptOpen(false); setTranscriptDismissed(true); setZoneMenuOpen(false); setHomeOrbitOpen(false); return; }
-    setMinimized(false);
     setZoneMenuOpen((open) => !open);
   };
   const toggleHomeOrbit = () => {
-    if (chatOpen || transcriptOpen || showCaption) { setChatOpen(false); setTranscriptOpen(false); setTranscriptDismissed(true); setHomeOrbitOpen(false); setZoneMenuOpen(false); return; }
-    setMinimized(false);
     setHomeOrbitOpen((open) => !open);
   };
   const openZoneChat = () => {
@@ -858,8 +851,8 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
           {pool.map((t) => <p key={voiceKey(t)} data-k={voiceKey(t)}><ProtectedTerms text={t} /></p>)}
         </div>
       )}
-      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}${transcriptOpen || showCaption ? " is-transcript-open" : ""}${chatOpen ? " is-chat-open" : ""}${repositioning ? " is-repositioning" : ""}`} aria-hidden={away || undefined}>
-        <motion.div layout="position" transition={chatTransition} className="saru-row">
+      <div className={`saro${zone ? " in-zone" : ""}${watch ? " is-watch" : ""}${pointing ? " is-pointing" : ""}${thinking ? " is-thinking" : ""}${away ? " is-away" : ""}${transcriptOpen || showCaption ? " is-transcript-open" : ""}${chatOpen ? " is-chat-open" : ""}`} aria-hidden={away || undefined}>
+        <div className="saru-row">
         <AnimatePresence initial={false} mode="popLayout">
           {!minimized && !chatOpen && (zone ? transcriptOpen : showCaption) && (
             <motion.div layout="position" key="caption" className="saru-caption" role="status" aria-live="polite"
@@ -869,7 +862,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.div layout="position" transition={chatTransition} key={`${zoneId ?? "home"}-${arrivals}`} className={`saru-avatar-anchor saru-enter${(zone ? zoneMenuOpen : homeOrbitOpen) ? " is-menu-open" : ""}`}>
+        <motion.div layout="position" transition={chatTransition} className={`saru-avatar-anchor${initialLanding ? " saru-enter" : ""}${(zone ? zoneMenuOpen : homeOrbitOpen) ? " is-menu-open" : ""}`}>
         <button ref={avatarRef} type="button" className="saro-avatar" onClick={zone ? toggleZoneMenu : toggleHomeOrbit}
           aria-expanded={zone ? zoneMenuOpen || transcriptOpen || chatOpen : homeOrbitOpen || transcriptOpen || chatOpen} aria-controls={chatOpen ? "saru-chat" : undefined}
           aria-label={zone ? (zoneMenuOpen ? (es ? "Ocultar controles de Saru" : "Hide Saru controls") : (es ? "Mostrar controles de Saru" : "Show Saru controls")) : chatOpen ? (es ? "Cerrar chat de Saru y mostrar diálogo" : "Close Saru chat and show dialogue") : homeOrbitOpen ? (es ? "Ocultar controles de Saru" : "Hide Saru controls") : (es ? "Mostrar controles de Saru" : "Show Saru controls")}>
@@ -893,7 +886,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
             </motion.div>}
         </AnimatePresence>
         </motion.div>
-        </motion.div>
+        </div>
 
       {/* Chat: barra translúcida pegada a Saru; responde en su subtítulo y con su voz */}
       <AnimatePresence>

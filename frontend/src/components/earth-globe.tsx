@@ -257,7 +257,8 @@ export default function EarthGlobe({ progress, playing, onReady }: { progress: M
       if (globeState.country) {
         changeCountryZoom(current / previousPinch);
       } else {
-        globeState.planetZoom = Math.max(0, Math.min(1, globeState.planetZoom + Math.log(current / previousPinch) * 0.8));
+        // El pellizco recorre gradualmente el mismo rango de cámara que el enfoque de un país.
+        globeState.planetZoom = Math.max(0, Math.min(1, globeState.planetZoom + Math.log(current / previousPinch) * 0.62));
       }
       previousPinch = current;
     };

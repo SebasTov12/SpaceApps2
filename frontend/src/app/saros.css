@@ -2801,9 +2801,6 @@ html body .hero-latest {
   transform: translate(-50%, -50%)
 }
 
-.space-comet-a { left: 0%; top: 12%; --comet-angle: 14deg; --comet-period: 18s; --comet-delay: 0s; --comet-x: 40vw; --comet-y: 10vw }
-.space-comet-b { left: 55%; top: 18%; --comet-angle: -9deg; --comet-period: 18s; --comet-delay: 6s; --comet-x: 25vw; --comet-y: -4vw }
-.space-comet-c { left: 3%; top: 64%; --comet-angle: -15deg; --comet-period: 18s; --comet-delay: 12s; --comet-x: 22vw; --comet-y: -6vw }
 .space-comet-b .comet-glow { background: linear-gradient(90deg, transparent 4%, rgba(139, 92, 246, .12) 46%, rgba(170, 139, 255, .38) 88%, rgba(246, 240, 255, .62)) }
 .space-comet-c .comet-glow { background: linear-gradient(90deg, transparent 4%, rgba(94, 240, 255, .08) 45%, rgba(94, 240, 255, .34) 88%, rgba(235, 252, 255, .62)) }
 
@@ -2875,9 +2872,6 @@ html body .hero-latest {
   .space-twinkles i,.space-stars .star-bright { animation-duration: 9s !important }
   .space-milkyway,.space-galaxy { animation-duration: 64s !important }
   .space-comet { animation: comet-pass-soft 42s linear var(--comet-delay) infinite !important }
-  .space-comet-a { --comet-x: 12vw; --comet-y: 3vw }
-  .space-comet-b { --comet-x: 8vw; --comet-y: -1vw }
-  .space-comet-c { --comet-x: 9vw; --comet-y: -3vw }
 }
 
 @keyframes comet-pass-soft {
@@ -3233,7 +3227,17 @@ html body .saru-enter{animation:saru-fly 1.6s cubic-bezier(.22,1.2,.36,1) both}
 }
 html body .saru-trail{animation:saru-trail-fly 1.5s ease-out both}
 @keyframes saru-trail-fly{0%{opacity:.95;transform:translate(-200px,170px) scale(2.2,.5) rotate(-38deg)}70%{opacity:.4}100%{opacity:0;transform:scale(.5)}}
+/* El polvo y la estela se activan una sola vez: cuando Saru aterriza al descubrir el planeta. */
+html body .saru-enter .saru-trail{animation:saru-entry-trail 1.5s ease-out both}
+html body .saru-enter .saru-land .saru-shock{animation:saru-entry-shock .75s cubic-bezier(.2,.8,.3,1) 1.05s both}
+html body .saru-enter .saru-land i{animation:saru-entry-puff 1.15s cubic-bezier(.15,.75,.35,1) calc(1.02s + var(--k) * .025s) both}
+html body .saru-enter .saru-land s{animation:saru-entry-spark .7s ease-out calc(1.06s + var(--k) * .02s) both}
+@keyframes saru-entry-trail{0%{opacity:.95;transform:translate(-200px,170px) scale(2.2,.5) rotate(-38deg)}70%{opacity:.4}100%{opacity:0;transform:scale(.5)}}
+@keyframes saru-entry-shock{0%{opacity:.95;transform:scale(.25)}100%{opacity:0;transform:scale(1.9,1.5)}}
+@keyframes saru-entry-puff{0%{opacity:0;transform:translate(0,4px) scale(.3)}15%{opacity:.95}100%{opacity:0;transform:translate(calc(var(--d) * 92px),calc(-12px - (1 - var(--d) * var(--d)) * 30px)) scale(calc(1.7 + (1 - var(--d) * var(--d)) * .7))}}
+@keyframes saru-entry-spark{0%{opacity:1;transform:none}100%{opacity:0;transform:translate(calc(var(--d) * 70px),calc(-26px - var(--k) * 4px))}}
 @media(prefers-reduced-motion:reduce){html body .hero-overlay .hero-search-btn{transition:opacity .2s}html body .saru-enter,html body .saru-trail{animation:none}}
+@media(prefers-reduced-motion:reduce){html body .saru-enter .saru-trail,html body .saru-enter .saru-land .saru-shock,html body .saru-enter .saru-land i,html body .saru-enter .saru-land s{animation:none;opacity:0}}
 
 /* ---------- Saru aterriza: anillo de impacto y humo ---------- */
 html body .saru-land{position:absolute;left:50%;bottom:4px;width:0;height:0;pointer-events:none;z-index:-1}
@@ -3438,16 +3442,16 @@ html body .saro.in-zone .zone-transcript-bar{opacity:1}
   html body .saro:not(.in-zone){bottom:calc(68px + env(safe-area-inset-bottom, 0px))}
 }
 
-/* En móvil, Saru y su panel se mueven como una sola composición centrada. */
+/* En móvil, Saru y su panel se mueven con una sola transición de posición (Framer Motion). */
 @media(max-width:900px){
   html body .saro:not(.in-zone){
     left:50%;right:auto;width:108px;align-items:center;transform:translateX(-50%);box-sizing:border-box;
-    transition:width .75s cubic-bezier(.22,1,.36,1),transform .75s cubic-bezier(.22,1,.36,1);
   }
   html body .saro:not(.in-zone).is-transcript-open,
   html body .saro:not(.in-zone).is-chat-open{
     left:50%;right:auto;width:min(360px,calc(100vw - 24px));align-items:stretch;transform:translateX(-50%);
   }
+  html body .saro:not(.in-zone):not(.is-transcript-open):not(.is-chat-open) .saru-row{width:100%;gap:0;justify-content:center;align-items:center}
   html body .saro:not(.in-zone).is-transcript-open .saru-row,
   html body .saro:not(.in-zone).is-chat-open .saru-row{width:100%;box-sizing:border-box;gap:24px;padding-left:26px;justify-content:flex-end;align-items:center}
   html body .saro:not(.in-zone).is-transcript-open .saru-caption{width:auto;max-width:none;flex:1;min-width:0;padding:9px 11px;margin:0;align-self:center}
@@ -3455,15 +3459,7 @@ html body .saro.in-zone .zone-transcript-bar{opacity:1}
   html body .saro:not(.in-zone).is-chat-open .saru-ask{width:100%;max-width:100%;box-sizing:border-box}
   html body .saro:not(.in-zone) .saru-zone-orbit{left:50%;width:108px;height:108px;margin:-54px 0 0 -54px}
   html body .saro:not(.in-zone).is-transcript-open .saru-text{max-height:34vh;overflow:auto;scrollbar-width:thin}
-  html body .saro:not(.in-zone).is-repositioning .saru-avatar-anchor{animation:saru-soft-landing .85s cubic-bezier(.22,1,.36,1) both}
-  html body .saro:not(.in-zone).is-repositioning .saru-land .saru-shock{animation:saru-reposition-shock .72s cubic-bezier(.2,.8,.3,1) both}
-  html body .saro:not(.in-zone).is-repositioning .saru-land i{animation:saru-reposition-puff 1s cubic-bezier(.15,.75,.35,1) calc(var(--k) * 24ms) both}
-  html body .saro:not(.in-zone).is-repositioning .saru-land s{animation:saru-reposition-spark .68s ease-out calc(var(--k) * 18ms) both}
+  html body .saro:not(.in-zone).is-chat-open .saru-chat-reveal{margin-top:28px}
   html body .zone-saru-slot .saru-caption{width:min(260px,calc(100vw - 110px));max-width:260px;max-height:none;padding:9px 11px}
   html body .zone-saru-slot .saru-caption .saru-text{max-height:34vh}
 }
-@keyframes saru-soft-landing{0%{opacity:.78;filter:blur(2px) brightness(1.35)}58%{opacity:1;filter:blur(0) brightness(1.08) drop-shadow(0 0 8px rgba(94,240,255,.35))}100%{filter:none}}
-@keyframes saru-reposition-shock{0%{opacity:.8;transform:scale(.25)}100%{opacity:0;transform:scale(1.65,1.4)}}
-@keyframes saru-reposition-puff{0%{opacity:0;transform:translate(0,4px) scale(.3)}18%{opacity:.75}100%{opacity:0;transform:translate(calc(var(--d) * 66px),calc(-8px - (1 - var(--d) * var(--d)) * 22px)) scale(calc(1.45 + (1 - var(--d) * var(--d)) * .6))}}
-@keyframes saru-reposition-spark{0%{opacity:.9;transform:none}100%{opacity:0;transform:translate(calc(var(--d) * 54px),calc(-20px - var(--k) * 3px))}}
-@media(prefers-reduced-motion:reduce){html body .saro:not(.in-zone){transition:none}html body .saro.is-repositioning .saru-avatar-anchor,html body .saro.is-repositioning .saru-land .saru-shock,html body .saro.is-repositioning .saru-land i,html body .saro.is-repositioning .saru-land s{animation:none}}

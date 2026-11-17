@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
 /**
  * Profundidad del espacio detrás del planeta: franja de la Vía Láctea, galaxias lejanas,
  * estrellas que titilan y estrellas fugaces ocasionales. Solo decoración (sin texto ni controles).
@@ -26,12 +30,32 @@ const GALAXIES = [
   { x: 14, y: 22, w: 7, h: 2.2, rot: -24, o: 0.5 },
   { x: 86, y: 68, w: 5, h: 1.6, rot: 32, o: 0.38 },
   { x: 78, y: 14, w: 3.4, h: 1.1, rot: -8, o: 0.32 },
+  { x: 34, y: 72, w: 2.8, h: 1.05, rot: 18, o: 0.2 },
+  { x: 62, y: 30, w: 2.1, h: 0.75, rot: -36, o: 0.24 },
+  { x: 92, y: 38, w: 2.4, h: 0.82, rot: 12, o: 0.19 },
 ];
 
 /** Tres trayectorias espaciadas: siempre detrás del planeta y sin controles. */
 function SpaceComets() {
+  const container = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const comets = container.current?.querySelectorAll<HTMLElement>(".space-comet");
+    if (!comets) return;
+    comets.forEach((comet) => {
+      const xDirection = Math.random() < 0.5 ? -1 : 1;
+      const yDirection = Math.random() < 0.5 ? -1 : 1;
+      const period = 38 + Math.random() * 24;
+      comet.style.left = `${Math.random() * 92}%`;
+      comet.style.top = `${5 + Math.random() * 88}%`;
+      comet.style.setProperty("--comet-angle", `${-28 + Math.random() * 56}deg`);
+      comet.style.setProperty("--comet-period", `${period.toFixed(1)}s`);
+      comet.style.setProperty("--comet-delay", `${(Math.random() * 24).toFixed(1)}s`);
+      comet.style.setProperty("--comet-x", `${(xDirection * (22 + Math.random() * 34)).toFixed(1)}vw`);
+      comet.style.setProperty("--comet-y", `${(yDirection * (5 + Math.random() * 18)).toFixed(1)}vh`);
+    });
+  }, []);
   return (
-    <div className="space-comets" aria-hidden="true">
+    <div ref={container} className="space-comets" aria-hidden="true">
       {["a", "b", "c"].map((id) => (
         <span key={id} className={`space-comet space-comet-${id}`}>
           <i className="comet-glow" />
