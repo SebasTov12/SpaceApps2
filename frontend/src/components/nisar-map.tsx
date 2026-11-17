@@ -142,7 +142,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
 }
 
 export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE, annotate = null, onZoomOut, live = null }: NisarMapProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
