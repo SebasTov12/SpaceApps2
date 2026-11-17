@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { createPortal } from "react-dom";
-import { FileText, History, MessageCircle, Mic, Minus, Pause, Play, Send, Volume2, VolumeX } from "lucide-react";
+import { FileText, History, MessageCircle, Mic, Pause, Play, Send } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isAutoLang, ProtectedTerms, useI18n, type Lang } from "@/lib/i18n";
 import { riskKinds, riskZones, watchKinds, type RiskZone } from "@/lib/risk-zones";
@@ -266,8 +266,8 @@ function scriptFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "
   const es = lang === "es";
   if (!zone) {
     return es
-      ? ["Hola.", "Soy Saru. Toca un punto para ver sus datos y el análisis disponible."]
-      : ["Hello.", "I'm Saru. Tap a point to see its data and available analysis."];
+      ? ["Hola. Soy Saru. Toca un punto para ver sus datos y el análisis disponible."]
+      : ["Hello. I'm Saru. Tap a point to see its data and available analysis."];
   }
   const name = zone.name[lang];
   const a = m?.assessment;
@@ -400,7 +400,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     };
   }, []);
   const away = !planetRevealed && !zoneId;
-  const [voice, setVoice] = useState(true);
+  const voice = true;
   const unlocked = true;
   const [playing, setPlaying] = useState(true);
   const playingRef = useRef(playing);
@@ -725,7 +725,6 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   // La transcripción empieza al terminar la entrada de Saru; el navegador puede
   // bloquear el audio automático, así que el typewriter mantiene visible el guion.
   const showCaption = transcriptOpen || (!zone && !transcriptDismissed && narrationReady && arrived && typed.length > 0);
-  const narrationProgress = lines.length ? Math.round(((step + (displayText.length ? typed.length / displayText.length : 0)) / lines.length) * 100) : 0;
   useEffect(() => {
     if ((zone && !transcriptOpen) || !transcriptTextRef.current) return;
     const transcript = transcriptTextRef.current;
@@ -800,7 +799,6 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     setListening(true);
     rec.start();
   };
-  const resumeTour = () => { setReply(null); setAside(null); setPlaying(true); };
   const chatTransition = { duration: reduce ? 0 : 0.8, ease: [0.22, 1, 0.36, 1] as const };
   const toggleTranscript = () => {
     const visible = transcriptOpen || showCaption;
@@ -857,23 +855,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
             <motion.div layout="position" key="caption" className="saru-caption" role="status" aria-live="polite"
               initial={{ opacity: 0, y: 18, scale: 0.96, filter: "blur(5px)" }} animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, y: 10, scale: 0.98, filter: "blur(3px)" }}
               transition={{ ...chatTransition, duration: reduce ? 0 : 0.55 }}>
-              {zone && !reply && !aside && <div className="saru-reading-progress" aria-label={es ? `Frase ${step + 1} de ${lines.length}` : `Line ${step + 1} of ${lines.length}`}>
-                <span>{es ? "Frase" : "Line"} {step + 1}<i> / {lines.length}</i></span>
-                <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={narrationProgress}><b style={{ width: `${narrationProgress}%` }} /></div>
-              </div>}
               <p ref={transcriptTextRef} className={`saru-text${auto ? " notranslate" : ""}`} translate={auto ? "no" : undefined}>{typed}{thinking ? <span className="saru-dots-think" aria-hidden="true"><i /><i /><i /></span> : talking && <span className="saro-caret" aria-hidden="true" />}</p>
-              <div className={`saru-bar${zone ? " zone-transcript-bar" : ""}`}>
-                <span className="saru-name notranslate" translate="no">Saru</span>
-                {!reply && !aside && lines.length > 1 && (
-                  <span className="saru-dots">{lines.map((_, i) => <button key={i} type="button" className={i === step ? "on" : i < step ? "seen" : undefined} onClick={() => { setAside(null); setStep(i); }} aria-label={`${es ? "Frase" : "Line"} ${i + 1}`} />)}</span>
-                )}
-                {(!zone || transcriptOpen) && reply && <button type="button" className="saru-btn saru-btn-text" onClick={resumeTour}>{es ? "Seguir el recorrido" : "Resume tour"}</button>}
-                {zone && transcriptOpen && <button type="button" className={`saru-btn${voice ? " on" : ""}`} onClick={() => setVoice((v) => !v)} aria-pressed={voice} aria-label={voice ? (es ? "Silenciar a Saru" : "Mute Saru") : (es ? "Activar voz de Saru" : "Enable Saru voice")}>{voice ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>}
-                {!zone && <>
-                  <button type="button" className={`saru-btn${voice ? " on" : ""}`} onClick={() => setVoice((v) => !v)} aria-pressed={voice} aria-label={es ? "Voz" : "Voice"}>{voice ? <Volume2 size={13} /> : <VolumeX size={13} />}</button>
-                  <button type="button" className="saru-btn" onClick={() => setMinimized(true)} aria-label={es ? "Ocultar a Saru" : "Hide Saru"}><Minus size={13} /></button>
-                </>}
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -896,7 +878,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
               <div className="saru-zone-orbit-plane">
                 <button className={`orbit-transcript${transcriptOpen || showCaption ? " is-active" : ""}`} type="button" onClick={toggleTranscript} aria-label={transcriptOpen || showCaption ? (es ? "Cerrar transcripción" : "Close transcript") : (es ? "Abrir transcripción" : "Open transcript")} title={es ? "Transcripción" : "Transcript"}><FileText size={14} /></button>
                 <button className="orbit-pause" type="button" onClick={togglePlayback} aria-label={playing ? (es ? "Pausar a Saru" : "Pause Saru") : (es ? "Reanudar a Saru" : "Resume Saru")} title={playing ? (es ? "Pausar" : "Pause") : (es ? "Reanudar" : "Resume")} aria-pressed={!playing}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
-                <button className="orbit-chat" type="button" onClick={openZoneChat} aria-label={es ? "Abrir chat con Saru" : "Open chat with Saru"} title={es ? "Chat" : "Chat"}><MessageCircle size={14} /></button>
+                <button className={`orbit-chat${chatOpen ? " is-active" : ""}`} type="button" onClick={openZoneChat} aria-label={es ? (chatOpen ? "Cerrar chat con Saru" : "Abrir chat con Saru") : (chatOpen ? "Close Saru chat" : "Open chat with Saru")} title={es ? "Chat" : "Chat"}><MessageCircle size={14} /></button>
               </div>
             </motion.div>}
         </AnimatePresence>
