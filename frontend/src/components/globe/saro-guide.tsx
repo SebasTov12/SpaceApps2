@@ -19,6 +19,8 @@ export const SECTOR_EVENT = "saros:sector";
 export const POINT_EVENT = "saros:point";
 /** La ficha se pliega cuando se abre el chat de Saru en la vista de zona. */
 export const ZONE_CHAT_OPEN_EVENT = "saros:zone-chat-open";
+/** La ficha cierra el chat para que nunca queden ambos paneles móviles abiertos. */
+export const ZONE_DETAILS_OPEN_EVENT = "saros:zone-details-open";
 
 /** Texto del asistente sin marcas de formato (para mostrarlo y leerlo en voz alta). */
 function plainText(t: string) {
@@ -331,6 +333,8 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   const setReply = useCallback((text: string | null) => setReplyValue(text === null ? null : { text: withoutEmoji(text), lang }), [lang]);
   const [prog, setProg] = useState({ text: "", n: 0 });
   const [speechProgress, setSpeechProgress] = useState({ text: "", n: 0 });
+  const speechProgressRef = useRef(speechProgress);
+  useEffect(() => { speechProgressRef.current = speechProgress; }, [speechProgress]);
   // El primer HTML debe coincidir en servidor y navegador; activa escritura tras hidratar.
   const [hydrated, setHydrated] = useState(false);
   const [mobileView, setMobileView] = useState(false);
@@ -527,6 +531,12 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     };
   }, [lang, setAside, setReply]);
 
+  useEffect(() => {
+    const closeChatForDetails = () => setChatOpen(false);
+    window.addEventListener(ZONE_DETAILS_OPEN_EVENT, closeChatForDetails);
+    return () => window.removeEventListener(ZONE_DETAILS_OPEN_EVENT, closeChatForDetails);
+  }, []);
+
   // mientras narra: el mapa señala lo que nombra y el panel resalta la parte de la que habla
   useEffect(() => {
     if (reply || aside || !current) return;
@@ -578,6 +588,8 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
   }, [lang]);
   const audio = useRef<HTMLAudioElement | null>(null);
   const token = useRef(0);
+  const nativeSpeechRef = useRef(false);
+  const restartSpeechRef = useRef<((offset: number) => void) | null>(null);
   const advanceTimer = useRef<number | null>(null);
   const speechFinishedRef = useRef(false);
   const stopAll = useCallback(() => {
@@ -586,14 +598,17 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
     advanceTimer.current = null;
     audio.current?.pause();
     audio.current = null;
+    nativeSpeechRef.current = false;
+    restartSpeechRef.current = null;
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
   }, []);
   /** Habla el texto; onDone se llama al terminar (para avanzar solo a la siguiente frase). */
-  const speak = useCallback((t: string, onDone: () => void) => {
+  const speak = useCallback((t: string, onDone: () => void, fromOffset = 0) => {
     stopAll();
     const my = ++token.current;
+    let activeToken = my;
     speechFinishedRef.current = false;
-    const done = () => { if (my === token.current) { speechFinishedRef.current = true; setSpeaking(false); onDone(); } };
+    const done = () => { if (activeToken === token.current) { speechFinishedRef.current = true; setSpeaking(false); onDone(); } };
     const key = voiceKey(t);
     if (es && !auto && recorded) {
       const keys = recorded.has(key) ? [key] : sentences(t).map(voiceKey);
@@ -639,22 +654,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
             setSpeaking(false);
             if ("speechSynthesis" in window) {
               window.speechSynthesis.cancel();
-              const fallback = new SpeechSynthesisUtterance(t);
-              fallback.lang = voices[0]?.lang ?? (es ? "es-CO" : "en-US");
-              if (voices[0]) fallback.voice = voices[0];
-              fallback.rate = prosody[mood].rate;
-              fallback.onstart = () => { setSpeaking(true); setSpeechProgress({ text: t, n: 0 }); };
-              fallback.onboundary = (event) => {
-                if (event.name !== "word") return;
-                const offset = event.charIndex;
-                const remaining = t.slice(offset);
-                const spaceAt = remaining.search(/\s/);
-                const wordEnd = spaceAt < 0 ? t.length : offset + spaceAt;
-                setSpeechProgress((p) => p.text === t && p.n > wordEnd ? p : { text: t, n: wordEnd });
-              };
-              fallback.onend = () => { setSpeechProgress({ text: t, n: t.length }); done(); };
-              fallback.onerror = () => { setSpeechProgress({ text: t, n: t.length }); done(); };
-              window.speechSynthesis.speak(fallback);
+              say(t, voices[0], voices[0]?.lang ?? (es ? "es-CO" : "en-US"), speechProgressRef.current.n);
             } else {
               setSpeechProgress({ text: t, n: t.length });
               done();
@@ -666,35 +666,51 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
       }
     }
     if (!("speechSynthesis" in window)) { done(); return; }
-    const say = (said: string, voiceFor: SpeechSynthesisVoice | undefined, langCode: string) => {
+    const say = (said: string, voiceFor: SpeechSynthesisVoice | undefined, langCode: string, startOffset = 0) => {
+      nativeSpeechRef.current = true;
+      const generation = activeToken;
       const parts = sentences(said.replace(/•/g, " "));
       if (!parts.length) { done(); return; }
       let searchFrom = 0;
-      parts.forEach((part, i) => {
+      const segments = parts.map((part) => {
         const foundAt = said.indexOf(part, searchFrom);
         const startAt = foundAt >= 0 ? foundAt : searchFrom;
         const endAt = startAt + part.length;
         searchFrom = endAt;
-        const u = new SpeechSynthesisUtterance(part);
+        return { part, startAt, endAt };
+      }).filter((segment) => segment.endAt > startOffset);
+      if (!segments.length) { done(); return; }
+      restartSpeechRef.current = (offset) => {
+        if (activeToken !== token.current) return;
+        activeToken = ++token.current;
+        speechFinishedRef.current = false;
+        window.speechSynthesis.cancel();
+        say(said, voiceFor, langCode, offset);
+      };
+      segments.forEach(({ startAt, endAt }, i) => {
+        const spokenFrom = Math.max(startAt, startOffset);
+        const u = new SpeechSynthesisUtterance(said.slice(spokenFrom, endAt));
         u.lang = voiceFor?.lang ?? langCode;
         if (voiceFor) u.voice = voiceFor;
         u.rate = prosody[mood].rate;
-        u.onstart = () => { setSpeaking(true); setSpeechProgress({ text: said, n: startAt }); };
+        u.onstart = () => { if (generation !== token.current) return; setSpeaking(true); setSpeechProgress({ text: said, n: spokenFrom }); };
         u.onboundary = (event) => {
-          if (event.name !== "word") return;
-          const offset = startAt + event.charIndex;
+          if (generation !== token.current || event.name !== "word") return;
+          const offset = spokenFrom + event.charIndex;
           const remaining = said.slice(offset, endAt);
           const spaceAt = remaining.search(/\s/);
           const wordEnd = spaceAt < 0 ? endAt : offset + spaceAt;
           setSpeechProgress((p) => p.text === said && p.n > wordEnd ? p : { text: said, n: wordEnd });
         };
         u.onend = () => {
+          if (generation !== token.current) return;
           setSpeechProgress((p) => p.text === said && p.n > endAt ? p : { text: said, n: endAt });
-          if (i === parts.length - 1) done();
+          if (i === segments.length - 1) done();
         };
         u.onerror = () => {
+          if (generation !== token.current) return;
           setSpeechProgress((p) => p.text === said && p.n > endAt ? p : { text: said, n: endAt });
-          if (i === parts.length - 1) done();
+          if (i === segments.length - 1) done();
         };
         window.speechSynthesis.speak(u);
       });
@@ -720,12 +736,12 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
           window.setTimeout(done, 2200 + said.length * 45);
           return;
         }
-        say(said, voiceFor, globalLang);
+        say(said, voiceFor, globalLang, fromOffset);
       };
       read();
       return;
     }
-    say(t, voices[0], es ? "es-CO" : "en-US");
+    say(t, voices[0], es ? "es-CO" : "en-US", fromOffset);
   }, [es, auto, globalLang, recorded, voices, mood, stopAll, translatedOf]);
 
   // narración continua: al terminar cada frase pasa sola a la siguiente
@@ -892,8 +908,15 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
           void currentAudio.play().then(() => setSpeaking(true)).catch(() => undefined);
         }
         if ("speechSynthesis" in window) {
-          window.speechSynthesis.resume();
-          if (window.speechSynthesis.speaking || window.speechSynthesis.pending || window.speechSynthesis.paused) setSpeaking(true);
+          const synthesis = window.speechSynthesis;
+          synthesis.resume();
+          if (synthesis.speaking || synthesis.pending || synthesis.paused) setSpeaking(true);
+          window.setTimeout(() => {
+            if (!playingRef.current || !nativeSpeechRef.current) return;
+            if (synthesis.paused || (!synthesis.speaking && !synthesis.pending)) {
+              restartSpeechRef.current?.(speechProgressRef.current.n);
+            }
+          }, 240);
         }
       }
     } else {

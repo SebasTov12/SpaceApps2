@@ -2483,46 +2483,6 @@ html body .hero-latest {
   filter: drop-shadow(0 0 5px rgba(139, 92, 246, .72))
 }
 
-.zone-stage-map .map-distance-scale {
-  position: absolute;
-  z-index: 4;
-  right: 12px;
-  bottom: 10px;
-  height: 28px;
-  max-width: calc(100% - 24px);
-  border: 1px solid rgba(232, 241, 255, .78);
-  border-top: 0;
-  background: linear-gradient(90deg, rgba(11, 15, 31, .08), rgba(11, 15, 31, .78));
-  color: #f3f6ff;
-  transition: width .16s ease-out;
-  pointer-events: none
-}
-
-.zone-stage-map .map-distance-scale::before,
-.zone-stage-map .map-distance-scale::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  width: 1px;
-  height: 9px;
-  background: rgba(232, 241, 255, .9)
-}
-
-.zone-stage-map .map-distance-scale::before { left: -1px }
-.zone-stage-map .map-distance-scale::after { right: -1px }
-
-.zone-stage-map .map-distance-scale span {
-  position: absolute;
-  right: 7px;
-  bottom: 5px;
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: rgba(11, 15, 31, .72);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap
-}
-
 /* ---------- Cómo afectaría a la región ---------- */
 .zone-sectors {
   display: grid;
@@ -2596,11 +2556,6 @@ html body .hero-latest {
     height: 40px
   }
 
-  .zone-stage-map .map-distance-scale {
-    right: 10px;
-    bottom: 8px;
-    max-width: calc(100% - 20px)
-  }
 }
 
 @media(max-width:900px) {
@@ -2806,10 +2761,10 @@ html body .hero-latest {
 .space-comet-c .comet-glow { background: linear-gradient(90deg, transparent 4%, rgba(94, 240, 255, .08) 45%, rgba(94, 240, 255, .34) 88%, rgba(235, 252, 255, .62)) }
 
 @keyframes comet-pass {
-  0% { opacity:0;translate:0 0;rotate:var(--comet-angle);scale:.8 }
-  8% { opacity:.9 }
-  72% { opacity:.9;translate:var(--comet-x) var(--comet-y);rotate:var(--comet-angle);scale:1 }
-  84%,100% { opacity:0;translate:var(--comet-x) var(--comet-y);scale:.9 }
+  0%,4% { opacity:0;translate:0 0;rotate:var(--comet-angle);scale:.88 }
+  8% { opacity:.92 }
+  96% { opacity:.92;translate:var(--comet-x) var(--comet-y);rotate:var(--comet-angle);scale:1 }
+  100% { opacity:0;translate:var(--comet-x) var(--comet-y);rotate:var(--comet-angle);scale:.96 }
 }
 
 /* El primer paso comienza después de que el planeta esté listo, no durante el loader. */
@@ -3525,3 +3480,28 @@ html body .saro .saru-zone-orbit-plane .orbit-glyph{display:grid;place-items:cen
 html body .saro .saru-zone-orbit-plane button svg{display:block;width:14px;height:14px;flex:none;rotate:0deg;animation:none!important;transform:none!important}
 html body .saro .saru-zone-orbit-plane .orbit-transcript{top:5px;left:50%;margin-left:-15px;display:grid;place-items:center}
 @media(prefers-reduced-motion:reduce){html body .saro .saru-zone-orbit-plane .orbit-glyph{animation:none}}
+
+/* Móvil: ficha cerrada flotante y compacta sobre un mapa que ocupa todo el escenario. */
+@media(max-width:900px){
+  html body .zone-stage-map .nisar-map{inset:0;transition:inset .5s cubic-bezier(.22,1,.36,1)}
+  html body .zone-stage-map[data-sheet-open="true"] .nisar-map{inset:0 0 50dvh 0}
+  html body .zone-panel:not(.is-open){
+    left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom,0px));width:min(144px,calc(100vw - 32px));max-width:calc(100vw - 32px);
+    height:48px;min-height:48px;max-height:48px;margin-inline:auto;padding:2px 8px;border-radius:999px;
+    background:rgba(12,12,32,.78);border:1px solid rgba(139,92,246,.38);box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 14px rgba(139,92,246,.12);
+    backdrop-filter:blur(12px);transition:height .42s cubic-bezier(.22,1,.36,1),max-height .42s cubic-bezier(.22,1,.36,1),background .3s;
+  }
+  html body .zone-panel .zone-grab{gap:0;height:38px;min-height:38px;margin:0;border-radius:999px;background:transparent}
+  html body .zone-panel .zone-grab>span{width:36px;height:4px}
+  html body .zone-panel.is-open{left:10px;right:10px;bottom:0;width:auto;max-width:calc(100vw - 20px);height:50dvh;max-height:50dvh;padding:4px 14px max(14px,env(safe-area-inset-bottom,0px));border-radius:18px 18px 0 0}
+  html body .zone-panel.is-open .zone-grab{height:38px;min-height:38px;margin-bottom:6px;border-bottom:1px solid rgba(167,139,250,.1)}
+  html body .zone-stage-map .zone-saru-slot{
+    top:max(54px,calc(env(safe-area-inset-top,0px) + 44px));left:max(44px,calc(env(safe-area-inset-left,0px) + 34px));
+  }
+  /* El trío conserva el mismo radio en las tres posiciones; el icono superior sigue el aro. */
+  html body .saro.in-zone .saru-zone-orbit-plane .orbit-transcript{top:-10px}
+  html body .zone-saru-slot .saru-chat-reveal{
+    position:fixed;z-index:12;left:14px;right:14px;bottom:calc(60px + env(safe-area-inset-bottom,0px));
+    width:auto;max-width:460px;margin:0 auto;filter:drop-shadow(0 12px 28px rgba(0,0,0,.35));
+  }
+}

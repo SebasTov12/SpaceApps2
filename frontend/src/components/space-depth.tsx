@@ -35,7 +35,7 @@ const GALAXIES = [
   { x: 92, y: 38, w: 2.4, h: 0.82, rot: 12, o: 0.19 },
 ];
 
-/** Tres trayectorias espaciadas: siempre detrás del planeta y sin controles. */
+/** Tránsitos con origen y destino distintos en el campo visible del cielo. */
 function SpaceComets() {
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -43,30 +43,32 @@ function SpaceComets() {
     if (!comets) return;
     const starts: Array<{ x: number; y: number }> = [];
     comets.forEach((comet, index) => {
-      let point = { x: 8 + Math.random() * 84, y: 5 + Math.random() * 88 };
-      for (let attempt = 0; attempt < 24 && starts.some((p) => Math.hypot(p.x - point.x, p.y - point.y) < 34); attempt++) {
-        point = { x: 8 + Math.random() * 84, y: 5 + Math.random() * 88 };
+      let point = { x: 5 + Math.random() * 90, y: 5 + Math.random() * 90 };
+      for (let attempt = 0; attempt < 30 && starts.some((p) => Math.hypot(p.x - point.x, p.y - point.y) < 30); attempt++) {
+        point = { x: 5 + Math.random() * 90, y: 5 + Math.random() * 90 };
       }
       starts.push(point);
       const xDirection = Math.random() < 0.5 ? -1 : 1;
-      const period = 42 + Math.random() * 24;
+      const period = 12 + Math.random() * 4;
       comet.style.left = `${point.x}%`;
       comet.style.top = `${point.y}%`;
-      const dx = xDirection * (22 + Math.random() * 34);
-      const dy = -8 + Math.random() * 16;
+      // Cruzar el viewport y llevar la cabeza un poco más allá del borde antes de apagarse.
+      const dx = xDirection > 0 ? 112 - point.x : -(point.x + 18);
+      const slope = (Math.random() - 0.5) * 0.34;
+      const dy = dx * window.innerWidth / Math.max(1, window.innerHeight) * slope;
       // El cuerpo se orienta con el mismo vector que recorre la animación;
       // así la cabeza avanza y la estela queda detrás siguiendo su curso.
       const angle = Math.atan2(dy * window.innerHeight, dx * window.innerWidth) * 180 / Math.PI;
       comet.style.setProperty("--comet-angle", `${angle.toFixed(2)}deg`);
       comet.style.setProperty("--comet-period", `${period.toFixed(1)}s`);
-      comet.style.setProperty("--comet-delay", `${(index * 18 + Math.random() * 8).toFixed(1)}s`);
+      comet.style.setProperty("--comet-delay", `${(index * 7 + Math.random() * 1.5).toFixed(1)}s`);
       comet.style.setProperty("--comet-x", `${dx.toFixed(1)}vw`);
       comet.style.setProperty("--comet-y", `${dy.toFixed(1)}vh`);
     });
   }, []);
   return (
     <div ref={container} className="space-comets" aria-hidden="true">
-      {["a", "b", "c"].map((id) => (
+      {["a", "b", "c", "d"].map((id) => (
         <span key={id} className={`space-comet space-comet-${id}`}>
           <i className="comet-glow" />
           <i className="comet-tail" />

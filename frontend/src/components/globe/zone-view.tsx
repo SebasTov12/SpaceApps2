@@ -1,14 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Box, ChevronDown, ChevronUp, Database, Info, MapPin, MapPinned, MousePointerClick, Radar, Sparkles, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, Database, Info, MapPin, MapPinned, MousePointerClick, Radar, Sparkles, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
 import ZoneSimple from "./zone-simple";
 import { HAZARD_POINT_SELECT, hazardPointId, loadHazardPoints, pointCountry, type HazardPoint } from "@/lib/hazard-points";
-import { POINT_EVENT, ZONE_CHAT_OPEN_EVENT } from "./saro-guide";
+import { POINT_EVENT, ZONE_CHAT_OPEN_EVENT, ZONE_DETAILS_OPEN_EVENT } from "./saro-guide";
 import { TOUR_EVENT, type LegendKind, type SaroAction, type TourKey } from "@/lib/saro-brain";
 import type { MapMode, Scene3D } from "@/components/nisar-map";
 import { levelInfo } from "@/lib/insights";
@@ -493,8 +493,12 @@ export default function ZoneView() {
             animate={{ opacity: 1, x: 0, y: 0, filter: "blur(0px)", transition: { delay: 0.5, duration: 0.7, ease: [0.22, 1, 0.36, 1] } }}
             exit={{ opacity: 0, x: wide ? 60 : 0, y: wide ? 0 : 60, filter: "blur(8px)", transition: { duration: 0.35 } }}
           >
-            <button type="button" className="zone-grab" aria-expanded={detailsOpen} aria-label={detailsOpen ? c.hideDetails : c.showDetails} title={detailsOpen ? c.hideDetails : c.showDetails} onClick={() => setDetailsOpen((open) => !open)}>
-              <span aria-hidden="true" />{detailsOpen ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronUp size={14} aria-hidden="true" />}
+            <button type="button" className="zone-grab" aria-expanded={detailsOpen} aria-label={detailsOpen ? c.hideDetails : c.showDetails} title={detailsOpen ? c.hideDetails : c.showDetails} onClick={() => setDetailsOpen((open) => {
+              const next = !open;
+              if (next) window.dispatchEvent(new CustomEvent(ZONE_DETAILS_OPEN_EVENT));
+              return next;
+            })}>
+              <span aria-hidden="true" />
             </button>
             <header className="zone-head">
               <span className="zone-kind" translate={zone.kind === "subsidence" && globalLang === "pt" ? "no" : undefined} style={{ color: riskKinds[zone.kind].color }}>{riskKindLabel(zone.kind, lang, globalLang)}</span>

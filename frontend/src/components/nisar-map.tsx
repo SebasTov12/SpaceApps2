@@ -11,7 +11,6 @@ export type MapMode = "single" | "swipe" | "change";
 /** Ajustes de cámara y relieve; las edificaciones se obtienen por ubicación. */
 export type Scene3D = { exaggeration: number; pitch: number; zoom: number };
 const DEFAULT_SCENE: Scene3D = { exaggeration: 1.35, pitch: 68, zoom: 13.4 };
-const EARTH_CIRCUMFERENCE_KM = 40075.0167;
 
 type NisarMapProps = {
   bbox: Bbox;
@@ -143,7 +142,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
 }
 
 export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE, annotate = null, onZoomOut, live = null }: NisarMapProps) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -151,7 +150,6 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
   const markerRef = useRef<Marker | null>(null);
   const onPickRef = useRef(onPick);
   const [ready, setReady] = useState(false);
-  const [distanceScale, setDistanceScale] = useState({ width: 84, label: "—" });
   // Deslizador antes/después con movimiento gradual: la línea persigue al objetivo con inercia
   const [split, setSplit] = useState(96);
   const splitShown = useRef(96);
@@ -224,27 +222,6 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
         return;
       }
       const after = new Map({ container: afterRef.current, ...common, interactive: false });
-      const updateDistanceScale = () => {
-        const width = main.getContainer().clientWidth;
-        if (!width) return;
-        const zoomRange = Math.max(1, main.getMaxZoom() - main.getMinZoom());
-        const altitude = 1 - Math.min(1, Math.max(0, (main.getZoom() - main.getMinZoom()) / zoomRange));
-        // Cerca: regla compacta. Lejos: ocupa casi todo el ancho visible del mapa.
-        const pixels = Math.round(72 + Math.max(0, width - 104) * Math.pow(altitude, 1.35));
-        const latitudeFactor = Math.max(0.08, Math.cos(main.getCenter().lat * Math.PI / 180));
-        const kmPerPixel = EARTH_CIRCUMFERENCE_KM * latitudeFactor / (512 * 2 ** main.getZoom());
-        const distanceKm = Math.min(EARTH_CIRCUMFERENCE_KM, kmPerPixel * pixels);
-        const locale = document.documentElement.lang === "en" ? "en-US" : "es-CO";
-        const label = distanceKm < 1
-          ? `${Math.max(1, Math.round(distanceKm * 1000)).toLocaleString(locale)} m`
-          : `${distanceKm.toLocaleString(locale, { maximumFractionDigits: distanceKm < 10 ? 1 : 0 })} km`;
-        setDistanceScale({ width: pixels, label });
-      };
-      main.on("zoom", updateDistanceScale);
-      main.on("moveend", updateDistanceScale);
-      main.on("resize", updateDistanceScale);
-      main.once("load", updateDistanceScale);
-
       const marker = new Marker({ color: "#e8b36b" });
       markerRef.current = marker;
 
@@ -274,9 +251,6 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
       mapRef.current = main;
       afterMapRef.current = after;
       cleanup = () => {
-        main.off("zoom", updateDistanceScale);
-        main.off("moveend", updateDistanceScale);
-        main.off("resize", updateDistanceScale);
         marker.remove();
         main.remove();
         after.remove();
@@ -583,9 +557,6 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
         </div>
       )}
       {failed && <div className="map-fallback">{t.mapFailed}</div>}
-      <div className="map-distance-scale" style={{ width: distanceScale.width }} aria-label={`${lang === "en" ? "Map scale" : "Escala terrestre"}: ${distanceScale.label}`}>
-        <span>{distanceScale.label}</span>
-      </div>
     </div>
   );
 }

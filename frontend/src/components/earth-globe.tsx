@@ -71,7 +71,7 @@ function Planet({ playing, quality, children }: { playing: boolean; quality: Sce
           <meshPhongMaterial map={day} normalMap={normal} normalScale={new Vector2(normalStrength, normalStrength)}
             displacementMap={height} displacementScale={RELIEF}
             specularMap={specular} specular="#263b4e" shininess={55}
-            emissive="#10243b" emissiveIntensity={0.08} />
+            emissive="#163a66" emissiveIntensity={0.42} />
         </mesh>
         {/* Zonas de riesgo; giran con la superficie */}
         <RiskMarkers />
@@ -175,23 +175,20 @@ class SceneBoundary extends Component<{ children: ReactNode; onFailure: () => vo
 
 function Sunlight({ progress }: { progress: MotionValue<number> }) {
   const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => progress.on("change", () => invalidate()), [progress, invalidate]);
   const ambient = useRef<AmbientLight>(null);
   const sun = useRef<DirectionalLight>(null);
-  useEffect(() => {
-    const update = (value = progress.get()) => {
-      const reveal = Math.min(1, Math.max(0, value));
-      if (ambient.current) ambient.current.intensity = 1.02 + reveal * 0.25;
-      if (sun.current) {
-        sun.current.position.set(-3 + reveal * 1.4, 4 - reveal * 1.5, 3 + reveal * 3.5);
-        sun.current.intensity = 2.25 - reveal * 0.2;
-      }
-    };
-    update();
-    return progress.on("change", (value) => { update(value); invalidate(); });
-  }, [progress, invalidate]);
+  useFrame(() => {
+    const reveal = Math.min(1, Math.max(0, progress.get()));
+    if (ambient.current) ambient.current.intensity = 0.85 + reveal * 0.45;
+    if (sun.current) {
+      sun.current.position.set(-3 + reveal * 1.4, 4 - reveal * 1.5, 3 + reveal * 3.5);
+      sun.current.intensity = 2.25 - reveal * 0.2;
+    }
+  });
   return (
     <>
-      <ambientLight ref={ambient} intensity={1.02} />
+      <ambientLight ref={ambient} intensity={0.85} />
       <hemisphereLight args={["#bfe6ff", "#2a1a55", 0.55]} />
       <directionalLight ref={sun} position={[-3, 4, 3]} intensity={2.1} color="#fff5e8" />
       <directionalLight position={[3, -2, -4]} intensity={0.3} color="#7197bd" />
