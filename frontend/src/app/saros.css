@@ -3485,6 +3485,18 @@ html body .saro .saru-zone-orbit-plane button svg{display:block;width:14px;heigh
 html body .saro .saru-zone-orbit-plane .orbit-transcript{top:-9px;left:50%;margin-left:-15px;display:grid;place-items:center}
 @media(prefers-reduced-motion:reduce){html body .saro .saru-zone-orbit-plane .orbit-glyph{animation:none}}
 
+/* Ayuda de lectura del mapa y paleta cósmica coherente en los controles. */
+html body .zone-explore{border-color:rgba(139,92,246,.62)}
+html body .zone-explore button,html body .zone-explore a{color:#8b5cf6}
+html body .zone-explore button:hover,html body .zone-explore a:hover{background:rgba(139,92,246,.24);color:#a879ff}
+html body .zone-stage-map .zone-legend{pointer-events:auto}
+html body .zone-map-help{position:relative;margin-top:6px;color:#bdc9df;font-size:10px;line-height:1.4}
+html body .zone-map-help summary{display:flex;align-items:center;gap:5px;color:#a879ff;cursor:pointer;list-style:none}
+html body .zone-map-help summary::-webkit-details-marker{display:none}
+html body .zone-map-help p{max-width:260px;margin:6px 0 0;color:#d5def0}
+@media(max-width:900px){html body .zone-stage-map .zone-saru-slot{top:max(52px,calc(env(safe-area-inset-top,0px) + 42px))}}
+@media(max-width:600px){html body .zone-stage-map .zone-saru-slot{top:max(42px,calc(env(safe-area-inset-top,0px) + 34px))}}
+
 /* Móvil: ficha cerrada flotante y compacta sobre un mapa que ocupa todo el escenario. */
 @media(max-width:900px){
   html body .zone-stage-map .nisar-map{inset:0}

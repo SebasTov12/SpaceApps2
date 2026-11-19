@@ -214,7 +214,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
       // con "intro" el mapa se precarga oculto un poco más alejado; aparece cuando ya tiene imagen
       const style: StyleSpecification = baseStyle;
       const view = { bounds: start.bbox, fitBoundsOptions: { padding: start.intro ? paddingRef.current : 40 } };
-      const common = { style, ...view, attributionControl: false as const, maxZoom: 16, maxPitch: 80 };
+      const common = { style, ...view, attributionControl: false as const, maxZoom: 20.5, maxPitch: 80 };
       let main: MapLibreMap;
       try {
         main = new Map({ container: mainRef.current, ...common });
@@ -389,7 +389,7 @@ export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pic
     const onZoom = (e: { originalEvent?: unknown }) => {
       if (!e.originalEvent || left) return;      // solo cuando lo hace el usuario
       const drop = base - map.getZoom();
-      if (drop > 2.3) {
+      if (drop > 6.2) {
         left = true;
         onZoomOutRef.current?.();
       }

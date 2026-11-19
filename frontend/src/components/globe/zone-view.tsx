@@ -451,8 +451,6 @@ export default function ZoneView() {
               splitValue={split}
               padding={padding}
             />
-            <button type="button" className="zone-back-floating" onClick={closeZone} aria-label={c.back} title={c.back}><ArrowLeft size={18} /></button>
-            <div className="zone-area-note" role="note"><Info size={12} />{c.areaNote}</div>
             <div className="zone-saru-slot" aria-label={lang === "es" ? "Saru, guía de la ubicación" : "Saru, location guide"} />
             <AnimatePresence>
               {explain && active && legend && (
@@ -469,6 +467,11 @@ export default function ZoneView() {
                 <strong>{mode === "change" ? `${t.changeFrom} ${sd(active.dates[0])} → ${sd(active.dates[lastIndex])}` : metric}</strong>
                 <span className="legend-bar" style={{ background: `linear-gradient(90deg, ${legend.colors.join(",")})` }} />
                 <span className="legend-ends"><i>{legend.range[0]} {unit}</i><i>{legend.range[1]} {unit}</i></span>
+                <details className="zone-map-help">
+                  <summary><Info size={12} />{lang === "es" ? "Cómo leer el mapa" : "How to read the map"}</summary>
+                  <p>{lang === "es" ? "El borde cian y morado marca la huella de la escena o capa cargada; no es el límite exacto del evento." : "The cyan and purple outline marks the loaded scene or layer footprint; it is not the exact event boundary."}</p>
+                  <p>{lang === "es" ? "La escala de color representa los valores del producto seleccionado; consulta sus unidades y extremos junto a la barra." : "The color scale represents values from the selected product; see its units and range beside the scale."}</p>
+                </details>
               </div>
             )}
             <div className="zone-explore" role="toolbar" aria-label={c.explore}>
