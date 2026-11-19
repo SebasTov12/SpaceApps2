@@ -1,61 +1,35 @@
-# 05. API y contratos
+# API y contratos
 
-Mantener Flask y el prefijo /api/v1. JSON, fechas UTC, errores consistentes, X-Request-ID y autenticación Bearer JWT con permisos para administración. Acordar contratos antes de conectar Next.js.
+La API Flask usa el prefijo /api/v1. Las rutas de consulta devuelven JSON; las de ingesta, análisis y asistente validan el cuerpo y la configuración requerida.
 
-## Recursos propuestos
+## Consultas
 
-| Método | Ruta | Función |
-|---|---|---|
-| GET | /health y /ready | Salud de aplicación y dependencias |
-| GET | /api/v1/manifest | Versión y vigencia de conjuntos publicados |
-| GET | /api/v1/areas | Áreas del piloto y cobertura |
-| GET | /api/v1/datasets | Catálogo y procedencia de datos |
-| GET | /api/v1/areas/{id}/observations | Cambios satelitales observados |
-| GET | /api/v1/areas/{id}/exposure/social | Población, vivienda y servicios expuestos |
-| GET | /api/v1/areas/{id}/exposure/economic | Sectores, activos y dependencias expuestos |
-| GET | /api/v1/areas/{id}/risk | Amenaza, exposición, vulnerabilidad y prioridad |
-| GET | /api/v1/areas/{id}/recommendations | Acciones y justificación |
-| POST | /api/v1/routes | Rutas de planificación a destino validado |
-| POST | /api/v1/admin/publications | Publicación restringida y auditada |
-| GET | /api/v1/headlines | Titulares del cintillo: últimas actualizaciones de afectaciones |
+| Método y ruta | Contenido |
+|---|---|
+| GET /health, GET /ready | Estado del proceso y dependencias |
+| GET /api/v1/headlines | Actualizaciones recientes de la plataforma |
+| GET /api/v1/hazards/points | Registros históricos agrupados por lugar y tipo |
+| GET /api/v1/nisar/scenes | Huellas de escenas, pasadas y estadísticas disponibles |
+| GET /api/v1/sites y rutas subordinadas | Catálogo del explorador, manifiestos, series y disponibilidad |
+| GET /api/v1/regions/{id}/assessment | Evaluación territorial disponible o estado sin evaluación |
+| GET /api/v1/datasets, GET /api/v1/manifest | Catálogo de datos y procedencia |
+| GET /api/v1/territorial/municipalities | GeoJSON municipal, con filtro de departamento |
+| GET /api/v1/territorial/municipalities/{divipola} | Perfil de un municipio |
+| GET /api/v1/territorial/agriculture | Estadísticas agrícolas por municipio y periodo |
 
-## Recursos de dominio
+## Operaciones protegidas
 
-Dataset: identificador, tema, fuente, fecha, cobertura, escala, licencia, madurez y calidad.
+| Método y ruta | Función |
+|---|---|
+| POST /api/v1/analysis | Análisis compuesto de características NISAR y contexto histórico |
+| POST /api/v1/predictions | Inferencia del predictor de par de imágenes |
+| POST /api/v1/nisar/observations | Ingesta idempotente de observaciones LOS con procedencia |
+| GET /api/v1/nisar/observations/checkpoint | Fecha de referencia de una serie |
+| POST /api/v1/nisar/forecasts/run | Backtest y pronóstico temporal |
+| POST /api/v1/assistant/chat | Respuesta contextual del asistente |
 
-Observation: producto, adquisición, procesamiento, métrica, unidad, geometría, máscara, cobertura y método.
+Las rutas protegidas usan Bearer tokens privados. La ruta web /api/assistant reenvía la conversación al backend sin exponer el token al navegador. Los contratos detallados están en backend/README.md y ml/nisar_change/README.md.
 
-Exposure: tipo de activo o población, unidad, escala, fuente, periodo, intersección y limitaciones.
+## Reglas de interpretación
 
-RiskAssessment: peligro, indicadores, exposición social/económica, vulnerabilidad, capacidad de respuesta, prioridad relativa, evidencia y revisión.
-
-Recommendation: prioridad, acción, beneficiario/zona, motivo, fuentes, vigencia y responsable/canal.
-
-## Reglas
-
-- No devolver una cifra de probabilidad o pérdida monetaria sin base validada.
-- Diferenciar exposición de daño confirmado.
-- Hacer que cada indicador pueda trazarse a su fuente.
-- Si falta cobertura, responder evaluación parcial o insuficiente.
-- Ollama solo explica una salida estructurada existente.
-
-
-## Titulares (cintillo del frontend)
-
-`GET /api/v1/headlines` devuelve `{ "headlines": Headline[] }`, del más reciente al más antiguo:
-
-```json
-{
-  "id": "asf-colombia-ladera-PROVISIONAL",
-  "kind": "deformation | backscatter | velocity | data",
-  "severity": "alta | media | baja | info",
-  "title": { "es": "…", "en": "…" },
-  "place": { "es": "…", "en": "…" },
-  "time": "2026-10-08",
-  "source": "NASA CMR · ASF DAAC",
-  "demo": false,
-  "siteId": "colombia-ladera"
-}
-```
-
-El frontend lo pide a `NEXT_PUBLIC_SAROS_API` (ver `frontend/src/lib/headlines.ts`). Mientras no exista, arma los titulares con las escenas NISAR reales publicadas en ASF (`availability.json`) y las cifras de cada sitio, marcadas como demo. Un titular nunca debe presentar una exposición como daño confirmado.
+Los registros históricos describen lo que informan sus fuentes. Las evaluaciones de modelo deben mantener método, escala y fecha. Si no hay medición o evaluación disponible, el contrato debe devolver ausencia o insuficiencia explícita.

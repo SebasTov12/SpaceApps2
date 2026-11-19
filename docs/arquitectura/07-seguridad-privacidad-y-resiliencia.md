@@ -1,28 +1,17 @@
-# 07. Seguridad, privacidad y resiliencia
+# Seguridad, privacidad y resiliencia
 
-## Controles del stack de referencia
+## Secretos
 
-- Access JWT y refresh tokens rotables/revocables; permisos comprobados en Flask.
-- Contraseñas con bcrypt.
-- CORS por origen explícito y rate limit en login.
-- Secretos en entorno privado, nunca en frontend o Git.
-- PostgreSQL solo en red interna de Compose, API y web detrás de Caddy.
-- Contenedores no root y filesystem restringido donde aplique.
-- Logs sin tokens, datos de hogares, coordenadas precisas ni secretos.
+Las claves de PostgreSQL, Earthdata, Groq y los tokens internos se configuran en el archivo privado de entorno del servidor. Nunca se publican con prefijo NEXT_PUBLIC, en el navegador, en registros de aplicación ni en Git. El repositorio ofrece .env.example sin credenciales.
 
-## Privacidad de datos socioeconómicos
+## Red y servicios
 
-Preferir datos agregados por unidad territorial. Evitar mostrar ubicación de hogares individuales o negocios vulnerables. Aplicar mínimos de agregación definidos con custodios de los datos. Registrar licencias, restricciones y finalidades de uso.
+Compose mantiene PostgreSQL, API y predictor en la red privada de SAROS. El proxy Caddy entrega HTTPS; solo los servicios web y API se exponen a las redes compartidas requeridas. El predictor y el procesador se comunican mediante servicios internos.
 
-## Calidad, sesgo y representación
+## Autorización y validación
 
-Registrar año, cobertura y resolución de cada conjunto. La población omitida, informalidad económica y diferencias entre censos pueden sesgar prioridades. Exponer calidad y brechas; no ocultar ausencia bajo una puntuación promedio.
+Las rutas de ingesta, análisis y predicción requieren el token de operación. El proxy de conversación mantiene su token en servidor y limita el tamaño y frecuencia de solicitudes. La API valida campos, dimensiones y valores antes de persistir o enviar una entrada al predictor.
 
-## Integridad
+## Resiliencia y datos
 
-Versionar fuentes, transformaciones, método, parámetros, revisión y publicación. PostgreSQL conserva el estado operativo. EVM puede anclar hashes mínimos de publicaciones si se justifica; su indisponibilidad no bloquea el servicio.
-
-## Resiliencia
-
-Si una fuente falla o está vencida, señalarlo y recalcular solo si las reglas lo permiten. Ollama no disponible implica explicación estructurada sin generación. Sin evidencia suficiente, estado de evaluación incompleta. Mantener copias de seguridad y procedimiento de retiro de resultados erróneos.
-
+Las consultas externas tienen límites de espera y errores explícitos. Los procesos de catálogo y procesamiento pueden repetirse sin reemplazar credenciales o datos de entrada. Las cargas guardan procedencia, hashes y versiones para permitir inspección posterior. Las ausencias se conservan como ausencias y no se convierten en indicadores de riesgo bajo.

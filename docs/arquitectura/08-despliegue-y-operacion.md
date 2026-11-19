@@ -1,22 +1,19 @@
-# 08. Despliegue y operación
+# Despliegue y operación
 
-## Base Orivia
+## Servicios
 
-Docker Compose de referencia levanta Next.js en Node 24, Flask/Gunicorn en Python 3.12, PostgreSQL 16 y Caddy 2. Caddy proporciona TLS y proxy; PostgreSQL queda en red privada. Lightsail Debian 13 y Tailscale corresponden al staging documentado de Orivia, no se asumen para el piloto sin confirmación.
+El Compose de SAROS define frontend Next.js, API Flask, PostgreSQL y predictor ONNX. Procesamiento NISAR, entrenamiento y migraciones se ejecutan mediante perfiles independientes. Caddy proporciona TLS y enruta el tráfico público al frontend y a la API.
 
-## Extensiones del proyecto
+## Publicación
 
-Agregar PostGIS, almacenamiento de objetos y worker científico para ingestión/procesamiento. Separar límites de CPU y memoria del pipeline respecto a API. Mantener productos fuente, resultados y metadatos en rutas/versiones distintas.
+GitHub Actions construye imágenes versionadas en GHCR. El servicio programado del servidor revisa main y actualiza los contenedores cuando existe un avance lineal y el checkout está limpio. Si detecta divergencia o cambios locales, no reemplaza el contenido del servidor.
 
-## Ciclo de datos y publicación
+## Operación de datos
 
-Ingestar -> validar licencia y madurez -> revisar calidad/cobertura -> procesar -> cruzar exposición -> calcular prioridad -> revisión -> publicar manifiesto -> verificar frontend y API. Marcar claramente conjuntos sintéticos y resultados exploratorios.
+1. Consultar y registrar la fuente y el periodo.
+2. Descargar o recortar los productos con las credenciales necesarias.
+3. Validar geometría, rejilla, unidades, cobertura y hashes.
+4. Cargar metadatos y productos derivados con versión.
+5. Comprobar API, visor y logs después de publicar el cambio.
 
-## Métricas
-
-Frescura de fuentes, cobertura territorial, errores de ingesta, duración de análisis, resultados insuficientes, revisión pendiente, latencia API, fallos de ruta y restauración de base.
-
-## Incidente
-
-Retirar una publicación incorrecta, conservar la versión auditada, mostrar aviso y coordinar corrección con responsable técnico y autoridad local.
-
+No ejecutar procesamiento pesado ni entrenamiento en producción. El detalle de servicios, perfiles, respaldos y despliegue está en infra/saros/README.md.

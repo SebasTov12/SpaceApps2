@@ -1,30 +1,21 @@
-# 09. Decisiones de arquitectura
+# Decisiones de arquitectura
 
-## ADR-001: adoptar el stack Orivia
+## Interfaz y servicios separados
 
-Next.js/React/TypeScript para frontend; Flask/Gunicorn para API; PostgreSQL, Compose y Caddy para operación. Blockchain y Ollama son integraciones auxiliares.
+Next.js entrega la experiencia web y mantiene rutas de servidor para solicitudes que necesitan acceso interno. Flask centraliza acceso a PostgreSQL, contratos versionados y comunicación con el predictor.
 
-## ADR-002: una amenaza principal para el piloto
+## Procedencia en cada etapa
 
-Acotar región y fenómeno, preferiblemente deslizamientos si productos y validación lo permiten. Las demás amenazas son expansión, no promesa del prototipo.
+La ingestión, procesamiento y análisis son pasos separados. Los metadatos de una escena no se tratan como un ráster procesado; una capa procesada no se convierte automáticamente en observación LOS validada; un resultado estadístico no se publica como alerta.
 
-## ADR-003: separar amenaza, exposición y vulnerabilidad
+## Registros y evaluaciones
 
-Mantener indicadores y procedencia por dimensión. La prioridad relativa debe ser interpretable y no fabricar probabilidad o pérdida monetaria.
+Los registros de amenazas y las salidas de modelo se representan como entidades distintas. El historial reportado no se mezcla con un análisis NISAR ni se interpreta como consecuencia de este sin una evaluación trazable.
 
-## ADR-004: PostGIS y pipeline son extensiones
+## Datos geográficos
 
-Agregar extensión espacial, worker SAR y almacenamiento ráster sin presentar esas piezas como existentes en Orivia.
+La API conserva el origen de coordenadas y utiliza perfiles municipales para resolver ubicaciones cuando la fuente carece de coordenadas puntuales. El frontend recibe la precisión como parte del registro.
 
-## ADR-005: IA explica, metodología estima
+## Despliegue
 
-Ollama resume evidencia estructurada. La evaluación proviene de método documentado y revisado. La IA no publica acciones.
-
-## ADR-006: rutas de planificación requieren datos locales
-
-Usar red, cierres y puntos de encuentro validados. No garantizar seguridad ni transitabilidad durante una emergencia.
-
-## ADR-007: cadena es opcional
-
-Anclar hashes solo si mejora auditoría; conservar PostgreSQL como fuente de verdad.
-
+Los servicios persistentes, procesos pesados y redes externas se separan mediante Compose. Las migraciones se ejecutan bajo un perfil explícito para evitar cambios de esquema durante el arranque habitual.

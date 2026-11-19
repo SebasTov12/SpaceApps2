@@ -1,33 +1,21 @@
-# 06. Experiencia y recomendaciones
+# Experiencia y recomendaciones
 
-## Superficies
+## Navegación
 
-Seguir Next.js, React, TypeScript y Tailwind de Orivia. Proponer landing, mapa regional, ficha de zona y panel analista. El acceso a publicación se controla con roles de la API Flask.
+La portada presenta SAROS y un globo 3D interactivo. El usuario puede elegir un país, filtrar registros, usar el buscador y abrir una ubicación desde el mapa o desde la barra de actualizaciones.
 
-## Mapa y panel territorial
+## Ficha territorial
 
-Mostrar observaciones NISAR por fecha, amenaza y calidad; luego capas de población, servicios, infraestructura y sectores productivos. Permitir activar/desactivar capas y comparar fechas. Leyendas deben indicar escala, fuente y limitaciones.
+La ficha reúne el mapa, la vista 3D cuando está disponible, el punto seleccionado, la delimitación geográfica, controles de visualización y el panel con fuente, fechas, tipo, cifras reportadas y análisis asociado. En pantallas móviles, la ficha y el mapa comparten el espacio mediante paneles superpuestos y controles adaptables.
 
-## Resumen para decisión
+## Asistente SARU
 
-Cada área muestra:
-- Qué cambio se observó.
-- Qué amenaza se analiza y con qué evidencia.
-- Quiénes/qué servicios podrían estar expuestos.
-- Qué actividades económicas dependen del sitio o infraestructura.
-- Qué factores elevan o reducen la prioridad.
-- Qué dato falta o tiene resolución desigual.
-- Acción preventiva sugerida y responsable sugerido.
+SARU guía el recorrido, narra la información del punto seleccionado y ofrece chat contextual. Sus explicaciones se construyen con la información disponible en la ficha y la API. Debe distinguir un registro histórico, una observación satelital y una evaluación analítica.
 
-## Recomendaciones
+## Principios de presentación
 
-Priorizar inspecciones, mitigación, evaluación técnica, preparación de evacuación, identificación de puntos de encuentro y continuidad productiva. Ajustar las medidas al contexto local. Separar recomendaciones propuestas por sistema de decisiones de autoridad.
-
-## Planificación de rutas
-
-Mostrar opciones y puntos de encuentro solo si la red y destinos tienen validación local suficiente. Son herramientas de planificación, no promesas de seguridad en tiempo real.
-
-## Accesibilidad
-
-Diseño móvil, navegación por teclado, alto contraste, texto simple, etiquetas para controles, movimiento reducido y leyendas que no dependan solo del color.
-
+- Mostrar la fuente, fecha y escala junto a la información relevante.
+- Indicar la precisión geográfica y no sobredimensionar la exactitud del punto.
+- Explicar leyendas, unidades y alcance de cada capa.
+- Mantener visibles los estados de carga, ausencia de datos y error de servicio.
+- Evitar que una prioridad relativa se interprete como probabilidad o alerta.

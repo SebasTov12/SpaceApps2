@@ -56,7 +56,7 @@ El script hace login no interactivo con `EARTHDATA_AUTH_STRATEGY` (por defecto `
 python scripts/connect_earthdata.py --anonymous
 ```
 
-La cuenta Earthdata se requiere para descargar o abrir los productos. Para NISAR, el acceso S3 directo requiere ejecutar en AWS us-west-2 y usar el endpoint S3 indicado en `.env`; desde un equipo local debe usarse acceso HTTPS/Earthdata. Este script de conexión solo consulta metadatos, no descarga datos.
+La cuenta Earthdata se requiere para descargar o abrir productos restringidos. Este script de conexión consulta metadatos; la descarga se realiza en los comandos de `download_nisar_colombia.py` o `pipeline/search_nisar.py` mediante Earthdata.
 
 Para descargar una cadena corta y de geometría consistente del piloto (se eligen pares GUNW consecutivos del GeoJSON de Colombia-ladera), primero revisa la selección y el tamaño sin descargar:
 
@@ -113,7 +113,7 @@ PROVISIONAL; no mezclar ambas madureces sin armonizar el CRID y el procesamiento
 ## Ajuste de tendencia por zona
 
 Cuando el procesador científico haya producido el CSV documentado en
-`docs/modelo-predictivo-nisar.md`, ejecutar:
+`docs/modelos/modelo-predictivo-nisar.md`, ejecutar:
 
 ```sh
 python -m ml.nisar_forecast.forecast \
@@ -124,9 +124,10 @@ python -m ml.nisar_forecast.forecast \
 
 El módulo acepta mediciones reales de un AOI y stack, compara persistencia
 con tendencia lineal robusta y genera JSON con procedencia y evaluación
-temporal. No genera observaciones a partir de capas demo. El procesador
-HDF5→CSV y la aplicación de la migración SQL son pasos pendientes hasta
-disponer de acceso a los archivos y al entorno de base de datos.
+temporal. Las observaciones deben proceder de una serie LOS procesada y
+validada, no directamente de una capa de visualización. La conversión
+HDF5→CSV y la aplicación de la migración SQL dependen del acceso a los
+archivos y al entorno de base de datos correspondiente.
 
 Para inspeccionar hasta tres HDF5 descargados en el servidor sin cargar sus
 matrices ráster en memoria:

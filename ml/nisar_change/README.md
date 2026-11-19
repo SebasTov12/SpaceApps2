@@ -1,84 +1,78 @@
-# NISAR and historical-impact models
+# Modelos de cambio y análisis NISAR
 
-The container loads a real-data **composite exploratory model** (`composite_model.json`) with two fitted components:
+El servicio predictor reúne dos flujos distintos: el análisis compuesto exploratorio usado por SAROS y el detector U-Net de cambios, cuyo entrenamiento requiere parches revisados y una partición espacial/temporal rigurosa.
 
-1. An unsupervised, per-orbit anomaly model trained from robustly standardized GUNW phase and coherence pixels.
-2. A department/municipality shrinkage estimator trained on UNGRD reported movement-in-mass impacts from 2019–2022, with 2025 held out for time-based validation.
+## Modelo compuesto
 
-Train it locally from the ingested data:
+El artefacto `models/nisar-change/composite_model.json` contiene dos componentes:
+
+1. Un cribado estadístico de anomalías por geometría orbital, ajustado con fase desenrollada GUNW y magnitud de coherencia.
+2. Un estimador jerárquico de consecuencias históricas municipales, ajustado con reportes UNGRD de movimientos en masa de 2019–2022 y evaluado con reportes de 2025.
+
+El análisis entrega fracción de píxeles atípicos, contexto de impactos históricos y prioridad relativa de revisión. No clasifica por sí mismo un evento, no estima una probabilidad de desastre y no atribuye causalidad entre una señal y un impacto. La rama NISAR no cuenta con etiquetas expertas asociadas a los píxeles.
+
+Entrenamiento local:
 
 ```powershell
 python ml/nisar_change/train_composite.py --device cuda
 ```
 
-The command writes `models/nisar-change/composite_model.json` and `composite_training_report.json`. `--device auto` selects CUDA when available; `--device cuda` requires a CUDA-enabled PyTorch build. CUDA fits the NISAR phase/coherence distribution; the impact estimator remains an empirical statistical model. It uses real raster hashes and actual reports. The NISAR branch has no expert event labels, and the impact branch predicts historical reported consequences rather than household vulnerability. The composite produces relative screening priorities; it does not estimate event probabilities or guarantee safety.
+La opción `--device auto` selecciona CUDA cuando está disponible. El proceso escribe el artefacto y el informe de entrenamiento en `models/nisar-change/`. El estimador histórico es estadístico; CUDA se utiliza para el procesamiento de características raster.
 
-## Composite analysis API
+## API de análisis compuesto
 
-`POST /api/v1/analysis?track_id=047-A-003&municipality=NEIVA&department=HUILA` accepts an `application/octet-stream` NPZ body with a `features` array shaped `[2,height,width]`, ordered `[unwrapped_phase_rad, coherence_magnitude]`. Provide a single same-grid GUNW phase/coherence pair, with matching track. The API returns the anomaly fraction, historical impact estimates, relative priority, and a planning recommendation. The mask is an exploratory anomaly screen; it is not a landslide classification.
+`POST /api/v1/analysis?track_id=047-A-003&municipality=NEIVA&department=HUILA` recibe el cuerpo `application/octet-stream` como NPZ. Debe incluir `features` con forma `[2, alto, ancho]`, en este orden: `[fase_desenvuelta_rad, coherencia]`. Las dos bandas deben corresponder a la misma escena, rejilla y geometría orbital.
 
-The result is persisted in `analysis.composite_assessments` after applying `pipeline/sql/007_composite_model.sql`. Apply the migration before enabling the route.
-
-Example request body creation:
+Ejemplo para empaquetar el cuerpo:
 
 ```python
 import numpy as np
 np.savez_compressed("patch.npz", features=np.stack([phase_rad, coherence]))
 ```
 
-Send the file with `Content-Type: application/octet-stream` and the SAROS bearer token. The API route requires `track_id`, `municipality`, and `department` query parameters.
+La ruta requiere token Bearer y la migración `pipeline/sql/007_composite_model.sql`. El resultado se guarda en `analysis.composite_assessments` con sus parámetros y procedencia. La máscara es un cribado exploratorio, no una clasificación de deslizamientos.
 
-This first training baseline is a supervised pixel-level change detector. It takes two co-registered, same-product NISAR patches, concatenates the earlier scene, later scene, and absolute per-channel difference, then predicts a binary change mask with a U-Net. It does not estimate landslide probability, predict an event, or calculate losses.
+## U-Net supervisada de cambio
 
-## Input contract
+El repositorio contiene la arquitectura y el entrenamiento de una U-Net para producir una máscara binaria de cambio entre dos parches co-registrados. El flujo necesita datos de entrada con etiquetas revisadas; la existencia del código no implica que haya un artefacto de inferencia listo para uso.
 
-Prepare one compressed NumPy `.npz` patch per manifest row. Each patch contains:
+### Contrato de entrada
 
-- `before`: `float32` array shaped `[channels, height, width]`.
-- `after`: same shape, channels, calibration, and spatial grid as `before`.
-- `label`: binary `0`/`1` array shaped `[height, width]` (`1` means the target change class).
+Cada fila del manifiesto CSV o Parquet debe referenciar un archivo `.npz` con:
 
-Values must be finite and consistently calibrated/normalized across patches. Keep product families and processing maturities separate; do not pair incompatible products or treat missing/low-quality pixels as unchanged. Mask invalid regions during preprocessing and exclude them from training patches for this baseline. Labels must come from a documented reference or expert-reviewed inventory, not from the model's own predictions.
+- `before`: `float32` con forma `[canales, alto, ancho]`.
+- `after`: misma forma, calibración y rejilla espacial que `before`.
+- `label`: máscara binaria `[alto, ancho]`, donde `1` representa la clase de cambio definida para el conjunto.
 
-Set `ML_INPUT_CHANNELS` to the number and order of bands in each patch. The example value `2` is only a starting configuration, not a claim about a selected NISAR product. Use patch dimensions large enough for four U-Net downsampling stages (for example, 64×64 or larger).
+Los valores deben ser finitos y comparables entre escenas. Se deben enmascarar píxeles inválidos, separar productos y madureces incompatibles y documentar el criterio de las etiquetas. El modelo no debe aprender sus etiquetas de sus propias salidas.
 
-The manifest is Parquet or CSV with these columns:
+Columnas del manifiesto:
 
-| Column | Meaning |
+| Columna | Uso |
 | --- | --- |
-| `sample_id` | Unique patch identifier. |
-| `sample_path` | `.npz` path, absolute or relative to the manifest directory. |
-| `split` | `train`, `validation`, or optional `test`. |
-| `spatial_group` | Non-overlapping spatial block or AOI group. |
-| `temporal_group` | Acquisition period/pair group. |
+| `sample_id` | Identificador único del parche. |
+| `sample_path` | Ruta al NPZ, absoluta o relativa al manifiesto. |
+| `split` | `train`, `validation` o `test` opcional. |
+| `spatial_group` | Bloque geográfico o AOI no solapado. |
+| `temporal_group` | Periodo o pareja de adquisiciones. |
 
-With `ML_SPLIT_STRATEGY=spatiotemporal`, neither a spatial group nor a temporal group may occur in more than one split. This guards against adjacent-patch and acquisition-pair leakage; prepare the split before training. A test split, when present, is evaluated only after selecting the best checkpoint using validation pixel F1.
+Con `ML_SPLIT_STRATEGY=spatiotemporal`, cada grupo espacial y temporal aparece en una sola partición, para limitar fugas entre muestras vecinas o fechas relacionadas. La evaluación de prueba se realiza después de elegir el checkpoint con validación.
 
-## Run with Docker Compose
+### Ejecución con Compose
 
-Create a local `.env` from `.env.example`, set the NISAR/data settings and model settings, prepare `data/filtered/manifest.parquet`, and run from the repository root:
+Configura `ML_MANIFEST`, canales y parámetros en el entorno privado. Prepara el manifiesto y los NPZ conforme al contrato, luego ejecuta desde la raíz:
 
 ```sh
 docker compose -f infra/saros/docker-compose.yml --profile training build trainer
 docker compose -f infra/saros/docker-compose.yml --profile training run --rm trainer
 ```
 
-The training container mounts `data/` read-only and writes `best.pt`, `best.onnx`, `history.json`, and, when a test split exists, `test_metrics.json` under `models/nisar-change/`. The ONNX file is the portable CPU inference artifact.
+El entrenador escribe `best.pt`, `best.onnx`, `history.json` y métricas de prueba cuando hay una partición `test` en `models/nisar-change/`. ONNX Runtime utiliza `best.onnx` para inferencia CPU.
 
-## Inference service and Docker health
+La ruta protegida `POST /api/v1/predictions` envía una entrada NPZ con `before` y `after`, ambos de forma `[canales, alto, ancho]`. Deben compartir calibración, rejilla y valores finitos; las dimensiones deben ser divisibles por 16. Los límites de tamaño los configuran `ML_MAX_REQUEST_BYTES` y `ML_MAX_PIXELS`.
 
-The inference container uses ONNX Runtime (without PyTorch) as the `predictor` service in `infra/saros/docker-compose.yml`. The API reaches it at `http://predictor:8001` on the private SAROS network. Docker marks it healthy only after a trained `best.onnx` is mounted and loaded. SAROS's frontend and API have separate healthchecks.
+## Servicio predictor y alcance
 
-After training, deploy the SAROS stack from the repository root on Orivia:
+Compose ejecuta el predictor ONNX en una red privada. Su salud informa la disponibilidad del artefacto compuesto; el endpoint U-Net necesita `best.onnx`. Los puntajes se deben interpretar con su periodo, productos, controles de calidad y métricas; una evaluación exploratoria no constituye validación operativa ni una alerta.
 
-```sh
-docker compose -f infra/saros/docker-compose.yml up -d --build
-```
-
-The backend checks model readiness at `http://predictor:8001/health` and forwards authenticated requests to its `/predict` endpoint. The input contract is an `application/octet-stream` body containing an `.npz` with `before` and `after` float arrays shaped `[channels,height,width]`. Arrays must be co-registered, consistently calibrated/normalized, finite, and have dimensions divisible by 16. Input size and pixel count are bounded by `ML_MAX_REQUEST_BYTES` and `ML_MAX_PIXELS`.
-
-The composite inference service is healthy when `composite_model.json` exists. The legacy supervised U-Net endpoint `/predict` still requires `best.onnx` and a labeled patch manifest; it remains unavailable until expert-reviewed pixel labels exist. The composite endpoint `/analyze` is the current deployed real-data path.
-
-## Limits of this baseline
-
-The repository does not yet contain labeled patches or a validated change inventory. The trainer intentionally fails on absent or malformed inputs. Do not use resulting scores as operational alerts until a domain expert validates the data, labels, quality masks, split design, and error tradeoffs. This initial container is intended for CPU training; CUDA requires a compatible NVIDIA host/runtime and PyTorch CUDA image setup.
+Para el contrato de observaciones LOS y pronósticos, consulta [modelo predictivo NISAR](../../docs/modelos/modelo-predictivo-nisar.md). Para ejecución y recursos del servidor, consulta [despliegue SAROS](../../infra/saros/README.md).

@@ -1,57 +1,21 @@
-# 04. Datos y procesamiento
+# Datos y procesamiento
 
-## Flujo analítico
+## Registros de afectaciones
 
-1. Descubrir productos y fuentes que intersectan el área del piloto.
-2. Capturar procedencia, licencia, escala, fechas y versión.
-3. Validar cobertura, calidad, sistema de referencia y compatibilidad temporal.
-4. Preparar capas y derivar indicadores de cambio con método documentado.
-5. Evaluar amenaza con contexto físico y validación experta.
-6. Cruzar amenaza con exposición social, infraestructura y actividad económica.
-7. Calcular prioridades relativas explicables, conservar dimensiones y limitaciones.
-8. Formular acciones preventivas y revisión humana según el nivel de impacto.
-9. Publicar una versión auditable con manifiesto.
+Los procesos de ingesta reciben fuentes públicas, conservan su procedencia, normalizan campos y coordinadas, controlan duplicados y cargan registros en PostgreSQL. La API publica los registros con datos de fecha, ubicación, tipo de afectación e impactos reportados cuando la fuente los incluye.
 
-## Familias de datos
+La ubicación puede provenir de coordenadas del registro, del centroide de una geometría o del centroide municipal. La precisión se devuelve como metadato para que el mapa no presente una ubicación aproximada como coordenada exacta.
 
-### NISAR
+## NISAR
 
-- GUNW o productos interferométricos compatibles: deformación superficial cuando el producto, la coherencia y la geometría lo permitan.
-- GSLC: señal compleja geocodificada; permite análisis de amplitud y pares compatibles.
-- GCOV: retrodispersión con corrección radiométrica/topográfica para cambio de superficie y otras aplicaciones.
-- SME2: humedad del suelo. Es contexto ambiental y agrícola, no indicador directo de deslizamiento.
-- GOFF/ROFF: offsets por seguimiento de speckle; verificar el uso previsto del producto antes de aplicarlo a terreno continental.
+El catálogo ASF/CMR proporciona metadatos y huellas de escenas. Earthdata y NASA Harmony permiten acceder a los productos y solicitar recortes geográficos. Los archivos derivados se inspeccionan por contenido, rejilla, unidades, cobertura, máscara y procedencia antes de registrarse.
 
-La elección del producto depende de la pregunta. No sumar productos distintos como si fueran una sola medida.
+Para interpretar desplazamiento LOS se requiere una serie de adquisiciones compatible, inversión temporal de pares, referencia espacial estable y control de calidad. La fase o una anomalía estadística no deben presentarse como milímetros de movimiento sin validación de esas etapas.
 
-### Contexto físico
+## Contexto territorial
 
-Modelo de elevación, pendiente, geología, suelos, cobertura terrestre, lluvia, hidrología, inventario de deslizamientos, inundaciones o sismos y visitas de campo.
+DANE, REPS, DANE SISE, UPRA y otras fuentes territoriales aportan variables a escala municipal o de servicio. La fecha, escala, unidad y cobertura de cada corte deben acompañar los resultados. Una variable municipal no identifica automáticamente una vivienda, parcela o activo afectado.
 
-### Exposición social e infraestructura
+## Publicación
 
-Población y distribución espacial, viviendas, instituciones educativas, centros de salud, vías, puentes, servicios esenciales, accesibilidad y capacidad de respuesta. Registrar año, escala, unidad territorial y restricciones de privacidad.
-
-### Exposición económica
-
-Agricultura, ganadería, comercio, transporte/logística, turismo, infraestructura productiva y cadenas de abastecimiento. Usar indicadores observables y documentar si son censales, agregados, reportados o aproximaciones.
-
-## Madurez y comparabilidad NISAR
-
-El catálogo ASF reporta productos VALIDATED L0–L2 para adquisiciones L-band desde el 21 de octubre de 2026, publicados el 6 de noviembre de 2026. Productos anteriores pueden pertenecer a colecciones PROVISIONAL o BETA; no mezclar madureces sin documentar diferencias de procesamiento y comparabilidad temporal. SME2 aún no tiene la misma madurez VALIDATED según la guía consultada.
-
-## Registro de cada resultado
-
-Fuente e identificador, fecha de adquisición y procesamiento, AOI, resolución/escala, métrica/unidad, cobertura, calidad, transformación, método y versión, evidencia auxiliar, supuestos, limitaciones, nivel relativo y estado de revisión.
-
-## Precauciones
-
-No inferir probabilidad de evento ni costo de pérdidas sin datos/modelos validados. La intersección con edificios o cultivos representa exposición potencial, no daño observado. Mostrar vacíos de datos y desigualdad de resolución.
-
-## Referencias
-
-- [Productos y madurez NISAR — ASF](https://nisar-docs.asf.alaska.edu/products-overview/)
-- [Disponibilidad — ASF](https://nisar-docs.asf.alaska.edu/availability-overview/)
-- [Acceso — ASF](https://nisar-docs.asf.alaska.edu/access-overview/)
-- [Resumen de misión — NASA](https://science.nasa.gov/mission/nisar/mission-overview/)
-
+Los procesos guardan resultados versionados y el backend los expone mediante contratos JSON. La disponibilidad del catálogo, la salida del procesamiento y la evaluación del modelo se conservan como etapas diferentes.

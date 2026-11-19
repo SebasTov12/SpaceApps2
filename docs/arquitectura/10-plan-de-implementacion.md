@@ -1,32 +1,19 @@
-# 10. Plan de implementación
+# Plan de evolución
 
-## Fase 1: delimitar piloto
+## Operación actual
 
-Escoger región, amenaza primaria y usuario decisor. Acordar extensión, temporalidad, escala, fuentes y criterios con especialistas y autoridad.
+- Consulta de registros públicos de afectaciones a través de la API y visualización geográfica.
+- Catálogo NISAR consultable desde ASF/CMR y carga de escenas y capas recortadas con procedencia.
+- API PostgreSQL para registros, catálogo, contexto territorial y resultados de análisis.
+- Interfaz multilingüe con globo 3D, mapas, ficha territorial y asistente SARU.
+- Servicios Docker Compose con publicación de imágenes y actualización controlada.
 
-## Fase 2: preparar catálogo
+## Siguientes mejoras técnicas
 
-Inventariar productos NISAR disponibles por fecha y madurez, límites AOI, auxiliares físicos, censales, infraestructura y economía. Registrar licencias, vacíos, calidad y responsables.
+1. Automatizar la actualización de las fuentes y publicar fecha de corte y estado de cada conjunto.
+2. Completar la serie de observaciones LOS por AOI y stack con referencia espacial y control de calidad.
+3. Ampliar la validación temporal y geográfica de los modelos con datos independientes.
+4. Integrar perfiles territoriales recientes y documentar su cobertura por municipio.
+5. Evaluar observaciones de usuarios, accesibilidad, rendimiento y funcionamiento ante fallos de servicios.
 
-## Fase 3: análisis NISAR
-
-Seleccionar producto y método adecuados. Preparar pares comparables, máscara de calidad, indicadores y linaje. Validar señal con datos y especialista.
-
-## Fase 4: evaluación socioeconómica
-
-Armonizar unidades geográficas, cruzar amenaza con población, servicios, vías y sectores. Definir indicadores relativos, documentar pesos/reglas y analizar sesgo de cobertura.
-
-## Fase 5: interfaz y decisiones
-
-Construir mapa y panel Next.js. Añadir explicación de prioridad, procedencia, escenarios y recomendaciones. Rutas solo con infraestructura y destinos validados.
-
-## Fase 6: revisión y despliegue
-
-Evaluar falsos positivos/negativos, probar supuestos, privacidad, permisos y restauración. Publicar en staging con etiquetas de demo y mecanismo de retirada.
-
-## Bloqueadores
-
-AOI, amenaza seleccionada, productos disponibles con madurez conocida, datos sociales/económicos legales y apropiados, método revisado, autoridad o especialista que valide recomendaciones.
-
-Datos simulados deben estar marcados. No presentar prioridad de demostración como alerta real.
-
+Cada incremento debe especificar fuente, fecha, escala, método, criterios de calidad y límites de interpretación.
