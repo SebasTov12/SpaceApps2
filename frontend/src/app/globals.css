@@ -51,7 +51,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #9ce2
 .earth-fallback{object-fit:cover;filter:brightness(.83) saturate(.96)}
 .earth-canvas{opacity:0;transition:opacity .8s ease}
 .earth-canvas-ready{opacity:1}
-.earth-static{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 32% 25%,transparent,rgba(0,0,0,.9) 85%),url('/earth-blue-marble.jpg') 32% center/auto 100%}
+.earth-static{--earth-fallback-texture:url('/earth-blue-marble.jpg');width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 32% 25%,transparent,rgba(0,0,0,.9) 85%),var(--earth-fallback-texture) 32% center/auto 100%}
+@media(max-width:760px){.earth-static{--earth-fallback-texture:url('/earth-blue-marble-mobile.webp')}}
 .orbit-line{position:absolute;z-index:2;border:1px solid rgba(126,192,197,.11);border-radius:50%;inset:-9%;transform:rotate(-21deg) scaleY(.45);pointer-events:none}.orbit-line-two{inset:-16%;transform:rotate(24deg) scaleY(.31);border-color:rgba(126,192,197,.07)}
 .scroll-cue{position:absolute;z-index:5;bottom:31px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;color:#9cadb1;font-size:8px;letter-spacing:.19em}.scroll-cue svg{color:var(--cyan);animation:nudge 1.8s ease-in-out infinite}@keyframes nudge{50%{transform:translateY(5px)}}
 .mobile-globe-cue{display:none;position:absolute;z-index:12;left:50%;bottom:max(22px,env(safe-area-inset-bottom));translate:-50% 0;width:70px;height:70px;align-items:center;justify-content:center;padding:0;border:0;background:transparent;color:#d5b6ff;cursor:pointer;filter:drop-shadow(0 0 8px #8e4bff80);animation:cue-float 2.2s ease-in-out infinite}

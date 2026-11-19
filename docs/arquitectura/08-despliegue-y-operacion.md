@@ -17,3 +17,9 @@ GitHub Actions construye imágenes versionadas en GHCR. El servicio programado d
 5. Comprobar API, visor y logs después de publicar el cambio.
 
 No ejecutar procesamiento pesado ni entrenamiento en producción. El detalle de servicios, perfiles, respaldos y despliegue está en infra/saros/README.md.
+
+## Rendimiento visual del frontend
+
+- La escena 3D mantiene la textura de máxima resolución en escritorio. Los dispositivos móviles y de recursos limitados descargan una variante WebP dimensionada para su resolución visible; el relieve, las nubes y las capas del planeta siguen activos.
+- El código de MapLibre se precarga durante tiempo ocioso solo en equipos sin ahorro de datos y con recursos suficientes. En los demás casos se solicita al entrar a una zona, para no competir con la carga inicial del globo.
+- Las animaciones 3D y decorativas se pausan cuando la escena sale de pantalla o la pestaña deja de estar visible.

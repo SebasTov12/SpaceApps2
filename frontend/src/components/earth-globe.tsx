@@ -21,8 +21,15 @@ type SceneQuality = "compact" | "mobile" | "full";
 function Planet({ playing, quality, children }: { playing: boolean; quality: SceneQuality; children?: ReactNode }) {
   const surface = useRef<Group>(null);
   const clouds = useRef<Group>(null);
+  // Las pantallas pequeñas no necesitan descargar una textura de 5400 px:
+  // sus píxeles físicos visibles caben en estas variantes y conservan el detalle.
+  const dayTexture = quality === "full"
+    ? "/earth-blue-marble.jpg"
+    : quality === "mobile"
+      ? "/earth-blue-marble-mobile.webp"
+      : "/earth-blue-marble-compact.webp";
   const [day, cloud, normal, specular, height] = useTexture([
-    "/earth-blue-marble.jpg", "/earth-clouds.png",
+    dayTexture, "/earth-clouds.png",
     "/earth-normal.jpg", "/earth-specular.jpg",
     // alturas reconstruidas desde el mapa de normales (montañas, mesetas y casquetes de hielo)
     "/earth-height.png",

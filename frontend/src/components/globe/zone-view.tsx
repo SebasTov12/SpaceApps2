@@ -329,10 +329,29 @@ export default function ZoneView() {
     }, wait));
   }, []);
   useEffect(() => () => revealTimers.current.forEach(clearTimeout), []);
-  // precargar el mapa (y MapLibre) cuando la página ya está quieta: abrir una zona es inmediato
+  // Calienta el código del mapa solo en un momento ocioso y en equipos aptos.
+  // En equipos con ahorro de datos o recursos se carga al abrir una zona, evitando
+  // competir durante el inicio con las texturas y la primera escena 3D.
   useEffect(() => {
-    const id = setTimeout(() => { void import("@/components/nisar-map"); void import("maplibre-gl"); }, 2500);
-    return () => clearTimeout(id);
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
+    const cores = navigator.hardwareConcurrency || 4;
+    if (connection?.saveData || memory <= 4 || cores <= 4) return;
+
+    const preload = () => {
+      void import("@/components/nisar-map");
+      void import("maplibre-gl");
+    };
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (idleWindow.requestIdleCallback) {
+      const id = idleWindow.requestIdleCallback(preload, { timeout: 6500 });
+      return () => idleWindow.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(preload, 4200);
+    return () => window.clearTimeout(id);
   }, []);
   // si el mapa no llega a estar listo (red lenta o error), igual se muestra
   useEffect(() => {
