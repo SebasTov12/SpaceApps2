@@ -32,7 +32,7 @@ const copy = {
     watch: (n: number) => `${n} puntos a vigilar marcados en el mapa: allí el cambio reciente es más rápido.`,
     noData: "Zona de interés: aún sin capas NISAR procesadas. La vista muestra la imagen satelital del lugar.",
     noDataNow: "Sin serie de datos todavía para calcular la tendencia en esta zona.",
-    withData: "Zonas con datos", clickMap: "Toca el mapa para ver la evolución de un punto",
+    clickMap: "Toca el mapa para ver la evolución de un punto",
     noPointSeries: "No hay una serie temporal disponible en esta coordenada. El marcador solo indica el lugar seleccionado.",
     areaNote: "Área de la escena/capa · no es el límite exacto de la afectación",
     asf: "Escenas NISAR reales en ASF", demo: "DEMO", real: "NISAR", accel: "Aceleración detectada",
@@ -56,7 +56,7 @@ const copy = {
     watch: (n: number) => `${n} watch points on the map: recent change is fastest there.`,
     noData: "Zone of interest: no NISAR layers processed yet. The view shows the satellite image of the place.",
     noDataNow: "No data series yet to compute a trend for this zone.",
-    withData: "Zones with data", clickMap: "Tap the map to see a point over time",
+    clickMap: "Tap the map to see a point over time",
     noPointSeries: "No time series is available at these coordinates. The marker only shows the selected location.",
     areaNote: "Scene/layer footprint · not the exact event boundary",
     asf: "Real NISAR scenes at ASF", demo: "DEMO", real: "NISAR", accel: "Acceleration detected",
@@ -574,14 +574,6 @@ export default function ZoneView() {
                     noData={!siteId ? (
                       <div className="zs-card">
                         <p className="zone-nodata"><ProtectedTerms text={c.noData} /></p>
-                        <p className="zone-sub">{c.withData}</p>
-                        <div className="zone-chips">
-                          {riskZones.filter((z) => z.siteId && z.country === "CO").map((z) => (
-                            <button key={z.id} type="button" onClick={() => focusZone(z.id)}>
-                              <i style={{ background: riskKinds[z.kind].color }} />{riskKinds[z.kind][lang]} · {z.place[lang].split(",")[0]}
-                            </button>
-                          ))}
-                        </div>
                       </div>
                     ) : null}
                   />
