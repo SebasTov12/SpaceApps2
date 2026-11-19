@@ -58,6 +58,9 @@ export default function EarthHero() {
     // La vista principal siempre inicia desde el título. Restaurar el scroll
     // guardado en escritorio podía saltarse el descubrimiento del planeta y
     // dejar a Saru y sus animaciones fuera de escena al abrir el dominio.
+    if (!mobileMode.get() && !window.location.hash) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
     return () => {
       window.history.scrollRestoration = previousRestoration;
     };
