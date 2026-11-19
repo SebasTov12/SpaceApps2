@@ -17,7 +17,6 @@ const EarthGlobe = dynamic(() => import("@/components/earth-globe"), {
   loading: () => null,
 });
 
-const SCROLL_POSITION_KEY = "saros:home-scroll-y";
 
 export default function EarthHero() {
   const { lang } = useI18n();
@@ -56,31 +55,10 @@ export default function EarthHero() {
   useLayoutEffect(() => {
     const previousRestoration = window.history.scrollRestoration;
     window.history.scrollRestoration = "manual";
-    if (!mobileMode.get() && !window.location.hash) {
-      try {
-        const saved = Number(window.sessionStorage.getItem(SCROLL_POSITION_KEY));
-        if (Number.isFinite(saved) && saved > 0) window.scrollTo({ top: saved, behavior: "instant" });
-      } catch {
-        // Scrolling still works if browser storage is unavailable.
-      }
-    }
-
-    let saveTimer = 0;
-    const savePosition = () => {
-      window.clearTimeout(saveTimer);
-      if (mobileMode.get()) return;
-      try { window.sessionStorage.setItem(SCROLL_POSITION_KEY, String(window.scrollY)); } catch { /* storage is optional */ }
-    };
-    const onScroll = () => {
-      window.clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(savePosition, 140);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("pagehide", savePosition);
+    // La vista principal siempre inicia desde el título. Restaurar el scroll
+    // guardado en escritorio podía saltarse el descubrimiento del planeta y
+    // dejar a Saru y sus animaciones fuera de escena al abrir el dominio.
     return () => {
-      savePosition();
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("pagehide", savePosition);
       window.history.scrollRestoration = previousRestoration;
     };
   }, [mobileMode]);
