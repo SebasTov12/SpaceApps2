@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { SITE_EVENT } from "@/components/globe/globe-state";
 import { SarosStar } from "@/components/saros-logo";
-import { loadHeadlines, type Headline } from "@/lib/headlines";
-import { HAZARD_POINT_SELECT, hazardPointId, loadHazardPoints } from "@/lib/hazard-points";
+import { loadHeadlines, resolveHeadlineHazard, type Headline } from "@/lib/headlines";
+import { HAZARD_POINT_SELECT, loadHazardPoints } from "@/lib/hazard-points";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
 
 const LIVE_BY_LANG: Record<string, string> = {
@@ -53,7 +53,7 @@ export default function HeadlineTicker({ className }: { className?: string }) {
   const openItem = async (item: Headline) => {
     if (item.hazardPointId) {
       const data = await loadHazardPoints();
-      const point = data?.points.find((candidate) => hazardPointId(candidate) === item.hazardPointId);
+      const point = data ? resolveHeadlineHazard(item, data.points) : null;
       if (point) {
         window.dispatchEvent(new CustomEvent(HAZARD_POINT_SELECT, { detail: point }));
         return;
@@ -64,9 +64,17 @@ export default function HeadlineTicker({ className }: { className?: string }) {
 
   useEffect(() => {
     let alive = true;
-    loadHeadlines().then((list) => alive && setItems(list)).catch(() => alive && setItems([]));
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      loadHeadlines().then((list) => alive && setItems(list)).catch(() => alive && setItems([]));
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
     return () => {
       alive = false;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
     };
   }, []);
 

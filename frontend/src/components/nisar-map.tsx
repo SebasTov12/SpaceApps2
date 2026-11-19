@@ -90,8 +90,8 @@ function addNisarLayer(map: MapLibreMap, url: string, bbox: Bbox, opacity: numbe
   // fundido largo: los cambios de fecha se ven progresivos
   map.addLayer({ id: "nisar", type: "raster", source: "nisar", paint: { "raster-opacity": opacity, "raster-fade-duration": 650, "raster-resampling": "linear" } });
   map.addSource("hotspots", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-  map.addLayer({ id: "hotspots-glow", type: "circle", source: "hotspots", paint: { "circle-radius": 18, "circle-color": "#f43f5e", "circle-opacity": 0.18, "circle-blur": 0.6 } });
-  map.addLayer({ id: "hotspots-core", type: "circle", source: "hotspots", paint: { "circle-radius": 5, "circle-color": "#ffffff", "circle-stroke-color": "#f43f5e", "circle-stroke-width": 2.5 } });
+  map.addLayer({ id: "hotspots-glow", type: "circle", source: "hotspots", paint: { "circle-radius": 22, "circle-color": "#8b5cf6", "circle-opacity": 0.24, "circle-blur": 0.72 } });
+  map.addLayer({ id: "hotspots-core", type: "circle", source: "hotspots", paint: { "circle-radius": 5.5, "circle-color": "#eefaff", "circle-stroke-color": "#8b5cf6", "circle-stroke-width": 2.5 } });
   map.addSource("aoi", { type: "geojson", data: outline(bbox) });
   map.addLayer({ id: "aoi-glow", type: "line", source: "aoi", paint: { "line-color": "#8b5cf6", "line-width": 6, "line-blur": 2, "line-opacity": 0.32 } });
   map.addLayer({ id: "aoi", type: "line", source: "aoi", paint: { "line-color": "#5ef0ff", "line-width": 1.8, "line-dasharray": [3, 2], "line-opacity": 0.94 } });
@@ -143,7 +143,7 @@ function updateNisarLayer(map: MapLibreMap | null, url: string, bbox: Bbox, opac
 }
 
 export default function NisarMap({ bbox, layerUrl, beforeUrl, mode, opacity, pick, onPick, recenterKey, intro, hotspots, splitValue, padding, onReady, reveal = true, terrain = false, scene = DEFAULT_SCENE, annotate = null, onZoomOut, live = null }: NisarMapProps) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const mainRef = useRef<HTMLDivElement>(null);
   const afterRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);

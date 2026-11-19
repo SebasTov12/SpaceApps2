@@ -95,10 +95,15 @@ const SOURCE_NAMES: Record<string, string> = {
 export const sourceName = (id: string) => SOURCE_NAMES[id] ?? id;
 
 let request: Promise<HazardPoints | null> | null = null;
+let requestedAt = 0;
+const HAZARD_POINTS_TTL = 120_000;
 export function loadHazardPoints(): Promise<HazardPoints | null> {
-  request ??= fetch("/api/hazards", { signal: AbortSignal.timeout(8000) })
-    .then((r) => (r.ok ? r.json() : null))
-    .then((d: HazardPoints | null) => (d && Array.isArray(d.points) ? d : null))
-    .catch(() => null);
+  if (!request || Date.now() - requestedAt >= HAZARD_POINTS_TTL) {
+    requestedAt = Date.now();
+    request = fetch("/api/hazards", { cache: "no-store", signal: AbortSignal.timeout(8000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: HazardPoints | null) => (d && Array.isArray(d.points) ? d : null))
+      .catch(() => null);
+  }
   return request;
 }

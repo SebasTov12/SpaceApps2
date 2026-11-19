@@ -280,7 +280,9 @@ export default function ZoneView() {
   const legend = active ? (mode === "change" ? active.changeLegend : active.legend) : null;
   const real = availability?.sites.find((s) => s.id === siteId);
   const currentValue = pointSeries?.[dateIndex];
-  const assessment = active?.source.mode === "real" ? active.assessment : undefined;
+  // Los hotspots forman parte de la experiencia del mapa también en escenas de referencia.
+  // La interfaz conserva su etiqueta de demo; no se descartan sus puntos de análisis.
+  const assessment = active?.assessment;
   const modelAssessment = zone ? modelPoints
     .map((point) => ({ point, distance: Math.hypot((point.lat - zone.lat) * 111, (point.lon - zone.lon) * 111 * Math.cos(zone.lat * Math.PI / 180)) }))
     .filter(({ distance }) => distance <= 1)
@@ -294,9 +296,17 @@ export default function ZoneView() {
   // nivel de ciudad cuando la coordenada es precisa; conserva más contexto
   // cuando el punto es un centroide administrativo aproximado.
   const selectedHazard = globeState.hazardFocus?.id === zoneId ? globeState.hazardFocus : null;
+  const mapHotspots = useMemo(() => active?.assessment?.hotspots?.length
+    ? active.assessment.hotspots
+    : selectedHazard?.model_assessment?.hotspots?.length
+      ? selectedHazard.model_assessment.hotspots
+      : selectedHazard
+        ? [{ lat: selectedHazard.lat, lon: selectedHazard.lon, value: selectedHazard.model_anomaly_index ?? 0 }]
+        : zone ? [{ lat: zone.lat, lon: zone.lon, value: 0 }]
+          : [], [active, selectedHazard, zone]);
   const activeScene = selectedHazard
-    ? { exaggeration: 1.25, pitch: selectedHazard.location_precision === "municipality_centroid" ? 58 : 66,
-        zoom: selectedHazard.location_precision === "municipality_centroid" ? 14.6 : 15.2 }
+    ? { exaggeration: 1.4, pitch: selectedHazard.location_precision === "municipality_centroid" ? 62 : 68,
+        zoom: selectedHazard.location_precision === "municipality_centroid" ? 15 : 15.8 }
     : zone ? sceneFor(zone.kind) : sceneFor("landslide");
   const level: AttentionLevel = modelAssessment?.priority === "P1" ? "alta" : modelAssessment?.priority === "P2" ? "moderada" : "baja";
   const colombia = zone?.country === "CO";
@@ -339,7 +349,12 @@ export default function ZoneView() {
       if (!action) return;
       const m = activeRef.current;
       const selected = globeState.hazardFocus?.id === zoneId ? globeState.hazardFocus : null;
-      const hotspots = m?.assessment?.hotspots ?? selected?.model_assessment?.hotspots ?? [];
+      const hotspots = m?.assessment?.hotspots?.length
+        ? m.assessment.hotspots
+        : selected?.model_assessment?.hotspots?.length
+          ? selected.model_assessment.hotspots
+          : selected ? [{ lat: selected.lat, lon: selected.lon, value: selected.model_anomaly_index ?? 0 }]
+            : zone ? [{ lat: zone.lat, lon: zone.lon, value: 0 }] : [];
       if (action.type === "legend") setExplain({ nonce: Date.now(), kind: action.kind });
       if (action.type === "point" && hotspots.length) {
         const unit = m?.assessment?.rate.unit.replace(/\/mes$/, "") ?? "";
@@ -368,7 +383,7 @@ export default function ZoneView() {
     };
     window.addEventListener(POINT_EVENT, onPoint);
     return () => window.removeEventListener(POINT_EVENT, onPoint);
-  }, [zoneId]);
+  }, [zoneId, zone]);
   // Saru resalta la parte del panel de la que habla: la desplaza a la vista y la ilumina
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -445,7 +460,7 @@ export default function ZoneView() {
               reveal={mapReady}
               terrain={terrain}
               scene={activeScene}
-              hotspots={assessment?.hotspots ?? selectedHazard?.model_assessment?.hotspots}
+              hotspots={mapHotspots}
               annotate={annotate}
               onZoomOut={closeZone}
               splitValue={split}

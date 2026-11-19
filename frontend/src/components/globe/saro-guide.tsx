@@ -39,8 +39,24 @@ type TourStep = { text: string; action?: SaroAction; tour?: TourKey; openSector?
 /** Recorrido de una zona: punto por punto en el mapa y parte por parte en el panel. */
 function stepsFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "en"): TourStep[] {
   const lines = scriptFor(zone, m, lang);
-  if (!zone || lang !== "es") return lines.map((text) => ({ text }));
+  if (!zone) return lines.map((text) => ({ text }));
   const a = m?.assessment;
+  if (lang === "en") {
+    const steps: TourStep[] = lines.slice(0, 1).map((text) => ({ text, tour: "now" }));
+    if (a?.hotspots.length) {
+      steps.push({ text: `I will walk through ${Math.min(a.hotspots.length, 4)} mapped analysis points one by one.`, action: { type: "hotspots", label: "Analysis point" } });
+      a.hotspots.slice(0, 4).forEach((hotspot, index) => steps.push({
+        text: `Point ${index + 1}: this is one of the locations with the fastest recent change.`,
+        action: { type: "point", index, label: `Point ${index + 1}`, sub: `${hotspot.value < 0 ? "−" : "+"}${Math.abs(hotspot.value).toFixed(1)} ${a.rate.unit.replace(/\/month$/, "")}` },
+      }));
+    } else {
+      const label = "Representative zone location";
+      steps.push({ text: "I am marking the location represented by this zone on the map. It is a reference point, not a separate satellite measurement.", action: { type: "hotspots", label, sub: "Reference location" } });
+      steps.push({ text: "This is the selected point. You can explore its surrounding terrain and the available layer on the map.", action: { type: "point", index: 0, label, sub: "Reference location" } });
+    }
+    steps.push(...lines.slice(1).map((text) => ({ text })));
+    return steps;
+  }
   const x = m?.extraction;
   const steps: TourStep[] = [];
   const legend = m?.extraction?.kind === "mining" ? "mining" : m?.change === "deformation" ? "deformation" : zone.kind === "flood" ? "flood" : "forest";
@@ -73,6 +89,13 @@ function stepsFor(zone: RiskZone | null, m: SiteManifest | null, lang: "es" | "e
       steps.push({ text, tour: "todo" });
     } else if (/^Y si ves una emergencia/.test(text)) steps.push({ text, tour: "call" });
     else steps.push({ text });
+  }
+  if (!a?.hotspots.length) {
+    const label = "Ubicación representativa de la zona";
+    steps.splice(Math.min(1, steps.length), 0,
+      { text: "Te señalo en el mapa la ubicación representativa de esta zona. Es un punto de referencia, no una medición satelital independiente.", action: { type: "hotspots", label, sub: "Punto de referencia" } },
+      { text: "Este es el punto seleccionado. Puedes explorar el terreno cercano y la capa disponible desde el mapa.", action: { type: "point", index: 0, label, sub: "Punto de referencia" } },
+    );
   }
   return steps;
 }
@@ -110,6 +133,26 @@ function stepsForHazard(point: HazardPoint, zone: RiskZone, lang: "es" | "en"): 
       text: es ? `Punto ${index + 1}: el modelo reporta un valor de ${number(hotspot.value)}. Es una señal exploratoria para revisión.` : `Point ${index + 1}: the model reports a value of ${number(hotspot.value)}. This is an exploratory signal for review.`,
       action: { type: "point", index, label: es ? `Punto ${index + 1}` : `Point ${index + 1}`, sub: number(hotspot.value) },
     }));
+  } else {
+    const representative = point.location_precision === "municipality_centroid" || point.location_precision === "geometry_centroid";
+    const label = es
+      ? representative ? "Ubicación representativa del registro" : "Ubicación del registro"
+      : representative ? "Representative record location" : "Record location";
+    const precision = es
+      ? representative ? "Centroide aproximado; no es la coordenada exacta del evento" : "Coordenada reportada por la fuente"
+      : representative ? "Approximate centroid; not the event's exact coordinate" : "Coordinate reported by the source";
+    lines.push({
+      text: es
+        ? `Ahora señalo en el mapa la ${representative ? "ubicación representativa" : "ubicación reportada"} de este grupo de registros. ${representative ? "Es un centroide y no debe interpretarse como el punto exacto de cada evento." : "La marca localiza el registro según la coordenada disponible en la fuente."}`
+        : `I am marking the ${representative ? "representative location" : "reported location"} of this record group on the map. ${representative ? "It is a centroid and should not be treated as each event's exact location." : "The marker locates the record using the coordinate available in its source."}`,
+      action: { type: "hotspots", label, sub: precision },
+      tour: "now",
+    });
+    lines.push({
+      text: es ? "Este es el punto seleccionado. Puedes comparar el terreno y consultar la capa disponible desde el mapa." : "This is the selected point. You can compare the terrain and inspect the available layer from the map.",
+      action: { type: "point", index: 0, label, sub: precision },
+      tour: "now",
+    });
   }
   const impacts = [
     point.affected > 0 ? `${number(point.affected)} ${es ? "personas reportadas" : "people reported"}` : "",
