@@ -82,6 +82,28 @@ function dateText(value: unknown, lang: Lang) {
   return new Date(value).toLocaleDateString(lang === "es" ? "es-CO" : "en-US", { dateStyle: "medium", timeZone: "UTC" });
 }
 
+function impactLabel(value: string, lang: Lang) {
+  const labels: Record<string, [string, string]> = {
+    families: ["Familias", "Families"], people: ["Personas", "People"],
+    damaged_homes: ["Viviendas dañadas", "Homes damaged"], destroyed_homes: ["Viviendas destruidas", "Homes destroyed"],
+    deaths: ["Fallecimientos reportados", "Reported deaths"], fatalities: ["Fallecimientos reportados", "Reported deaths"],
+  };
+  return labels[value] ? labels[value][lang === "es" ? 0 : 1] : value.replaceAll("_", " ");
+}
+
+function qualityLabel(value: unknown, lang: Lang) {
+  const labels: Record<string, [string, string]> = {
+    forecast_exploratory: ["Exploratorio", "Exploratory"],
+    insufficient_independent_targets: ["Pocos objetivos independientes para evaluar fiabilidad", "Too few independent targets to assess reliability"],
+    insufficient_backtest_origins: ["Backtest insuficiente", "Insufficient backtest"],
+    trend_does_not_beat_persistence: ["La tendencia no supera la referencia persistente", "Trend does not outperform persistence"],
+    provisional_candidate_requires_external_validation: ["Candidato provisional; requiere validación externa", "Provisional candidate; external validation required"],
+    not_calibrated: ["No calibrado", "Not calibrated"],
+  };
+  const key = String(value ?? "");
+  return labels[key]?.[lang === "es" ? 0 : 1] ?? (key || "—");
+}
+
 function friendlyError(error: unknown, lang: Lang) {
   const value = String(error instanceof Error ? error.message : error);
   const messages: Record<string, [string, string]> = {
@@ -357,9 +379,9 @@ export default function HazardBackendDetails({ point, lang }: Props) {
     } finally { setRunning(false); }
   }
 
-  return <section className="zone-trend backend-evidence" data-tour="backend-evidence">
-    <strong><Database size={13} />{es ? "Fuentes y datos disponibles" : "Sources and available data"}</strong>
-    {busy && <p className="zone-muted">{es ? "Consultando fuentes territoriales…" : "Loading territorial sources…"}</p>}
+  return <section className="zone-trend backend-evidence" data-tour="backend-evidence" aria-labelledby="backend-evidence-title" aria-busy={busy}>
+    <h3 id="backend-evidence-title"><Database size={13} />{es ? "Fuentes y datos disponibles" : "Sources and available data"}</h3>
+    {busy && <p className="zone-muted" role="status" aria-live="polite">{es ? "Consultando fuentes territoriales…" : "Loading territorial sources…"}</p>}
 
     {profileState === "found" && municipality && <div className="backend-evidence-block">
       <b>{String(municipality.municipality_name)}, {String(municipality.department_name)}</b>
@@ -390,7 +412,7 @@ export default function HazardBackendDetails({ point, lang }: Props) {
 
     <div className="backend-evidence-block">
       <b><Radar size={13} /> {es ? "Cobertura NISAR en este punto" : "NISAR coverage at this point"}</b>
-      {scenes?.summary && <p>{es ? "Catálogo consultado" : "Catalog queried"}: {numberText(scenes.summary.scenes, lang, 0)} {es ? "escenas" : "scenes"} · {numberText(scenes.summary.rasters, lang, 0)} {es ? "activos raster" : "raster assets"} · {matchedFrames.length} {es ? "marcos coincidentes" : "matching frames"}</p>}
+      {scenes?.summary && <p>{es ? "Catálogo NASA-ISRO NISAR" : "NASA-ISRO NISAR catalog"}: {numberText(scenes.summary.scenes, lang, 0)} {es ? "escenas" : "scenes"} · {numberText(scenes.summary.rasters, lang, 0)} {es ? "activos ráster" : "raster assets"} · {matchedFrames.length} {es ? "huellas coincidentes" : "matching footprints"}</p>}
       {matchedFrames.length ? matchedFrames.slice(0, 5).map((frame, index) => <p key={`${frame.aoi}-${frame.track}-${frame.frame}-${index}`}>
         {frame.aoi} · {frame.direction ?? "—"} {frame.track ?? ""}/{frame.frame ?? ""} · {frame.passes} {es ? "pasadas" : "passes"} · {dateText(frame.first, lang)} – {dateText(frame.last, lang)} · {frame.products.join(", ") || (es ? "sin producto declarado" : "no product listed")} · {frame.maturity.join("/") || (es ? "madurez no declarada" : "maturity not listed")} · {frame.granules.slice(0, 2).join(", ") || (es ? "sin granule listado" : "no granule listed")}
       </p>) : <p className="zone-muted">{scenes ? (es ? "El catálogo NISAR consultado no contiene una huella que cubra este punto." : "The current NISAR catalog has no footprint covering this point.") : (es ? "El catálogo NISAR no está disponible ahora." : "The NISAR catalog is unavailable right now.")}</p>}
@@ -398,7 +420,7 @@ export default function HazardBackendDetails({ point, lang }: Props) {
         {variableLabel(series.variable, es)} · {series.points.length} {es ? "resúmenes raster" : "raster summaries"} · {series.units ?? (es ? "unidad no declarada" : "unit not declared")}
       </small>)}
       {selectedSeries && <RasterSeriesChart series={selectedSeries} options={matchedSeries} lang={lang} onChange={setSeriesKey} />}
-      {!!matchedFrames.length && <small>{es ? "Una huella/activo confirma cobertura de catálogo, no que exista una medición LOS validada del evento." : "A catalog footprint/asset confirms coverage, not a validated LOS measurement for this event."}</small>}
+      {!!matchedFrames.length && <small>{es ? "La huella indica cobertura de catálogo en el área. No confirma una medición LOS del evento ni que el ráster esté procesado para esta ubicación." : "The footprint indicates catalog coverage in this area. It does not confirm an event-level LOS measurement or a raster processed for this location."}</small>}
     </div>
 
     <div className="backend-evidence-block">
@@ -425,7 +447,7 @@ export default function HazardBackendDetails({ point, lang }: Props) {
           <label>{es ? "Clave de acceso" : "Access key"}<input type="password" autoComplete="current-password" value={modelAccessKey} onChange={(event) => setModelAccessKey(event.target.value)} maxLength={256} required /></label>
           <button type="submit" disabled={unlocking || !modelAccessKey}>{unlocking ? (es ? "Validando…" : "Checking…") : (es ? "Desbloquear herramientas" : "Unlock tools")}</button>
         </form>
-        {modelAccessError && <p className="zone-muted">{modelAccessError}</p>}
+        {modelAccessError && <p className="zone-muted backend-error" role="alert">{modelAccessError}</p>}
       </>}
       {modelTools === "enabled" && <>
         <div className="backend-model-status">
@@ -480,12 +502,12 @@ export default function HazardBackendDetails({ point, lang }: Props) {
             </>}
             <button type="button" className="backend-secondary" onClick={() => void inspectCheckpoint()} disabled={checkingCheckpoint || !selectedLosSeries}>{checkingCheckpoint ? (es ? "Consultando…" : "Checking…") : (es ? "Consultar observaciones LOS" : "Check LOS observations")}</button>
             {checkpoint && <p className="backend-checkpoint">{numberText(checkpoint.observation_count, lang, 0)} {es ? "observaciones reales guardadas" : "stored real observations"} · {es ? "última fecha" : "latest date"}: {dateText(checkpoint.last_processed_date, lang)}</p>}
-            {checkpointError && <p className="zone-muted">{checkpointError}</p>}
+            {checkpointError && <p className="zone-muted backend-error" role="alert">{checkpointError}</p>}
           </>}
           <button type="submit" disabled={running || (action === "analysis" && (!modelCapabilities?.composite_ready || !selectedFrame || !supportedTracksForPoint.length)) || (action === "prediction" && !modelCapabilities?.unet_ready) || (action === "forecast" && !selectedLosSeries)}>{running ? (es ? "Procesando…" : "Processing…") : (es ? "Ejecutar en el backend" : "Run on backend")}</button>
         </form>
-        {formError && <p className="zone-muted">{formError}</p>}
-        {result && <ModelResult action={result.action} data={result.data} lang={lang} />}
+        {formError && <p className="zone-muted backend-error" role="alert">{formError}</p>}
+        {result && <div aria-live="polite" aria-atomic="true"><ModelResult action={result.action} data={result.data} lang={lang} /></div>}
         <button type="button" className="backend-secondary" onClick={() => void lockModelTools()}>{es ? "Bloquear herramientas" : "Lock tools"}</button>
       </>}
     </details>
@@ -540,7 +562,7 @@ function ModelResult({ action, data, lang }: { action: string; data: JsonRecord;
         <span>{es ? "Percentil histórico" : "Historical percentile"}<b>{numberText(data.impact_percentile, lang)}</b></span>
       </div>
       <MaskPreview value={data.anomaly_mask} title={es ? "Máscara exploratoria de anomalía" : "Exploratory anomaly mask"} />
-      {impacts && <div className="backend-impact-list">{Object.entries(impacts).map(([name, value]) => <span key={name}>{name.replaceAll("_", " ")} <b>{numberText(value, lang)}</b></span>)}</div>}
+      {impacts && <div className="backend-impact-list" role="group" aria-label={es ? "Contexto de impactos históricos" : "Historical impact context"}>{Object.entries(impacts).map(([name, value]) => <span key={name}>{impactLabel(name, lang)} <b>{numberText(value, lang)}</b></span>)}</div>}
       {typeof data.recommendation === "string" && <p>{data.recommendation}</p>}
       <small>{es ? "Priorización relativa para revisión; no es una probabilidad, alerta ni impacto medido del evento." : "Relative prioritization for review; not a probability, alert, or measured event impact."}</small>
     </div>;
@@ -590,7 +612,7 @@ function ModelResult({ action, data, lang }: { action: string; data: JsonRecord;
       <figcaption><span>{es ? "Observado" : "Observed"}</span><span>{es ? "Tendencia del backtest" : "Backtest trend"}</span></figcaption>
       <small>{es ? "Comparación de objetivos históricos del backtest; la última fecha no es una observación futura." : "Historical backtest targets; the latest date is not a future observation."}</small>
     </figure>}
-    <p>{es ? "Estado" : "Status"}: {String(data.status ?? "—")} · {es ? "intervalo de confianza" : "confidence interval"}: {String(quality?.confidence_interval_status ?? "—")} · {es ? "fiabilidad" : "reliability"}: {String(quality?.reliability_status ?? "—")}</p>
+    <p>{es ? "Estado" : "Status"}: {qualityLabel(data.status, lang)} · {es ? "intervalo de confianza" : "confidence interval"}: {qualityLabel(quality?.confidence_interval_status, lang)} · {es ? "evaluación del backtest" : "backtest assessment"}: {qualityLabel(quality?.reliability_status, lang)}</p>
     <small>{typeof quality?.reliability_note === "string" ? quality.reliability_note : ""}</small>
     <small>{es ? "Extrapolación de LOS con backtest; no es un pronóstico de deslizamiento ni una alerta operativa." : "LOS extrapolation with backtest; not a landslide forecast or operational alert."}</small>
   </div>;

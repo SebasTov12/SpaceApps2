@@ -3503,7 +3503,7 @@ html body .zone-map-help p{max-width:260px;margin:6px 0 0;color:#d5def0}
 
 /* Datos del backend en la ficha de una afectación: evidencia y operaciones separadas. */
 .backend-evidence{display:grid;gap:12px;min-width:0}
-.backend-evidence>strong{display:flex;align-items:center;gap:7px}
+.backend-evidence>h3{display:flex;align-items:center;gap:7px;margin:0;color:inherit;font:inherit;font-size:12px;font-weight:700;letter-spacing:.01em}
 .backend-evidence-block{min-width:0;padding:11px 12px;border:1px solid rgba(139,92,246,.2);border-radius:13px;background:linear-gradient(135deg,rgba(15,19,43,.68),rgba(16,14,38,.58))}
 .backend-evidence-block>b{display:flex;align-items:center;gap:6px;color:#e7e1f7;font-size:12px}
 .backend-evidence-block p{margin:7px 0 0;color:#cbd3e7;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
@@ -3519,7 +3519,7 @@ html body .zone-map-help p{max-width:260px;margin:6px 0 0;color:#d5def0}
 .backend-raster-series>div b{color:#d7c1ff;font-size:10px;text-align:center}
 .backend-raster-series>small{color:var(--saros-muted);font-size:9px;line-height:1.4}
 .backend-model-tools{min-width:0;padding:10px 12px;border:1px solid rgba(139,92,246,.28);border-radius:13px;background:rgba(12,13,32,.62)}
-.backend-model-tools>summary{display:flex;align-items:center;gap:7px;color:#c49aff;font-size:12px;font-weight:700;cursor:pointer;list-style:none}
+.backend-model-tools>summary{display:flex;align-items:center;gap:7px;min-height:40px;color:#c49aff;font-size:12px;font-weight:700;cursor:pointer;list-style:none}
 .backend-model-tools>summary::-webkit-details-marker{display:none}
 .backend-model-tools>summary::after{content:"+";margin-left:auto;font-size:17px;font-weight:400}
 .backend-model-tools[open]>summary::after{content:"−"}
@@ -3531,7 +3531,7 @@ html body .zone-map-help p{max-width:260px;margin:6px 0 0;color:#d5def0}
 .backend-model-tools input,.backend-model-tools select{width:100%;min-width:0;padding:8px 9px;border:1px solid rgba(139,92,246,.26);border-radius:8px;background:#0b1020;color:#f0edfa;font:inherit;box-sizing:border-box}
 .backend-model-tools input[type=file]{padding:6px;font-size:10px}
 .backend-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.backend-model-tools button{justify-self:start;min-height:34px;padding:7px 12px;border:1px solid rgba(139,92,246,.62);border-radius:9px;background:linear-gradient(120deg,#482079,#34256e);color:#fff;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+.backend-model-tools button{justify-self:start;min-height:40px;padding:8px 12px;border:1px solid rgba(139,92,246,.62);border-radius:9px;background:linear-gradient(120deg,#482079,#34256e);color:#fff;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
 .backend-model-tools button:disabled{opacity:.55;cursor:wait}
 .backend-model-tools button.backend-secondary{background:rgba(139,92,246,.1);color:#c9a7ff}
 .backend-checkpoint{padding:8px 9px;border-left:2px solid #5ef0ff;border-radius:0 8px 8px 0;background:rgba(94,240,255,.06);color:#d5e6f5;font-size:11px}
@@ -3556,7 +3556,33 @@ html body .zone-map-help p{max-width:260px;margin:6px 0 0;color:#d5def0}
 .backend-forecast-chart figcaption span::before{content:"";width:12px;height:2px;background:#5ef0ff}
 .backend-forecast-chart figcaption span+span::before{background:linear-gradient(90deg,#b178ff 60%,transparent 60%);background-size:5px 2px}
 .backend-forecast-chart small{color:var(--saros-muted);font-size:9px;line-height:1.4}
-@media(max-width:520px){.backend-form-grid{grid-template-columns:minmax(0,1fr)}.backend-result-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.backend-evidence-block{padding:9px}}
+.backend-evidence-block p,.backend-result-card p{overflow-wrap:anywhere}
+.backend-evidence-block small,.backend-result-card small{overflow-wrap:anywhere}
+.backend-raster-series select,.backend-model-tools input,.backend-model-tools select,.backend-model-tools button,.backend-model-tools summary{touch-action:manipulation}
+.backend-model-tools :focus-visible,.backend-raster-series :focus-visible{outline:2px solid #5ef0ff;outline-offset:2px}
+.backend-model-tools input:focus-visible,.backend-model-tools select:focus-visible,.backend-raster-series select:focus-visible{border-color:#a879ff;box-shadow:0 0 0 3px rgba(168,121,255,.17)}
+.backend-error{padding:8px 10px;border:1px solid rgba(255,122,92,.3);border-radius:9px;background:rgba(255,122,92,.08);color:#ffd8cc!important}
+@media(max-width:600px){
+  .backend-evidence{gap:9px}
+  .backend-evidence-block{padding:9px 10px}
+  .backend-evidence-block p{line-height:1.55}
+  .backend-model-tools form{gap:9px}
+  .backend-model-tools label{font-size:12px}
+  .backend-model-tools input,.backend-model-tools select,.backend-raster-series select{min-height:42px;font-size:12px}
+  .backend-model-tools button{width:100%;justify-self:stretch}
+  .backend-model-tools button.backend-secondary{width:auto}
+  .backend-form-grid{grid-template-columns:minmax(0,1fr)}
+  .backend-result-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .backend-result-metrics span{min-width:0;overflow-wrap:anywhere}
+  .backend-raster-series{padding:8px}
+  .backend-raster-series svg{height:100px}
+  .backend-raster-series>div{flex-wrap:wrap;font-size:10px}
+  .backend-raster-series>div b{flex:1 1 100%;order:3}
+  .backend-forecast-chart{padding:8px}
+  .backend-forecast-chart svg{height:108px}
+  .backend-forecast-chart figcaption{flex-wrap:wrap;gap:6px 12px}
+}
+@media(prefers-reduced-motion:reduce){.backend-model-tools *,.backend-raster-series *{scroll-behavior:auto!important;transition-duration:.01ms!important}}
 
 /* Móvil: ficha cerrada flotante y compacta sobre un mapa que ocupa todo el escenario. */
 @media(max-width:900px){
