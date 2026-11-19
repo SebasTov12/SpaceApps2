@@ -132,8 +132,10 @@ export default function HeroOverlay({ progress, mobileMode }: { progress: Motion
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   useEffect(() => {
-    if (open) setTimeout(() => input.current?.focus(), 50);
-  }, [open]);
+    if (!open || mobileMode.get()) return;
+    const timer = window.setTimeout(() => input.current?.focus(), 50);
+    return () => window.clearTimeout(timer);
+  }, [open, mobileMode]);
 
   const results = useMemo(() => {
     const q = fold(deferredQuery.trim());

@@ -914,14 +914,14 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
         }
         if ("speechSynthesis" in window) {
           const synthesis = window.speechSynthesis;
-          synthesis.resume();
-          if (synthesis.speaking || synthesis.pending || synthesis.paused) setSpeaking(true);
-          window.setTimeout(() => {
-            if (!playingRef.current || !nativeSpeechRef.current) return;
-            if (synthesis.paused || (!synthesis.speaking && !synthesis.pending)) {
-              restartSpeechRef.current?.(speechProgressRef.current.n);
-            }
-          }, 240);
+          if (nativeSpeechRef.current && (synthesis.paused || (!synthesis.speaking && !synthesis.pending))) {
+            // Chrome/Edge a veces deja la utterance pausada sin reanudarla.
+            // Reiniciamos la frase desde el último límite de palabra sincronizado.
+            restartSpeechRef.current?.(speechProgressRef.current.n);
+          } else {
+            synthesis.resume();
+          }
+          if (synthesis.speaking || synthesis.pending || audio.current) setSpeaking(true);
         }
       }
     } else {

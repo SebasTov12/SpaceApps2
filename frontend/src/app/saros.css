@@ -3418,11 +3418,7 @@ html body .zone-stage-map:has(.saro.in-zone.is-chat-open) .zone-explore{transfor
 
 /* Ficha móvil plegable: deja el mapa amplio y conserva controles junto a su borde visible. */
 @media(max-width:900px){
-  html body .zone-stage-map .nisar-map{
-    inset:0 0 52px 0;
-    transition:inset .55s cubic-bezier(.22,1,.36,1);
-  }
-  html body .zone-stage-map[data-sheet-open="true"] .nisar-map{inset:0 0 50dvh 0}
+  html body .zone-stage-map .nisar-map{inset:0}
   html body .zone-panel{
     top:auto;right:10px;bottom:0;left:10px;width:auto;max-width:calc(100vw - 20px);
     height:52px;min-height:52px;max-height:52px;padding:4px 12px 2px;
@@ -3485,8 +3481,7 @@ html body .saro .saru-zone-orbit-plane .orbit-transcript{top:-9px;left:50%;margi
 
 /* Móvil: ficha cerrada flotante y compacta sobre un mapa que ocupa todo el escenario. */
 @media(max-width:900px){
-  html body .zone-stage-map .nisar-map{inset:0;transition:inset .5s cubic-bezier(.22,1,.36,1)}
-  html body .zone-stage-map[data-sheet-open="true"] .nisar-map{inset:0 0 50dvh 0}
+  html body .zone-stage-map .nisar-map{inset:0}
   html body .zone-panel:not(.is-open){
     left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom,0px));width:min(144px,calc(100vw - 32px));max-width:calc(100vw - 32px);
     height:48px;min-height:48px;max-height:48px;margin-inline:auto;padding:2px 8px;border-radius:999px;
