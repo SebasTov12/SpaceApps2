@@ -2482,6 +2482,9 @@ html body .hero-latest {
   color: var(--saros-analysis);
   filter: drop-shadow(0 0 5px rgba(139, 92, 246, .72))
 }
+html body .zone-back-floating{position:absolute;z-index:8;top:16px;left:16px;display:grid;place-items:center;width:42px;height:42px;padding:0;border:1px solid rgba(104,25,147,.62);border-radius:999px;background:linear-gradient(145deg,rgba(139,92,246,.3),rgba(7,11,24,.9));color:#dfe8fb;backdrop-filter:blur(12px);box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 16px rgba(104,25,147,.24);cursor:pointer;transition:background .25s,color .25s,transform .25s}
+html body .zone-back-floating:hover{background:rgba(104,25,147,.42);color:#fff;transform:translateX(-2px)}
+html body .zone-back-floating svg{color:var(--saros-analysis);filter:drop-shadow(0 0 5px rgba(139,92,246,.72))}
 
 /* ---------- Cómo afectaría a la región ---------- */
 .zone-sectors {
@@ -3371,6 +3374,9 @@ html body .saro .saru-avatar-anchor .saro-avatar{z-index:1}
 html body .saro.in-zone .zone-transcript-bar{opacity:1}
 html body .zone-stage-map .zone-explore{transition:transform .55s cubic-bezier(.22,1,.36,1)}
 html body .zone-stage-map:has(.saro.in-zone.is-chat-open) .zone-explore{transform:translateY(-96px)}
+html body .zone-area-note{position:absolute;z-index:4;left:12px;bottom:14px;display:flex;align-items:center;gap:6px;max-width:min(330px,calc(100% - 150px));padding:7px 10px;border:1px solid rgba(94,240,255,.24);border-left:2px solid rgba(167,139,250,.86);border-radius:10px;background:rgba(7,12,27,.78);color:#c6d4ea;font-size:10px;line-height:1.35;backdrop-filter:blur(8px);pointer-events:none}
+html body .zone-area-note svg{flex:none;color:#a879ff}
+html body .zone-point-note{margin:7px 0 0;padding:8px 10px;border-left:2px solid #a879ff;border-radius:0 9px 9px 0;background:rgba(139,92,246,.08);line-height:1.45}
 @media(min-width:901px){html body .saro:not(.in-zone) .saru-zone-orbit{width:136px;height:136px;margin:-68px 0 0 -68px}}
 @media(max-width:900px){html body .zone-stage-map .zone-saru-slot{top:82px;left:82px;width:min(260px,calc(100% - 94px));min-height:72px}html body .zone-saru-slot .saru-avatar{width:62px;height:72px}html body .zone-saru-slot .saru-caption{max-height:min(200px,30vh)}html body .zone-saru-slot .saru-caption .saru-text{max-height:126px}html body .zone-saru-slot .saru-ask,html body .zone-saru-slot .saru-ask.in-zone{width:100%;max-width:100%}html body .saro:not(.in-zone) .saru-zone-orbit{left:50%;width:108px;height:108px;margin:-54px 0 0 -54px}}
 @media(prefers-reduced-motion:reduce){html body .saro .saru-zone-orbit-plane,html body .saro .saru-zone-orbit-plane button svg{animation:none}}
@@ -3437,7 +3443,7 @@ html body .zone-stage-map:has(.saro.in-zone.is-chat-open) .zone-explore{transfor
     width:100%;height:40px;min-height:40px;margin:0 0 2px;padding:0;border:0;border-radius:12px;
     background:linear-gradient(180deg,rgba(19,17,42,.99),rgba(14,15,34,.94));color:#bd8cff;cursor:pointer;touch-action:manipulation;
   }
-  html body .zone-panel .zone-grab>span{width:38px;height:4px;border-radius:999px;background:rgba(225,218,255,.42);box-shadow:0 0 10px rgba(167,139,250,.25)}
+  html body .zone-panel .zone-grab>span{width:38px;height:4px;border-radius:999px;background:linear-gradient(90deg,#8b5cf6,#5ef0ff);box-shadow:0 0 10px rgba(139,92,246,.42)}
   html body .zone-panel .zone-grab svg{width:14px;height:14px;filter:drop-shadow(0 0 6px rgba(167,139,250,.55))}
   html body .zone-panel.is-open .zone-grab{margin-bottom:8px;border-bottom:1px solid rgba(167,139,250,.12)}
   html body .zone-panel .zone-title{overflow-wrap:anywhere;word-break:normal}
@@ -3493,7 +3499,7 @@ html body .saro .saru-zone-orbit-plane .orbit-transcript{top:-9px;left:50%;margi
   html body .zone-panel.is-open{left:10px;right:10px;bottom:0;width:auto;max-width:calc(100vw - 20px);height:50dvh;max-height:50dvh;padding:4px 14px max(14px,env(safe-area-inset-bottom,0px));border-radius:18px 18px 0 0}
   html body .zone-panel.is-open .zone-grab{height:38px;min-height:38px;margin-bottom:6px;border-bottom:1px solid rgba(167,139,250,.1)}
   html body .zone-stage-map .zone-saru-slot{
-    top:max(54px,calc(env(safe-area-inset-top,0px) + 44px));left:max(44px,calc(env(safe-area-inset-left,0px) + 34px));
+    top:max(68px,calc(env(safe-area-inset-top,0px) + 58px));left:max(44px,calc(env(safe-area-inset-left,0px) + 34px));
   }
   /* El trío conserva el mismo radio en las tres posiciones; el icono superior sigue el aro. */
   html body .saro.in-zone .saru-zone-orbit-plane .orbit-transcript{top:-9px}

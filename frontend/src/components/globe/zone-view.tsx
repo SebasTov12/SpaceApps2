@@ -32,6 +32,8 @@ const copy = {
     noData: "Zona de interés: aún sin capas NISAR procesadas. La vista muestra la imagen satelital del lugar.",
     noDataNow: "Sin serie de datos todavía para calcular la tendencia en esta zona.",
     withData: "Zonas con datos", clickMap: "Toca el mapa para ver la evolución de un punto",
+    noPointSeries: "No hay una serie temporal disponible en esta coordenada. El marcador solo indica el lugar seleccionado.",
+    areaNote: "Área de la escena/capa · no es el límite exacto de la afectación",
     asf: "Escenas NISAR reales en ASF", demo: "DEMO", real: "NISAR", accel: "Aceleración detectada",
     trend: "Tendencia", early: "Ritmo inicial", recent: "Ritmo reciente", p30: "Proyección 30 días", p90: "Proyección 90 días",
     compare: "Antes · después", opacity: "Opacidad de la capa", loading: "Acercando a la zona…",
@@ -54,6 +56,8 @@ const copy = {
     noData: "Zone of interest: no NISAR layers processed yet. The view shows the satellite image of the place.",
     noDataNow: "No data series yet to compute a trend for this zone.",
     withData: "Zones with data", clickMap: "Tap the map to see a point over time",
+    noPointSeries: "No time series is available at these coordinates. The marker only shows the selected location.",
+    areaNote: "Scene/layer footprint · not the exact event boundary",
     asf: "Real NISAR scenes at ASF", demo: "DEMO", real: "NISAR", accel: "Acceleration detected",
     trend: "Trend", early: "Early rate", recent: "Recent rate", p30: "30-day projection", p90: "90-day projection",
     compare: "Before · after", opacity: "Layer opacity", loading: "Zooming into the zone…",
@@ -447,6 +451,8 @@ export default function ZoneView() {
               splitValue={split}
               padding={padding}
             />
+            <button type="button" className="zone-back-floating" onClick={closeZone} aria-label={c.back} title={c.back}><ArrowLeft size={18} /></button>
+            <div className="zone-area-note" role="note"><Info size={12} />{c.areaNote}</div>
             <div className="zone-saru-slot" aria-label={lang === "es" ? "Saru, guía de la ubicación" : "Saru, location guide"} />
             <AnimatePresence>
               {explain && active && legend && (
@@ -582,6 +588,8 @@ export default function ZoneView() {
                             <TimeSeriesChart dates={active.dates} values={pointSeries} unit={unit} activeIndex={dateIndex}
                               onSelect={(i) => { setDateIndex(i); if (mode === "change") setMode("single"); }} />
                           )}
+                          {pick && !pointSeries && <p className="zone-muted zone-point-note">{c.noPointSeries}</p>}
+                          {pick && pointSeries && (currentValue === null || currentValue === undefined) && <p className="zone-muted zone-point-note">{c.noPointSeries}</p>}
                         </div>
 
                         {assessment && (

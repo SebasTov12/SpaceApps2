@@ -104,7 +104,7 @@ export default function LanguageModal({ progress, mobileMode }: { progress: Moti
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder="Buscar idioma / Search language..."
                   aria-label={lang === "en" ? "Search language" : "Buscar idioma"}
-                  autoFocus
+                  autoFocus={!mobileMode.get()}
                 />
                 {filter && (
                   <button type="button" onClick={() => setFilter("")} aria-label={lang === "en" ? "Clear" : "Limpiar"}>
