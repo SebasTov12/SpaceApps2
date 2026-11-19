@@ -7,7 +7,8 @@ El proyecto Compose `spaceapps2` empaqueta los servicios de SAROS: frontend Next
 1. Copia `.env.example` a `.env` en la raíz del repositorio.
 2. En Orivia conserva en `SAROS_POSTGRES_PASSWORD` exactamente la contraseña configurada en el contenedor PostgreSQL actual. El volumen `spaceapps2_postgres_data` ya contiene sus datos.
 3. Genera `SAROS_PREDICTION_TOKEN` con un valor aleatorio largo.
-4. Configura un registro DNS `A` para `saros.tobaru.xyz` apuntando a la IP pública del servidor. Si Cloudflare tiene el proxy activo, configura su modo SSL/TLS como **Full (strict)**.
+4. Mantén `SAROS_ENABLE_MODEL_ACTIONS=false` para dejar apagado el cómputo desde la interfaz. Si lo habilitas, configura en el `.env` privado `SAROS_MODEL_TOOLS_ACCESS_KEY` (al menos 24 caracteres aleatorios) y `SAROS_MODEL_TOOLS_SESSION_SECRET` (al menos 32), y luego cambia el flag a `true`. No reutilices el token Bearer como clave de acceso.
+5. Configura un registro DNS `A` para `saros.tobaru.xyz` apuntando a la IP pública del servidor. Si Cloudflare tiene el proxy activo, configura su modo SSL/TLS como **Full (strict)**.
 
 No levantes otro PostgreSQL sobre `spaceapps2_postgres_data` mientras `spaceapps2-postgres` esté ejecutándose. Para migrar el servicio manual al Compose, conserva el volumen, detén y retira solo el contenedor antiguo, y luego inicia el proyecto.
 

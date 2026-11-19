@@ -182,7 +182,7 @@ def assistant_data_context(selected_point_id: str | None = None) -> dict[str, ob
             context["selected_hazard_point"] = {
                 key: selected.get(key) for key in (
                     "id", "kind", "place", "lat", "lon", "n", "first", "last", "type",
-                    "sources", "location_precision", "impact_reports", "affected", "homes",
+                    "divipola", "divipola_conflict", "sources", "location_precision", "impact_reports", "affected", "homes",
                     "events", "model_assessment", "model_context",
                 )
             }
@@ -202,6 +202,86 @@ def assistant_data_context(selected_point_id: str | None = None) -> dict[str, ob
                 "historical_model_context_for_municipality": bool(selected.get("model_context")),
                 "forecast_for_this_point": False,
             }
+            # Add official territorial context for Saru from the same database-backed
+            # sources used by the location panel. These are municipal aggregates, not
+            # measurements of damage caused by the selected event.
+            place_parts = [part.strip() for part in str(selected.get("place") or "").split(",", 1)]
+            selected_model_context = selected.get("model_context")
+            if not isinstance(selected_model_context, dict):
+                selected_model_context = {}
+            municipality_name = str(selected_model_context.get("municipality") or (place_parts[0] if place_parts else ""))
+            department_name = str(selected_model_context.get("department") or (place_parts[1] if len(place_parts) > 1 else ""))
+            divipola = str(selected.get("divipola") or "")
+            territorial_context: dict[str, object] = {
+                "status": "ambiguous" if selected.get("divipola_conflict") else "unavailable", "municipality": municipality_name,
+                "department": department_name, "divipola": divipola or None,
+                "municipal_profile": None, "agricultural_production": [],
+                "interpretation": "Official municipal aggregates provide context only; they are not event-specific exposure or loss measurements.",
+            }
+            try:
+                with connect_db() as connection:
+                    profile = None
+                    if re.fullmatch(r"\d{5}", divipola):
+                        profile = connection.execute(
+                            """
+                            SELECT divipola, municipality_name, department_name, census_vintage,
+                                   population_total, households_total, dwellings_total,
+                                   housing_deficit_percent, multidimensional_poverty_index,
+                                   health_facility_count, school_site_count
+                              FROM territorial.municipal_profiles WHERE divipola = %s
+                            """, (divipola,),
+                        ).fetchone()
+                    elif not selected.get("divipola_conflict") and municipality_name and department_name:
+                        profile = connection.execute(
+                            """
+                            SELECT divipola, municipality_name, department_name, census_vintage,
+                                   population_total, households_total, dwellings_total,
+                                   housing_deficit_percent, multidimensional_poverty_index,
+                                   health_facility_count, school_site_count
+                              FROM territorial.municipal_profiles
+                             WHERE lower(municipality_name) = lower(%s)
+                               AND lower(department_name) = lower(%s)
+                             LIMIT 1
+                            """, (municipality_name, department_name),
+                        ).fetchone()
+                    if profile:
+                        territorial_context["divipola"] = profile[0]
+                        territorial_context["municipal_profile"] = {
+                            "municipality": profile[1], "department": profile[2], "census_vintage": profile[3],
+                            "population_total": float(profile[4]) if profile[4] is not None else None,
+                            "households_total": float(profile[5]) if profile[5] is not None else None,
+                            "dwellings_total": float(profile[6]) if profile[6] is not None else None,
+                            "housing_deficit_percent": float(profile[7]) if profile[7] is not None else None,
+                            "multidimensional_poverty_index": float(profile[8]) if profile[8] is not None else None,
+                            "health_facility_count": profile[9], "school_site_count": profile[10],
+                        }
+                        territorial_context["status"] = "found"
+                    resolved_code = str(territorial_context.get("divipola") or "")
+                    if re.fullmatch(r"\d{5}", resolved_code):
+                        agricultural_rows = connection.execute(
+                            """
+                            SELECT year, period, crop_name, area_harvested_ha,
+                                   production_tonnes, yield_tonnes_per_ha
+                              FROM territorial.agricultural_production
+                             WHERE divipola = %s
+                             ORDER BY year DESC, period DESC, crop_name
+                             LIMIT 5
+                            """, (resolved_code,),
+                        ).fetchall()
+                        territorial_context["agricultural_production"] = [
+                            {
+                                "year": item[0], "period": item[1], "crop": item[2],
+                                "area_harvested_ha": float(item[3]) if item[3] is not None else None,
+                                "production_tonnes": float(item[4]) if item[4] is not None else None,
+                                "yield_tonnes_per_ha": float(item[5]) if item[5] is not None else None,
+                            }
+                            for item in agricultural_rows
+                        ]
+            except psycopg.Error:
+                # The assistant remains usable if an optional territorial migration
+                # has not yet been applied or its source data are temporarily offline.
+                pass
+            context["selected_territorial_context"] = territorial_context
     return context
 
 
@@ -634,10 +714,22 @@ def build_hazard_points() -> dict[str, object]:
         kind = hazard_kind(record_type, event_type)
         group = groups.setdefault((key_place, kind), {
             "lat": 0.0, "lon": 0.0, "kind": kind, "n": 0, "first": None, "last": None,
-            "muni": place_muni, "dept": place_dept, "deaths": 0.0, "affected": 0.0, "homes": 0.0,
+            "muni": place_muni, "dept": place_dept,
+            "divipola": "".join(ch for ch in str(code or "") if ch.isdigit()).zfill(5) if code else "",
+            "divipola_conflict": False,
+            "deaths": 0.0, "affected": 0.0, "homes": 0.0,
             "sources": set(), "types": {}, "events": [], "impact_reports": 0,
             "location_precision": location_precision,
         })
+        normalized_code = "".join(ch for ch in str(code or "") if ch.isdigit())
+        normalized_code = normalized_code.zfill(5) if normalized_code else ""
+        if normalized_code and not group["divipola_conflict"] and not group["divipola"]:
+            group["divipola"] = normalized_code
+        elif normalized_code and group["divipola"] != normalized_code:
+            # Do not attach territorial context from one municipality to a cluster
+            # containing records with conflicting DIVIPOLA codes.
+            group["divipola"] = ""
+            group["divipola_conflict"] = True
         n = int(group["n"])
         group["lat"] = (float(group["lat"]) * n + lonlat[1]) / (n + 1)
         group["lon"] = (float(group["lon"]) * n + lonlat[0]) / (n + 1)
@@ -680,6 +772,8 @@ def build_hazard_points() -> dict[str, object]:
             "lat": round(float(group["lat"]), 4), "lon": round(float(group["lon"]), 4),
             "kind": group["kind"], "n": group["n"], "first": group["first"], "last": group["last"],
             "place": ", ".join(str(v).title() for v in (group["muni"], group["dept"]) if v),
+            "divipola": str(group.get("divipola") or "") or None,
+            "divipola_conflict": bool(group.get("divipola_conflict")),
             "deaths": int(group["deaths"]), "affected": int(group["affected"]), "homes": int(group["homes"]),
             "type": types[0][0].capitalize() if types else "", "sources": sorted(group["sources"]),
             "location_precision": group["location_precision"], "impact_reports": group["impact_reports"],
@@ -981,6 +1075,44 @@ def manifest():
         return jsonify({"error": "dataset_manifest_unavailable"}), 503
 
 
+@app.get("/api/v1/models/status")
+def model_service_status():
+    """Expose model capabilities without leaking internal paths or credentials."""
+    try:
+        with urllib.request.urlopen(f"{MODEL_URL}/health", timeout=4) as response:
+            payload = json.loads(response.read())
+        if not isinstance(payload, dict):
+            raise ValueError("invalid_model_health_payload")
+        supported_tracks = payload.get("supported_tracks", [])
+        if not isinstance(supported_tracks, list):
+            supported_tracks = []
+        return jsonify({
+            "service_ready": payload.get("status") == "ready",
+            "composite_ready": bool(payload.get("composite_model_loaded")),
+            "unet_ready": bool(payload.get("legacy_supervised_unet_loaded")),
+            "model_version": payload.get("model_version"),
+            "supported_tracks": [track for track in supported_tracks if isinstance(track, str)],
+        })
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read()).get("detail", {})
+        except (json.JSONDecodeError, UnicodeDecodeError, AttributeError):
+            detail = {}
+        return jsonify({
+            "service_ready": False,
+            "composite_ready": False,
+            "unet_ready": False,
+            "model_version": None,
+            "supported_tracks": [],
+            "status": detail.get("status") if isinstance(detail, dict) else None,
+        }), 200
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, ValueError):
+        return jsonify({
+            "service_ready": False, "composite_ready": False,
+            "unet_ready": False, "model_version": None, "supported_tracks": [],
+        }), 200
+
+
 @app.get("/api/v1/territorial/municipalities")
 def territorial_municipalities():
     """Return DANE DIVIPOLA municipality exposure profiles as a GeoJSON layer."""
@@ -1277,7 +1409,9 @@ def assistant_chat():
             "qué sí hay (por ejemplo, registros reales UNGRD/SGC o contexto histórico municipal). Nunca inventes movimiento, fechas, probabilidades, "
             "daños, personas afectadas, recomendaciones oficiales ni rutas seguras. Usa selected_hazard_point "
             "si existe para responder sobre el punto pulsado; sus eventos y cifras son reportes históricos y "
-            "model_context es solo una línea base histórica municipal, nunca un diagnóstico actual. Una evaluación SAROS es "
+            "model_context es solo una línea base histórica municipal, nunca un diagnóstico actual. Usa selected_territorial_context "
+            "cuando exista para mencionar población, infraestructura o producción agrícola como contexto municipal agregado, "
+            "sin atribuirlo al evento. Una evaluación SAROS es "
             "priorización exploratoria; las cifras de impacto son contexto histórico municipal, no daños causados "
             "por esa escena ni pérdidas futuras. Solo menciona un pronóstico si existe un resultado de pronóstico "
             "guardado en el contexto. NISAR no predice terremotos. No muestres el indicador de fallecimientos. "
@@ -1327,7 +1461,8 @@ def assistant_chat():
                         "hint": "Apply pipeline/sql/008_assistant_interactions.sql first."}), 503
     return jsonify({"answer": answer, "model": GROQ_MODEL, "interaction_id": interaction_id,
                     "context_sources": ["nisar.observations", "nisar.forecasts", "hazards.records",
-                                        "analysis.composite_assessments"]})
+                                        "analysis.composite_assessments", "territorial.municipal_profiles",
+                                        "territorial.agricultural_production"]})
 
 
 @app.post("/api/v1/nisar/observations")
@@ -1414,6 +1549,61 @@ def nisar_observation_checkpoint():
         })
     except psycopg.Error:
         return jsonify({"error": "nisar_checkpoint_unavailable", "hint": "Apply pipeline/sql/004_nisar_forecast.sql first."}), 503
+
+
+@app.get("/api/v1/nisar/observations/series")
+def nisar_observation_series():
+    """List real LOS series that meet the caller's minimum count and validity threshold."""
+    if not PREDICTION_TOKEN:
+        return jsonify({"error": "nisar_series_not_configured"}), 503
+    if not has_prediction_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    aoi_ids = [value.strip() for value in request.args.getlist("aoi_id") if value.strip()]
+    if len(aoi_ids) > 50 or any(len(value) > 120 for value in aoi_ids):
+        return jsonify({"error": "invalid_aoi_id"}), 400
+    try:
+        min_valid_fraction = float(request.args.get("min_valid_fraction", "0.5"))
+        min_observations = int(request.args.get("min_observations", "5"))
+        if not 0 <= min_valid_fraction <= 1 or not 3 <= min_observations <= 1000:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid_series_quality_threshold"}), 400
+    try:
+        with connect_db() as connection:
+            rows = connection.execute(
+                """
+                SELECT aoi_id, stack_id, processing_version,
+                       count(*) AS total_observations,
+                       count(*) FILTER (WHERE valid_fraction >= %s) AS valid_observations,
+                       min(observation_date) FILTER (WHERE valid_fraction >= %s) AS first_valid_date,
+                       max(observation_date) FILTER (WHERE valid_fraction >= %s) AS last_valid_date,
+                       max(valid_fraction) AS best_valid_fraction
+                  FROM nisar.observations
+                 WHERE data_mode = 'real' AND (cardinality(%s::text[]) = 0 OR aoi_id = ANY(%s::text[]))
+                 GROUP BY aoi_id, stack_id, processing_version
+                HAVING count(*) FILTER (WHERE valid_fraction >= %s) >= %s
+                 ORDER BY last_valid_date DESC, valid_observations DESC, aoi_id, stack_id
+                 LIMIT 250
+                """,
+                (min_valid_fraction, min_valid_fraction, min_valid_fraction,
+                 aoi_ids, aoi_ids, min_valid_fraction, min_observations),
+            ).fetchall()
+        return jsonify({
+            "data_mode": "real", "min_valid_fraction": min_valid_fraction,
+            "min_observations": min_observations, "count": len(rows),
+            "series": [
+                {
+                    "aoi_id": row[0], "stack_id": row[1], "processing_version": row[2],
+                    "observation_count": row[3], "valid_observation_count": row[4],
+                    "first_valid_date": row[5].isoformat() if row[5] else None,
+                    "last_valid_date": row[6].isoformat() if row[6] else None,
+                    "best_valid_fraction": row[7],
+                }
+                for row in rows
+            ],
+        })
+    except psycopg.Error:
+        return jsonify({"error": "nisar_series_unavailable", "hint": "Apply pipeline/sql/004_nisar_forecast.sql first."}), 503
 
 
 @app.post("/api/v1/nisar/forecasts/run")

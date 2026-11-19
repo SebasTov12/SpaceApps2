@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import TimeSeriesChart from "@/components/time-series-chart";
 import TerritorialImpact from "./territorial-impact";
+import HazardBackendDetails from "./hazard-backend-details";
 import ZoneSimple from "./zone-simple";
 import { HAZARD_POINT_SELECT, hazardPointId, loadHazardPoints, pointCountry, type HazardPoint } from "@/lib/hazard-points";
 import { POINT_EVENT, ZONE_CHAT_OPEN_EVENT, ZONE_DETAILS_OPEN_EVENT } from "./saro-guide";
@@ -567,7 +568,54 @@ export default function ZoneView() {
                   />
                 ) : (
                   <div className="zone-analysis">
-                    {!active ? <p className="zone-muted">{siteId ? c.loading : c.noDataNow}</p> : active.source.mode === "demo" ? <p className="zone-nodata">{lang === "es" ? "Esta serie y sus capas son DEMO; no se muestran como mediciones ni predicciones reales." : "This series and its layers are DEMO; they are not presented as real measurements or predictions."}</p> : (
+                    {!active && selectedHazard ? (
+                      <div className="hazard-analysis" data-tour="records">
+                        <div className="zone-trend">
+                          <strong><Database size={13} /> {lang === "es" ? "Análisis del registro histórico" : "Historical record analysis"}</strong>
+                          <p className="zone-muted">{lang === "es"
+                            ? `Resumen de ${selectedHazard.n.toLocaleString("es-CO")} reportes agrupados por ubicación y tipo. Periodo: ${selectedHazard.first ?? "sin fecha inicial"} – ${selectedHazard.last ?? "sin fecha final"}.`
+                            : `Summary of ${selectedHazard.n.toLocaleString("en-US")} reports grouped by location and type. Period: ${selectedHazard.first ?? "no start date"} – ${selectedHazard.last ?? "no end date"}.`}</p>
+                          <dl className="hazard-analysis-metrics">
+                            <div><dt>{lang === "es" ? "Personas reportadas" : "People reported"}</dt><dd>{selectedHazard.affected.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</dd></div>
+                            <div><dt>{lang === "es" ? "Viviendas reportadas" : "Homes reported"}</dt><dd>{selectedHazard.homes.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</dd></div>
+                            <div><dt>{lang === "es" ? "Fallecimientos reportados" : "Deaths reported"}</dt><dd>{selectedHazard.deaths.toLocaleString(lang === "es" ? "es-CO" : "en-US")}</dd></div>
+                          </dl>
+                          <div className="hazard-analysis-sources"><span>{lang === "es" ? "Fuentes" : "Sources"}</span>{selectedHazard.sources.map((source) => <i key={source}>{source}</i>)}</div>
+                        </div>
+
+                        {selectedHazard.events?.length ? <div className="zone-trend" data-tour="history">
+                          <strong><TrendingUp size={13} /> {lang === "es" ? "Reportes recientes disponibles" : "Recent available reports"}</strong>
+                          <div className="hazard-analysis-chart" role="img" aria-label={lang === "es" ? "Personas afectadas reportadas en los reportes recientes disponibles" : "People reported affected in recent available reports"}>
+                            {selectedHazard.events.filter((event) => event.date).slice(0, 5).map((event, index) => {
+                              const maxAffected = Math.max(1, ...selectedHazard.events!.map((item) => item.affected ?? 0));
+                              return <div className="hazard-analysis-event" key={`${event.date}-${index}`}>
+                                <time>{event.date}</time><span>{event.type}</span>
+                                {event.source && <small>{event.source}</small>}
+                                {event.affected !== null && <><div className="hazard-analysis-bar"><i style={{ width: `${Math.max(3, (event.affected / maxAffected) * 100)}%` }} /></div><small>{event.affected.toLocaleString(lang === "es" ? "es-CO" : "en-US")} {lang === "es" ? "personas reportadas" : "people reported"}</small></>}
+                              </div>;
+                            })}</div>
+                          <p className="zone-muted">{lang === "es" ? "El backend entrega hasta cinco reportes recientes de este grupo; no representan necesariamente todos los eventos del periodo." : "The backend returns up to five recent reports in this group; they may not represent every event in the period."}</p>
+                        </div> : null}
+
+                        {selectedHazard.model_context ? <div className="zone-trend" data-tour="model">
+                          <strong><Sparkles size={13} /> {lang === "es" ? "Contexto histórico municipal" : "Municipal historical context"}</strong>
+                          {Object.entries(selectedHazard.model_context.estimated_historical_impacts).map(([key, value]) => <p key={key}>{key.replaceAll("_", " ")}: <b>{Number(value).toLocaleString(lang === "es" ? "es-CO" : "en-US", { maximumFractionDigits: 1 })}</b></p>)}
+                          <p className="zone-muted">{selectedHazard.model_context.interpretation || (lang === "es" ? "Estimación agregada del historial municipal; no es el impacto de este evento ni una evaluación de riesgo actual." : "Aggregated municipal history estimate; not this event's impact or a current risk assessment.")}</p>
+                        </div> : null}
+
+                        {selectedHazard.model_assessment ? <div className="zone-trend" data-tour="model">
+                          <strong><Radar size={13} /> {lang === "es" ? "Evaluación SAROS asociada" : "Associated SAROS assessment"}</strong>
+                          <p>{selectedHazard.model_assessment.priority} · {selectedHazard.model_assessment.anomaly_index.toFixed(1)} / 100</p>
+                          <p>{selectedHazard.model_assessment.recommendation}</p>
+                          <p className="zone-muted">{lang === "es" ? "Prioridad exploratoria; no es una probabilidad, alerta ni pronóstico." : "Exploratory priority; not a probability, warning, or forecast."}</p>
+                        </div> : <div className="zone-explain" data-tour="model">
+                          <strong><Info size={13} /> {lang === "es" ? "Sin evaluación NISAR para este punto" : "No NISAR assessment for this point"}</strong>
+                          <p>{lang === "es" ? "Este análisis describe los reportes y el contexto histórico disponible. No hay una serie LOS procesada y validada asociada a esta ubicación para calcular movimiento satelital o un pronóstico." : "This analysis describes reports and available historical context. No processed, validated LOS series is associated with this location to estimate satellite motion or a forecast."}</p>
+                        </div>}
+                        <p className="zone-muted">{lang === "es" ? "Las cifras reflejan lo reportado por las fuentes y pueden estar agregadas. No confirman daños actuales ni una amenaza activa." : "Figures reflect source reports and may be aggregated. They do not confirm current damage or an active threat."}</p>
+                        <HazardBackendDetails key={hazardPointId(selectedHazard)} point={selectedHazard} lang={lang} />
+                      </div>
+                    ) : !active ? <p className="zone-muted">{siteId ? c.loading : c.noDataNow}</p> : active.source.mode === "demo" ? <p className="zone-nodata">{lang === "es" ? "Esta serie y sus capas son DEMO; no se muestran como mediciones ni predicciones reales." : "This series and its layers are DEMO; they are not presented as real measurements or predictions."}</p> : (
                       <>
                         <div className="zone-modes" role="radiogroup" aria-label={t.mapView}>
                           {([["single", t.viewSingle], ["swipe", t.viewSwipe], ["change", t.viewChange]] as const).map(([value, label]) => (

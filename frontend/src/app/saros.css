@@ -1675,6 +1675,35 @@ html body .zone-panel {
   color: #fff
 }
 
+.hazard-analysis-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.hazard-analysis-metrics > div {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(166, 126, 255, .2);
+  border-radius: 10px;
+  background: rgba(118, 58, 196, .08);
+}
+
+.hazard-analysis-metrics dt { line-height: 1.35; }
+.hazard-analysis-metrics dd { font-size: clamp(12px, 3vw, 16px); overflow-wrap: anywhere; }
+.hazard-analysis-chart { display: grid; gap: 9px; margin-top: 12px; }
+.hazard-analysis-event { display: grid; grid-template-columns: minmax(80px, auto) 1fr; gap: 3px 9px; align-items: center; font-size: 11px; }
+.hazard-analysis-event time { color: #c7a1ff; font-variant-numeric: tabular-nums; }
+.hazard-analysis-event span { color: #e7e8f5; }
+.hazard-analysis-event small { grid-column: 2; color: var(--saros-muted); font-size: 10px; }
+.hazard-analysis-bar { grid-column: 2; height: 5px; overflow: hidden; border-radius: 9px; background: rgba(255,255,255,.08); }
+.hazard-analysis-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #7140c4, #a978ff); }
+
+@media (max-width: 520px) {
+  .hazard-analysis-metrics { gap: 5px !important; }
+  .hazard-analysis-metrics > div { padding: 7px 5px; }
+  .hazard-analysis-event { grid-template-columns: 1fr; gap: 3px; }
+  .hazard-analysis-event small, .hazard-analysis-bar { grid-column: 1; }
+}
+
 .zone-flag-inline {
   font-size: 9px;
   font-weight: 700;
@@ -3471,6 +3500,51 @@ html body .zone-map-help summary::-webkit-details-marker{display:none}
 html body .zone-map-help p{max-width:260px;margin:6px 0 0;color:#d5def0}
 @media(max-width:900px){html body .zone-stage-map .zone-saru-slot{top:max(52px,calc(env(safe-area-inset-top,0px) + 42px))}}
 @media(max-width:600px){html body .zone-stage-map .zone-saru-slot{top:max(42px,calc(env(safe-area-inset-top,0px) + 34px))}}
+
+/* Datos del backend en la ficha de una afectación: evidencia y operaciones separadas. */
+.backend-evidence{display:grid;gap:12px;min-width:0}
+.backend-evidence>strong{display:flex;align-items:center;gap:7px}
+.backend-evidence-block{min-width:0;padding:11px 12px;border:1px solid rgba(139,92,246,.2);border-radius:13px;background:linear-gradient(135deg,rgba(15,19,43,.68),rgba(16,14,38,.58))}
+.backend-evidence-block>b{display:flex;align-items:center;gap:6px;color:#e7e1f7;font-size:12px}
+.backend-evidence-block p{margin:7px 0 0;color:#cbd3e7;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.backend-evidence-block small,.backend-result-card small{display:block;margin-top:7px;color:var(--saros-muted);font-size:10px;line-height:1.5}
+.backend-raster-series{display:grid;gap:6px;margin-top:10px;padding:9px;border:1px solid rgba(94,240,255,.15);border-radius:10px;background:rgba(6,14,29,.48)}
+.backend-raster-series label{display:grid;gap:5px;color:#bfcbe1;font-size:10px}
+.backend-raster-series select{width:100%;min-width:0;padding:7px;border:1px solid rgba(139,92,246,.25);border-radius:7px;background:#0b1020;color:#eee8ff;font:inherit}
+.backend-raster-series svg{display:block;width:100%;height:92px;overflow:visible}
+.backend-raster-series svg path{fill:none;stroke:rgba(177,190,215,.13);stroke-width:1}
+.backend-raster-series svg polyline{fill:none;stroke:#a879ff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px rgba(139,92,246,.55))}
+.backend-raster-series svg circle{fill:#5ef0ff;stroke:#0b1020;stroke-width:1}
+.backend-raster-series>div{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#8794ae;font-size:9px}
+.backend-raster-series>div b{color:#d7c1ff;font-size:10px;text-align:center}
+.backend-raster-series>small{color:var(--saros-muted);font-size:9px;line-height:1.4}
+.backend-model-tools{min-width:0;padding:10px 12px;border:1px solid rgba(139,92,246,.28);border-radius:13px;background:rgba(12,13,32,.62)}
+.backend-model-tools>summary{display:flex;align-items:center;gap:7px;color:#c49aff;font-size:12px;font-weight:700;cursor:pointer;list-style:none}
+.backend-model-tools>summary::-webkit-details-marker{display:none}
+.backend-model-tools>summary::after{content:"+";margin-left:auto;font-size:17px;font-weight:400}
+.backend-model-tools[open]>summary::after{content:"−"}
+.backend-model-tools form{display:grid;gap:10px;margin-top:10px}
+.backend-model-status{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 9px;border:1px solid rgba(139,92,246,.2);border-radius:9px;background:rgba(139,92,246,.06);color:#cbd3e7;font-size:10px}
+.backend-model-status b{color:#e8dcff}
+.backend-model-status small{width:100%;color:var(--saros-muted)}
+.backend-model-tools label{display:grid;gap:5px;min-width:0;color:#cbd3e7;font-size:11px}
+.backend-model-tools input,.backend-model-tools select{width:100%;min-width:0;padding:8px 9px;border:1px solid rgba(139,92,246,.26);border-radius:8px;background:#0b1020;color:#f0edfa;font:inherit;box-sizing:border-box}
+.backend-model-tools input[type=file]{padding:6px;font-size:10px}
+.backend-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.backend-model-tools button{justify-self:start;min-height:34px;padding:7px 12px;border:1px solid rgba(139,92,246,.62);border-radius:9px;background:linear-gradient(120deg,#482079,#34256e);color:#fff;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+.backend-model-tools button:disabled{opacity:.55;cursor:wait}
+.backend-model-tools button.backend-secondary{background:rgba(139,92,246,.1);color:#c9a7ff}
+.backend-checkpoint{padding:8px 9px;border-left:2px solid #5ef0ff;border-radius:0 8px 8px 0;background:rgba(94,240,255,.06);color:#d5e6f5;font-size:11px}
+.backend-result-card{display:grid;gap:9px;margin-top:11px;padding:11px;border:1px solid rgba(94,240,255,.22);border-radius:11px;background:rgba(8,19,35,.78);color:#d9e2f4;font-size:11px;overflow:hidden}
+.backend-result-card> b{color:#ebddff;font-size:12px}
+.backend-result-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.backend-result-metrics span,.backend-impact-list span{display:grid;gap:3px;padding:7px;border:1px solid rgba(167,139,250,.12);border-radius:8px;background:rgba(139,92,246,.06);color:#aebad2;font-size:10px}
+.backend-result-metrics b,.backend-impact-list b{color:#f1edff;font-size:11px;font-variant-numeric:tabular-nums}
+.backend-mask{display:grid;gap:5px;margin:0;justify-items:start}
+.backend-mask canvas{display:block;width:min(100%,320px);max-height:180px;object-fit:contain;image-rendering:pixelated;border:1px solid rgba(167,139,250,.24);border-radius:7px;background:linear-gradient(45deg,rgba(255,255,255,.025) 25%,transparent 25%,transparent 75%,rgba(255,255,255,.025) 75%),linear-gradient(45deg,rgba(255,255,255,.025) 25%,transparent 25%,transparent 75%,rgba(255,255,255,.025) 75%);background-position:0 0,7px 7px;background-size:14px 14px}
+.backend-mask figcaption{color:#aab9d4;font-size:10px}
+.backend-impact-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+@media(max-width:520px){.backend-form-grid{grid-template-columns:minmax(0,1fr)}.backend-result-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.backend-evidence-block{padding:9px}}
 
 /* Móvil: ficha cerrada flotante y compacta sobre un mapa que ocupa todo el escenario. */
 @media(max-width:900px){

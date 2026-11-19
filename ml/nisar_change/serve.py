@@ -49,7 +49,7 @@ class ContextRequest(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict[str, str | bool]:
+def health() -> dict[str, object]:
     if composite_bundle is None:
         raise HTTPException(status_code=503, detail={"status": "composite_model_missing", "path": str(COMPOSITE_MODEL_PATH)})
     return {
@@ -57,6 +57,7 @@ def health() -> dict[str, str | bool]:
         "composite_model_loaded": True,
         "legacy_supervised_unet_loaded": session is not None,
         "model_version": composite_bundle["model_version"],
+        "supported_tracks": sorted(composite_bundle.get("nisar_anomaly", {}).get("tracks", {}).keys()),
     }
 
 

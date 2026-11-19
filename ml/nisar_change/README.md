@@ -30,6 +30,24 @@ import numpy as np
 np.savez_compressed("patch.npz", features=np.stack([phase_rad, coherence]))
 ```
 
+Para preparar una ventana desde dos COGs GUNW reales que compartan exactamente
+rejilla y CRS, el repositorio incluye `scripts/prepare_gunw_analysis_npz.py`.
+El comando deja un NPZ listo para la interfaz y un JSON contiguo con hashes,
+rejilla, ventana, track y fracción válida; no fabrica píxeles ni etiquetas:
+
+```powershell
+python scripts/prepare_gunw_analysis_npz.py `
+  --phase data/processed/phase.tif `
+  --coherence data/processed/coherence.tif `
+  --window 1200,800,512,512 `
+  --track-id 083-D-087 `
+  --output data/processed/saros-analysis-patch.npz
+```
+
+Omite `--window` solo si todo el ráster tiene como máximo 262.144 píxeles.
+La fase debe estar en radianes y la coherencia entre 0 y 1. El panel limita los
+tracks a los que admite el modelo y que coinciden con una huella del punto.
+
 La ruta requiere token Bearer y la migración `pipeline/sql/007_composite_model.sql`. El resultado se guarda en `analysis.composite_assessments` con sus parámetros y procedencia. La máscara es un cribado exploratorio, no una clasificación de deslizamientos.
 
 ## U-Net supervisada de cambio
@@ -70,6 +88,11 @@ docker compose -f infra/saros/docker-compose.yml --profile training run --rm tra
 El entrenador escribe `best.pt`, `best.onnx`, `history.json` y métricas de prueba cuando hay una partición `test` en `models/nisar-change/`. ONNX Runtime utiliza `best.onnx` para inferencia CPU.
 
 La ruta protegida `POST /api/v1/predictions` envía una entrada NPZ con `before` y `after`, ambos de forma `[canales, alto, ancho]`. Deben compartir calibración, rejilla y valores finitos; las dimensiones deben ser divisibles por 16. Los límites de tamaño los configuran `ML_MAX_REQUEST_BYTES` y `ML_MAX_PIXELS`.
+
+El frontend consulta `/health` a través de la API y deshabilita el flujo U-Net
+si no hay checkpoint ONNX cargado. En este checkout no se incluye `best.onnx`;
+la arquitectura de entrenamiento por sí sola no permite presentar resultados
+U-Net como disponibles.
 
 ## Servicio predictor y alcance
 
