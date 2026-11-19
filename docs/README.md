@@ -36,5 +36,5 @@ Este directorio contiene únicamente documentos Markdown y está agrupado por te
 ## Recursos relacionados
 
 - Los snapshots de investigación ASF están en [evidence](../evidence/README.md).
-- Los prototipos y grabaciones de revisión frontend están en `frontend/design/`.
+- La guía que reúne criterios de diseño, evolución, prototipos y grabaciones frontend está en [frontend/design/README.md](../frontend/design/README.md).
 - Los datos de trabajo y artefactos locales permanecen en `data/` y otras carpetas de procesamiento; no son documentación ni necesariamente forman parte del despliegue.
