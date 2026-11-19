@@ -885,7 +885,7 @@ export default function SaroGuide({ sceneReady, planetRevealed }: { sceneReady: 
       const response = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({ messages, ...(hazard?.id ? { point_id: hazard.id } : {}) }),
         signal: AbortSignal.timeout(45000),
       });
       const payload = (await response.json().catch(() => ({}))) as { answer?: string };
