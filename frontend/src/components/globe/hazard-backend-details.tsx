@@ -82,6 +82,21 @@ function dateText(value: unknown, lang: Lang) {
   return new Date(value).toLocaleDateString(lang === "es" ? "es-CO" : "en-US", { dateStyle: "medium", timeZone: "UTC" });
 }
 
+function friendlyError(error: unknown, lang: Lang) {
+  const value = String(error instanceof Error ? error.message : error);
+  const messages: Record<string, [string, string]> = {
+    model_backend_unavailable: ["El servicio de análisis no responde. Inténtalo de nuevo más tarde.", "The analysis service is unavailable. Try again later."],
+    model_access_required: ["La sesión de análisis expiró. Vuelve a ingresar la clave autorizada.", "The analysis session expired. Enter the authorized key again."],
+    model_actions_disabled: ["El servidor mantiene desactivadas las operaciones de modelos.", "Model operations are disabled on the server."],
+    insufficient_real_observations: ["La serie no tiene suficientes observaciones LOS reales para calcular el pronóstico.", "This series does not have enough real LOS observations for a forecast."],
+    upload_exceeds_32mb_limit: ["El archivo supera el límite de 32 MB.", "The file exceeds the 32 MB limit."],
+    expected_npz_file_under_32mb: ["Selecciona un archivo NPZ válido de hasta 32 MB.", "Select a valid NPZ file under 32 MB."],
+  };
+  return messages[value]?.[lang === "es" ? 0 : 1] ?? (value.startsWith("HTTP ")
+    ? (lang === "es" ? `El servidor respondió ${value}. Revisa los datos o inténtalo de nuevo.` : `The server returned ${value}. Check the input or try again.`)
+    : value);
+}
+
 function pointInFrame(lon: number, lat: number, frame: NisarFrame) {
   return pointInRing(lon, lat, frame.footprint);
 }
@@ -149,7 +164,7 @@ export default function HazardBackendDetails({ point, lang }: Props) {
   const [result, setResult] = useState<{ action: string; data: JsonRecord } | null>(null);
   const [running, setRunning] = useState(false);
   const [formError, setFormError] = useState("");
-  const [trackId, setTrackId] = useState("");
+  const [sceneKey, setSceneKey] = useState("");
   const [checkpoint, setCheckpoint] = useState<JsonRecord | null>(null);
   const [checkpointError, setCheckpointError] = useState("");
   const [checkingCheckpoint, setCheckingCheckpoint] = useState(false);
@@ -246,7 +261,19 @@ export default function HazardBackendDetails({ point, lang }: Props) {
     }));
     return (modelCapabilities?.supported_tracks ?? []).filter((track) => available.has(track));
   }, [matchedFrames, modelCapabilities?.supported_tracks]);
-  const selectedTrack = supportedTracksForPoint.includes(trackId) ? trackId : supportedTracksForPoint[0] ?? "";
+  const analysisFrames = useMemo(() => matchedFrames.filter((frame) => {
+    if (!frame.products.some((product) => product.toUpperCase().includes("GUNW"))) return false;
+    const orbit = frame.direction?.toUpperCase().startsWith("D") ? "D" : frame.direction?.toUpperCase().startsWith("A") ? "A" : "";
+    return supportedTracksForPoint.includes(`${String(frame.track ?? "").padStart(3, "0")}-${orbit}-${String(frame.frame ?? "").padStart(3, "0")}`);
+  }), [matchedFrames, supportedTracksForPoint]);
+  const selectedFrame = analysisFrames.find((frame) => `${frame.aoi}|${frame.track}|${frame.direction}|${frame.frame}` === sceneKey) ?? analysisFrames.find((frame) => {
+    const orbit = frame.direction?.toUpperCase().startsWith("D") ? "D" : frame.direction?.toUpperCase().startsWith("A") ? "A" : "";
+    return supportedTracksForPoint.includes(`${String(frame.track ?? "").padStart(3, "0")}-${orbit}-${String(frame.frame ?? "").padStart(3, "0")}`);
+  }) ?? null;
+  const selectedFrameTrack = selectedFrame ? `${String(selectedFrame.track ?? "").padStart(3, "0")}-${selectedFrame.direction?.toUpperCase().startsWith("D") ? "D" : "A"}-${String(selectedFrame.frame ?? "").padStart(3, "0")}` : "";
+  const selectedTrack = selectedFrameTrack && supportedTracksForPoint.includes(selectedFrameTrack)
+    ? selectedFrameTrack
+    : supportedTracksForPoint[0] ?? "";
   const losSeriesResultMatchesPoint = losSeriesResult?.aoiKey === matchedAoiKey;
 
   useEffect(() => {
@@ -309,7 +336,7 @@ export default function HazardBackendDetails({ point, lang }: Props) {
       if (!response.ok) throw new Error(String(body.error ?? body.detail ?? `HTTP ${response.status}`));
       setCheckpoint(body);
     } catch (error) {
-      setCheckpointError(String(error instanceof Error ? error.message : error));
+      setCheckpointError(friendlyError(error, lang));
     } finally { setCheckingCheckpoint(false); }
   }
 
@@ -326,7 +353,7 @@ export default function HazardBackendDetails({ point, lang }: Props) {
       if (!response.ok) throw new Error(String(body.error ?? body.detail ?? `HTTP ${response.status}`));
       setResult({ action, data: body });
     } catch (error) {
-      setFormError(String(error instanceof Error ? error.message : error));
+      setFormError(friendlyError(error, lang));
     } finally { setRunning(false); }
   }
 
@@ -416,11 +443,14 @@ export default function HazardBackendDetails({ point, lang }: Props) {
             </select>
           </label>
           {action === "analysis" && <div className="backend-form-grid">
-            <label>Track NISAR<select name="track_id" value={selectedTrack} onChange={(event) => setTrackId(event.target.value)} required disabled={!supportedTracksForPoint.length}>
-              {supportedTracksForPoint.map((track) => <option key={track} value={track}>{track}</option>)}
+            <label>{es ? "Escena GUNW que cubre el punto" : "GUNW scene covering this point"}<select value={selectedFrame ? `${selectedFrame.aoi}|${selectedFrame.track}|${selectedFrame.direction}|${selectedFrame.frame}` : ""} onChange={(event) => setSceneKey(event.target.value)} disabled={!analysisFrames.length}>
+              {analysisFrames.map((frame) => <option key={`${frame.aoi}|${frame.track}|${frame.direction}|${frame.frame}`} value={`${frame.aoi}|${frame.track}|${frame.direction}|${frame.frame}`}>{frame.aoi} · {frame.direction} {frame.track}/{frame.frame} · {dateText(frame.first, lang)}–{dateText(frame.last, lang)}</option>)}
             </select></label>
+            <input type="hidden" name="track_id" value={selectedTrack} />
             <label>{es ? "Municipio" : "Municipality"}<input name="municipality" required defaultValue={String(municipality?.municipality_name ?? parts[0] ?? "")} /></label>
             <label>{es ? "Departamento" : "Department"}<input name="department" required defaultValue={department} /></label>
+            {!analysisFrames.length && <p className="zone-muted">{es ? "No hay una escena GUNW catalogada que cubra este punto." : "No catalogued GUNW scene covers this point."}</p>}
+            {selectedFrame && <p className="zone-muted">{es ? "Granules disponibles en el catálogo" : "Granules listed in the catalog"}: {selectedFrame.granules.slice(0, 3).join(", ") || (es ? "sin granules asociados" : "no associated granules")}. {es ? "El NPZ debe prepararse con rásteres de esta escena y conservar su procedencia." : "Prepare the NPZ from this scene's rasters and retain its provenance."}</p>}
             {!supportedTracksForPoint.length && <p className="zone-muted">{es ? "El modelo no tiene un track entrenado que coincida con la huella NISAR registrada para este punto." : "No trained model track matches the NISAR footprint recorded for this point."}</p>}
           </div>}
           {action === "prediction" && <p className="zone-muted">{es ? "NPZ con arreglos `before` y `after` co-registrados, misma forma [canales, alto, ancho] y dimensiones divisibles por 16. La predicción se habilita solo cuando el servicio confirma pesos ONNX." : "NPZ with co-registered `before` and `after` arrays, matching [channels, height, width] shapes, and dimensions divisible by 16. Prediction is enabled only when the service confirms ONNX weights."}</p>}
@@ -452,7 +482,7 @@ export default function HazardBackendDetails({ point, lang }: Props) {
             {checkpoint && <p className="backend-checkpoint">{numberText(checkpoint.observation_count, lang, 0)} {es ? "observaciones reales guardadas" : "stored real observations"} · {es ? "última fecha" : "latest date"}: {dateText(checkpoint.last_processed_date, lang)}</p>}
             {checkpointError && <p className="zone-muted">{checkpointError}</p>}
           </>}
-          <button type="submit" disabled={running || (action === "analysis" && (!modelCapabilities?.composite_ready || !supportedTracksForPoint.length)) || (action === "prediction" && !modelCapabilities?.unet_ready) || (action === "forecast" && !selectedLosSeries)}>{running ? (es ? "Procesando…" : "Processing…") : (es ? "Ejecutar en el backend" : "Run on backend")}</button>
+          <button type="submit" disabled={running || (action === "analysis" && (!modelCapabilities?.composite_ready || !selectedFrame || !supportedTracksForPoint.length)) || (action === "prediction" && !modelCapabilities?.unet_ready) || (action === "forecast" && !selectedLosSeries)}>{running ? (es ? "Procesando…" : "Processing…") : (es ? "Ejecutar en el backend" : "Run on backend")}</button>
         </form>
         {formError && <p className="zone-muted">{formError}</p>}
         {result && <ModelResult action={result.action} data={result.data} lang={lang} />}
@@ -523,7 +553,7 @@ function ModelResult({ action, data, lang }: { action: string; data: JsonRecord;
       <span>{es ? "Dimensiones" : "Dimensions"}<b>{String(data.width ?? "—")} × {String(data.height ?? "—")}</b></span>
     </div>
     <MaskPreview value={data.mask} title={es ? "Máscara de cambio del modelo" : "Model change mask"} />
-    <small>{es ? "La máscara es una salida del modelo sobre el par entregado; requiere validación antes de interpretarse como afectación." : "The mask is a model output for the supplied pair; validate it before interpreting it as an impact."}</small>
+    <small>{es ? "Vista de píxeles de la máscara, todavía sin alineación geográfica sobre el mapa. Es una salida del modelo sobre el par entregado y requiere validación antes de interpretarse como afectación." : "Pixel preview of the mask; it is not yet georeferenced on the map. This model output for the supplied pair requires validation before it is interpreted as an impact."}</small>
   </div>;
 
   const forecast = data.forecast as JsonRecord | undefined;
@@ -532,6 +562,14 @@ function ModelResult({ action, data, lang }: { action: string; data: JsonRecord;
   const quality = data.quality as JsonRecord | undefined;
   const trend = backtest?.robust_linear_trend as JsonRecord | undefined;
   const persistence = backtest?.persistence as JsonRecord | undefined;
+  const origins = Array.isArray(backtest?.origins) ? backtest.origins as JsonRecord[] : [];
+  const chartPoints = origins.filter((origin) => typeof origin.actual_los_mm === "number" && typeof origin.trend_prediction_mm === "number").slice(-12);
+  const chartValues = chartPoints.flatMap((origin) => [Number(origin.actual_los_mm), Number(origin.trend_prediction_mm)]);
+  const chartMin = chartValues.length ? Math.min(...chartValues) : 0;
+  const chartMax = chartValues.length ? Math.max(...chartValues) : 1;
+  const chartSpan = chartMax - chartMin || 1;
+  const chartX = (index: number) => chartPoints.length < 2 ? 150 : 12 + index * 276 / (chartPoints.length - 1);
+  const chartY = (value: number) => 78 - ((value - chartMin) / chartSpan) * 62;
   return <div className="backend-result-card">
     <b>{es ? "Pronóstico LOS exploratorio" : "Exploratory LOS forecast"}</b>
     <div className="backend-result-metrics">
@@ -542,6 +580,16 @@ function ModelResult({ action, data, lang }: { action: string; data: JsonRecord;
       <span>{es ? "MAE persistencia" : "Persistence MAE"}<b>{numberText(persistence?.mae_mm, lang)} mm</b></span>
       <span>{es ? "Objetivos independientes" : "Independent targets"}<b>{numberText(backtest?.unique_target_count, lang, 0)}</b></span>
     </div>
+    {chartPoints.length > 1 && <figure className="backend-forecast-chart">
+      <svg viewBox="0 0 300 92" role="img" aria-label={es ? "Backtest LOS: valores reales y tendencia estimada" : "LOS backtest: actual values and trend estimates"}>
+        <path d="M12 16H288M12 47H288M12 78H288" />
+        <polyline className="backend-forecast-actual" points={chartPoints.map((origin, index) => `${chartX(index)},${chartY(Number(origin.actual_los_mm))}`).join(" ")} />
+        <polyline className="backend-forecast-trend" points={chartPoints.map((origin, index) => `${chartX(index)},${chartY(Number(origin.trend_prediction_mm))}`).join(" ")} />
+        {chartPoints.map((origin, index) => <circle key={`${origin.target_date}-${index}`} cx={chartX(index)} cy={chartY(Number(origin.actual_los_mm))} r="2.5"><title>{`${dateText(origin.target_date, lang)} · ${numberText(origin.actual_los_mm, lang)} mm`}</title></circle>)}
+      </svg>
+      <figcaption><span>{es ? "Observado" : "Observed"}</span><span>{es ? "Tendencia del backtest" : "Backtest trend"}</span></figcaption>
+      <small>{es ? "Comparación de objetivos históricos del backtest; la última fecha no es una observación futura." : "Historical backtest targets; the latest date is not a future observation."}</small>
+    </figure>}
     <p>{es ? "Estado" : "Status"}: {String(data.status ?? "—")} · {es ? "intervalo de confianza" : "confidence interval"}: {String(quality?.confidence_interval_status ?? "—")} · {es ? "fiabilidad" : "reliability"}: {String(quality?.reliability_status ?? "—")}</p>
     <small>{typeof quality?.reliability_note === "string" ? quality.reliability_note : ""}</small>
     <small>{es ? "Extrapolación de LOS con backtest; no es un pronóstico de deslizamiento ni una alerta operativa." : "LOS extrapolation with backtest; not a landslide forecast or operational alert."}</small>
