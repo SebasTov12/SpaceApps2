@@ -60,8 +60,12 @@ def values(feature: dict[str, Any], aoi_id: str, inventoried_at: str) -> list[An
         orbit_match.group(1) if orbit_match else None,
         str(props.get("frameNumber")) if props.get("frameNumber") is not None else (orbit_match.group(3) if orbit_match else None),
         polarization,
+        # GUNW names encode start/end timestamps for the reference acquisition,
+        # followed by start/end timestamps for the secondary acquisition.
+        # Use the first timestamp of each acquisition, not both ends of the
+        # reference acquisition.
         datetime.strptime(timestamps[0], "%Y%m%d").date().isoformat() if timestamps else None,
-        datetime.strptime(timestamps[1], "%Y%m%d").date().isoformat() if len(timestamps) > 1 else None,
+        datetime.strptime(timestamps[2], "%Y%m%d").date().isoformat() if len(timestamps) > 2 else None,
         size, json_text(feature["geometry"]), json_text(props), "ASF DAAC", inventoried_at,
         "real_metadata",
     ]
@@ -84,8 +88,14 @@ def make_stream(catalog_path: Path, summary_path: Path, output: Path) -> int:
         handle.write(
             f"INSERT INTO nisar.catalog_assets ({', '.join(COLUMNS)}) "
             f"SELECT {', '.join(COLUMNS)} FROM _nisar_catalog "
-            "ON CONFLICT (granule_name) DO UPDATE SET source_properties=EXCLUDED.source_properties, "
-            "geometry_geojson=EXCLUDED.geometry_geojson, inventoried_at=EXCLUDED.inventoried_at;\nCOMMIT;\n"
+            "ON CONFLICT (granule_name) DO UPDATE SET aoi_id=EXCLUDED.aoi_id, "
+            "processing_level=EXCLUDED.processing_level, collection=EXCLUDED.collection, "
+            "maturity=EXCLUDED.maturity, orbit_direction=EXCLUDED.orbit_direction, "
+            "relative_orbit=EXCLUDED.relative_orbit, frame=EXCLUDED.frame, "
+            "polarization=EXCLUDED.polarization, reference_date=EXCLUDED.reference_date, "
+            "secondary_date=EXCLUDED.secondary_date, size_bytes=EXCLUDED.size_bytes, "
+            "geometry_geojson=EXCLUDED.geometry_geojson, source_properties=EXCLUDED.source_properties, "
+            "source=EXCLUDED.source, inventoried_at=EXCLUDED.inventoried_at, data_mode=EXCLUDED.data_mode;\nCOMMIT;\n"
         )
     return len(catalog["features"])
 

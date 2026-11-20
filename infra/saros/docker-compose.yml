@@ -129,7 +129,7 @@ services:
       PGPASSWORD: ${SAROS_POSTGRES_PASSWORD:?Set SAROS_POSTGRES_PASSWORD in the server .env}
     volumes:
       - ../../pipeline/sql:/migrations:ro
-    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/004_nisar_forecast.sql", "-f", "/migrations/006_real_data_ingestion.sql", "-f", "/migrations/007_composite_model.sql", "-f", "/migrations/008_assistant_interactions.sql", "-f", "/migrations/009_colombia_territorial_exposure.sql"]
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/004_nisar_forecast.sql", "-f", "/migrations/006_real_data_ingestion.sql", "-f", "/migrations/007_composite_model.sql", "-f", "/migrations/008_assistant_interactions.sql", "-f", "/migrations/009_colombia_territorial_exposure.sql", "-f", "/migrations/010_correct_gunw_pair_dates.sql"]
     depends_on:
       postgres:
         condition: service_healthy
