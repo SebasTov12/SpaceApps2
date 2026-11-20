@@ -229,6 +229,7 @@ services:
       - ../../data:/workspace/data
       - ../../pipeline/data:/workspace/pipeline/data
       - ../../frontend/public/data:/workspace/frontend/public/data
+      - ${SAROS_NISAR_DATA_HOST_PATH:-../../data/nisar}:/home/admin/spaceapps2/data/nisar:ro
     init: true
     restart: "no"
     networks:

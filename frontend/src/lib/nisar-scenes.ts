@@ -8,7 +8,21 @@ export type NisarFrame = {
   footprint: [number, number][]; passes: number; first: string | null; last: string | null;
   products: string[]; maturity: string[]; granules: string[];
 };
-export type NisarPoint = { date: string | null; reference: string | null; mean: number | null; min: number | null; max: number | null; std: number | null; valid: number | null; granule: string };
+export type NisarAssetReference = {
+  asset_id: number; granule: string; product: string; collection: string; maturity: string;
+  track: string | null; frame: string | null; orbit_direction: string | null;
+  date: string | null; reference_date: string | null; secondary_date: string | null;
+  variable: string; band: number; units: string | null; storage_key: string | null;
+  file_name: string; sha256: string; byte_size: number; width: number | null;
+  height: number | null; crs: string | null; bounds: unknown;
+  valid_pixel_count: number | null; valid_fraction: number | null;
+  statistics: Record<string, number>; footprint: [number, number][] | null;
+};
+export type NisarPoint = {
+  date: string | null; reference: string | null; mean: number | null; min: number | null;
+  max: number | null; std: number | null; valid: number | null; granule: string;
+  asset?: NisarAssetReference;
+};
 export type NisarSeries = { aoi: string; variable: string; product: string; units: string | null; points: NisarPoint[] };
 export type NisarScenes = {
   summary: { scenes: number; rasters: number; frames: number; products: Record<string, number>; first: string | null; last: string | null; aois: string[] };

@@ -868,6 +868,22 @@ def _number(value: object) -> float | None:
     return number if math.isfinite(number) else None
 
 
+def _nisar_storage_key(storage_uri: object) -> str | None:
+    """Return a relative NISAR key, never exposing a host file path in the API."""
+    if not isinstance(storage_uri, str):
+        return None
+    parsed = urllib.parse.urlparse(storage_uri)
+    if parsed.scheme != "file":
+        return None
+    parts = Path(urllib.parse.unquote(parsed.path)).parts
+    try:
+        index = len(parts) - 1 - list(reversed(parts)).index("nisar")
+    except ValueError:
+        return None
+    key_parts = parts[index + 1:]
+    return "/".join(key_parts) if key_parts else None
+
+
 def build_nisar_scenes() -> dict[str, object]:
     with connect_db() as connection:
         scenes = connection.execute(
@@ -880,8 +896,12 @@ def build_nisar_scenes() -> dict[str, object]:
         ).fetchall()
         rasters = connection.execute(
             """
-            SELECT r.granule_name, r.variable, r.units, r.valid_fraction, r.statistics,
-                   c.aoi_id, c.processing_level, c.reference_date, c.secondary_date
+            SELECT r.asset_id, r.granule_name, r.variable, r.collection, r.storage_uri,
+                   r.file_name, r.sha256, r.byte_size, r.width, r.height, r.crs, r.units,
+                   r.bounds, r.valid_pixel_count, r.valid_fraction, r.statistics, r.inspected_metadata,
+                   c.aoi_id, c.processing_level, c.maturity, c.orbit_direction,
+                   c.relative_orbit, c.frame, c.reference_date, c.secondary_date,
+                   c.geometry_geojson
               FROM nisar.raster_assets r
               JOIN nisar.catalog_assets c USING (granule_name)
              WHERE r.data_mode = 'real'
@@ -916,8 +936,11 @@ def build_nisar_scenes() -> dict[str, object]:
 
     # series por zona y variable: estadísticas de cada raster en la fecha de su escena
     series: dict[tuple[str, str], dict[str, object]] = {}
-    for granule, variable, units, valid, stats, aoi, level, ref, sec in rasters:
+    for (asset_id, granule, variable, collection, storage_uri, file_name, sha256,
+         byte_size, width, height, crs, units, bounds, valid_pixel_count, valid, stats, inspected,
+         aoi, level, maturity, direction, track, frame, ref, sec, geometry) in rasters:
         stats = stats if isinstance(stats, dict) else {}
+        inspected = inspected if isinstance(inspected, dict) else {}
         key = (str(aoi), str(variable))
         entry = series.setdefault(key, {"aoi": aoi, "variable": variable, "product": level, "units": units, "points": []})
         entry["points"].append({
@@ -926,6 +949,22 @@ def build_nisar_scenes() -> dict[str, object]:
             "mean": _number(stats.get("mean")), "min": _number(stats.get("minimum")),
             "max": _number(stats.get("maximum")), "std": _number(stats.get("standard_deviation")),
             "valid": _number(valid), "granule": granule,
+            "asset": {
+                "asset_id": int(asset_id), "granule": granule,
+                "product": level, "collection": collection, "maturity": maturity,
+                "track": track, "frame": frame, "orbit_direction": direction,
+                "date": (sec or ref).isoformat() if (sec or ref) else None,
+                "reference_date": ref.isoformat() if ref else None,
+                "secondary_date": sec.isoformat() if sec else None,
+                "variable": variable, "band": 1, "units": units,
+                "storage_key": _nisar_storage_key(storage_uri), "file_name": file_name,
+                "sha256": sha256, "byte_size": byte_size, "width": width,
+                "height": height, "crs": crs, "bounds": bounds,
+                "valid_pixel_count": valid_pixel_count,
+                "valid_fraction": _number(valid),
+                "statistics": stats,
+                "footprint": _outer_ring(geometry),
+            },
         })
 
     return {

@@ -51,6 +51,8 @@ docker compose -f infra/saros/docker-compose.yml --profile processing run --rm p
 
 El contenedor de procesamiento usa una red de salida dedicada para consultar ASF/CMR y descargar productos por HTTPS; no se conecta a la red privada de la base. La búsqueda pública del catálogo no requiere Earthdata Login. La descarga sí requiere `EARTHDATA_USERNAME` y `EARTHDATA_PASSWORD` en `.env`. El acceso S3 directo de NISAR solo funciona desde AWS `us-west-2`; desde otras regiones usa el flujo HTTPS de `earthaccess`.
 
+Para leer COGs ya registrados, `SAROS_NISAR_DATA_HOST_PATH` debe apuntar al directorio de activos en el host. En Orivia es `/home/admin/spaceapps2/data/nisar`; el contenedor `processor` lo monta en solo lectura en esa misma ruta. El catálogo expone un `storage_key` relativo junto con la variable, banda, fechas, huella y SHA-256. Este montaje habilita trabajos de procesamiento, pero no convierte automáticamente interferogramas GUNW en observaciones LOS.
+
 El entrenamiento supervisado U-Net se ejecuta bajo el perfil `training` y escribe `best.onnx` en `models/nisar-change/`; requiere una colección de parches etiquetados. El modelo compuesto exploratorio se entrena con `python ml/nisar_change/train_composite.py` y escribe `composite_model.json` en el mismo directorio. El predictor monta ambos artefactos en solo lectura. `/health` comprueba el modelo compuesto; `/api/v1/analysis` expone el análisis combinado, mientras que `/api/v1/predictions` depende del U-Net supervisado.
 
 ### Límites de recursos para Orivia
