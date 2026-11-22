@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import "./operations.css";
 
-export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "SAROS | Data & Validation",
   description: "Live SAROS source coverage, historical validation metrics, and forecast readiness.",
@@ -70,6 +70,7 @@ function number(value: number | undefined, digits = 2) {
 }
 
 export default async function OperationsPage() {
+  await connection();
   const report = await loadReport();
   const metrics = report?.historical_impact_backtest?.metrics ?? {};
   const assessment = report?.latest_exploratory_assessment;
