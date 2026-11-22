@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ProtectedTerms, useI18n } from "@/lib/i18n";
 import { exposureScenarios, type TerritorialAssessment } from "@/lib/socioeconomic";
-import { loadAssessment, loadMunicipalProfile, type MunicipalProfile } from "@/lib/territorial-api";
+import { loadAssessment } from "@/lib/territorial-api";
 
 /** Embedded disclosure in the existing region view, opened by selecting the globe. */
 export default function TerritorialImpact({ zoneId, lat, lon, assessment, observation }: {
@@ -20,9 +20,7 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
   const [result, setResult] = useState<{ zoneId: string; data: TerritorialAssessment | null; error: boolean } | null>(null);
   const [retry, setRetry] = useState(0);
   const [now, setNow] = useState(0);
-  const [liveResult, setLiveResult] = useState<{ zoneId: string; data: MunicipalProfile | null; error: boolean } | null>(null);
   const hasBackend = Boolean(process.env.NEXT_PUBLIC_SAROS_API);
-  const hasLiveRegion = hasBackend && ["colombia-ladera", "bogota-subsidencia", "la-mojana-inundacion", "caqueta-deforestacion", "atrato-mineria", "bajo-cauca-mineria", "chiribiquete-borde"].includes(zoneId);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
@@ -32,64 +30,32 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
     const controller = new AbortController();
     // Keep state updates inside the async completion to avoid a synchronous
     // render cascade when the selected zone changes.
-    loadAssessment(zoneId, controller.signal).then((data) => {
+    loadAssessment(zoneId, lat, lon, controller.signal).then((data) => {
       if (!controller.signal.aborted) setResult({ zoneId, data, error: false });
     }).catch(() => {
       if (!controller.signal.aborted) setResult({ zoneId, data: null, error: true });
     });
     return () => controller.abort();
-  }, [zoneId, assessment, retry]);
-  useEffect(() => {
-    if (!hasLiveRegion) return;
-    const controller = new AbortController();
-    loadMunicipalProfile(zoneId, lon, lat, controller.signal).then((data) => {
-      if (!controller.signal.aborted) setLiveResult({ zoneId, data, error: false });
-    }).catch(() => {
-      if (!controller.signal.aborted) setLiveResult({ zoneId, data: null, error: true });
-    });
-    return () => controller.abort();
-  }, [zoneId, lon, lat, retry, hasLiveRegion]);
-  const loading = hasLiveRegion
-    ? liveResult?.zoneId !== zoneId && result?.zoneId !== zoneId
-    : assessment === undefined && result?.zoneId !== zoneId;
-  const failed = hasLiveRegion
-    ? liveResult?.zoneId === zoneId && liveResult.error && !result?.data
-    : assessment === undefined && result?.zoneId === zoneId && result.error;
-  const profile = liveResult?.zoneId === zoneId ? liveResult.data : null;
+  }, [zoneId, lat, lon, assessment, retry]);
+  const loading = assessment === undefined && result?.zoneId !== zoneId;
+  const failed = assessment === undefined && result?.zoneId === zoneId && result.error;
   const candidate = assessment === undefined ? result?.data : assessment;
   const data = candidate?.zoneId === zoneId ? candidate : null;
   const alerts = data?.alerts?.filter((item) => Date.parse(item.issuedAt) <= now && Date.parse(item.expiresAt) > now) ?? [];
   const selected = exposureScenarios[scenario];
   const format = (value: number) => Math.round(value).toLocaleString(en ? "en-US" : "es-CO");
-  const formatNullable = (value: number | null) => value === null ? "—" : format(value);
   const retryLoad = () => {
     setResult(null);
-    setLiveResult(null);
     setRetry((n) => n + 1);
   };
   return (
     <details className="zone-explain territorial-impact">
-      <summary>{en ? "Territory & livelihoods" : "Territorio y medios de vida"}{(profile || data?.mode === "real") && <span className="territorial-badge notranslate" translate="no">{profile ? "DANE" : "SAROS"}</span>}</summary>
+      <summary>{en ? "Territory & livelihoods" : "Territorio y medios de vida"}{data?.mode === "real" && <span className="territorial-badge notranslate" translate="no">SAROS</span>}</summary>
       {loading ? <p role="status">{en ? "Loading territorial data…" : "Cargando datos territoriales…"}</p>
         : failed ? <div role="alert"><p>{en ? "The backend could not provide territorial data." : "El backend no pudo entregar los datos territoriales."}</p><button className="territorial-retry" onClick={retryLoad}>{en ? "Retry" : "Reintentar"}</button></div>
-          : hasLiveRegion && profile ? <>
-            <p>{en ? "Official municipal indicators from SAROS. The selected point is matched to the DANE municipal boundary." : "Indicadores municipales oficiales consultados a SAROS. El punto seleccionado se cruza con el límite municipal del DANE."}</p>
-            <strong>{profile.municipality}, {profile.department} · DIVIPOLA {profile.divipola}</strong>
-            <div className="zone-stats" aria-live="polite">
-              {[
-                { label: en ? "Population" : "Población", value: profile.population },
-                { label: en ? "Households" : "Hogares", value: profile.households },
-                { label: en ? "Dwellings" : "Viviendas", value: profile.dwellings },
-                { label: en ? "Occupied dwellings" : "Viviendas ocupadas", value: profile.occupiedDwellings },
-              ].map(({ label, value }) => <div key={label}><small>{label}</small><strong>{formatNullable(value)}</strong><em>{en ? `DANE census ${profile.censusVintage}` : `Censo DANE ${profile.censusVintage}`}</em></div>)}
-            </div>
-            <p>{en ? "Housing deficit" : "Déficit habitacional"}: {profile.housingDeficitPercent === null ? "—" : `${profile.housingDeficitPercent.toFixed(1)}%`} · {en ? "Multidimensional poverty index (source value)" : "Índice de pobreza multidimensional (valor de la fuente)"}: {formatNullable(profile.multidimensionalPovertyIndex)}</p>
-            <p>{en ? "Health facilities" : "Centros de salud"}: {formatNullable(profile.healthFacilities)} · {en ? "School sites" : "Establecimientos educativos"}: {formatNullable(profile.schools)}</p>
-            <p>{en ? "Source: DANE municipal framework and census; health and education counts are shown when available." : "Fuente: marco geoestadístico y censo municipal del DANE; los conteos de salud y educación se muestran cuando están disponibles."}</p>
-            <p>{en ? "These are municipal baseline indicators, not people exposed to this radar change, confirmed losses, or a risk forecast." : "Son indicadores base del municipio; no representan personas expuestas a este cambio de radar, daños confirmados ni un pronóstico de riesgo."}</p>
-            {profile.updatedAt && <small className="territorial-provenance">{en ? "Backend refresh" : "Actualizado en backend"}: {profile.updatedAt}</small>}
-          </> : !data ? <p>{en ? "No backend or local reference data is available for this region." : "No hay datos del backend ni referencias locales disponibles para esta región."}</p> : <>
+          : !data ? <p>{hasBackend ? (en ? "No official Colombian municipal profile covers this selected point." : "No hay un perfil municipal oficial colombiano disponible para este punto.") : (en ? "No local reference data is available for this region." : "No hay datos locales de referencia para esta región.")}</p> : <>
               <p><ProtectedTerms text={en ? "SAROS connects surface observations with territorial exposure and preventive review." : "SAROS relaciona cambios de la superficie con exposición territorial y revisión preventiva."} /></p>
+              {data.municipalityName && <strong>{data.municipalityName}{data.departmentName ? `, ${data.departmentName}` : ""} · DIVIPOLA {data.divipola}</strong>}
               <strong>{en ? "1. Surface observation" : "1. Observación de la superficie"}</strong>
               <p>{observation ? `${observation.date} · ${observation.value == null ? "—" : observation.value.toFixed(1)} ${observation.unit}` : (en ? "Observation unavailable" : "Observación no disponible")}</p>
               <p>{en ? "Use the existing map timeline and chart to review the selected point. Exposure assumptions are independent of this measurement." : "Usa la línea de tiempo y la gráfica del mapa para revisar el punto seleccionado. Los supuestos de exposición son independientes de esta medición."}</p>
@@ -104,7 +70,7 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
                 {exposureScenarios.map((item, index) => <option key={index} value={index}>{item.label[lang]} · {item.fraction * 100}%</option>)}
               </select>
               <div className="zone-stats" aria-live="polite">
-                {[[en ? "People exposed" : "Personas expuestas", data.population], [en ? "Homes exposed" : "Viviendas expuestas", data.homes], [en ? "Productive hectares" : "Hectáreas productivas", data.productiveHa]].map(([label, value]) => <div key={label}><small>{label}</small><strong>{format(Number(value) * selected.fraction)}</strong><em>{en ? "Simulated exposure" : "Exposición simulada"}</em></div>)}
+                {[[en ? "Population baseline" : "Población base", data.population], [en ? "Dwellings baseline" : "Viviendas base", data.homes], [en ? "Harvested hectares" : "Hectáreas cosechadas", data.productiveHa]].map(([label, value]) => <div key={label}><small>{label}</small><strong>{value === null ? "—" : format(Number(value) * selected.fraction)}</strong><em>{value === null ? (en ? "No data" : "Sin dato") : (en ? "Illustrative share, not a forecast" : "Fracción ilustrativa, no pronóstico")}</em></div>)}
               </div>
               <p>{data.infrastructure.map((item) => `${item.label[lang]}: ${format(item.count * selected.fraction)}`).join(" · ")}</p>
               <p>{en ? "Assumed share of the inventory; no forecast probability, confirmed loss or monetary damage estimate." : "Fracción supuesta del inventario; no es probabilidad de ocurrencia, pérdida confirmada ni estimación monetaria de daños."}</p>
@@ -127,7 +93,9 @@ export default function TerritorialImpact({ zoneId, lat, lon, assessment, observ
                   <p>{alert.message[lang]}</p><p>{alert.action[lang]}</p><small>{alert.source} · {alert.issuedAt} → {alert.expiresAt}</small>
                 </article>) : <p>{en ? "No current notices received. This does not establish safe conditions." : "Sin avisos vigentes recibidos. Esto no determina condiciones seguras."}</p>}
               </details>
-              <p className="territorial-provenance">{data.assessedAt ? `${en ? "Assessment date" : "Fecha de evaluación"}: ${data.assessedAt}` : (en ? "Illustrative assessment without validation date." : "Evaluación ilustrativa sin fecha de validación.")} <ProtectedTerms text={en ? "SAROS does not predict earthquakes. Decisions require local expert review." : "SAROS no predice terremotos. Las decisiones requieren revisión técnica local."} /></p>
+              {data.productiveHaYear && <p>{en ? "Agricultural harvest data year" : "Año del dato de área cosechada"}: {data.productiveHaYear}</p>}
+              {data.dataSources?.length ? <p className="territorial-provenance">{en ? "Sources" : "Fuentes"}: {data.dataSources.join(" · ")}</p> : <p className="territorial-provenance">{data.source[lang]}</p>}
+              <p className="territorial-provenance">{data.assessedAt ? `${en ? "Backend record updated" : "Registro del backend actualizado"}: ${data.assessedAt}` : (en ? "No update timestamp available." : "Sin fecha de actualización disponible.")} <ProtectedTerms text={en ? "SAROS does not predict earthquakes. Decisions require local expert review." : "SAROS no predice terremotos. Las decisiones requieren revisión técnica local."} /></p>
             </>}
     </details>
   );

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import time
 import re
 import urllib.error
 import urllib.parse
@@ -1076,24 +1077,6 @@ def explorer_availability():
     return jsonify(payload)
 
 
-@app.get("/api/v1/regions/<zone_id>/assessment")
-def region_assessment(zone_id: str):
-    if not re.fullmatch(r"[a-z0-9-]{1,80}", zone_id):
-        return jsonify({"error": "invalid_zone_id"}), 400
-    # A real satellite scene is not by itself a calibrated territorial risk assessment.
-    # Keep this contract explicitly unassessed until DANE exposure and reviewed LOS data join.
-    return jsonify({
-            "zoneId": zone_id, "mode": "demo",
-            "source": {"es": "Sin evaluación territorial publicada para esta zona.", "en": "No territorial assessment is published for this zone."},
-            "population": 0, "homes": 0, "productiveHa": 0, "infrastructure": [],
-            "vulnerability": {"status": "unassessed", "factors": []},
-            "risk": {"level": "unassessed", "method": {"es": "La evaluación territorial y el desplazamiento LOS validado aún no están disponibles.", "en": "A territorial assessment and validated LOS displacement are not yet available."}},
-            "assessedAt": None, "forecast": {"status": "unavailable", "horizon": {"es": "No disponible", "en": "Unavailable"}, "method": "none", "uncertainty": {"es": "No calculada", "en": "Not calculated"}, "summary": {"es": "No hay observaciones procesadas.", "en": "No processed observations are available."}},
-            "sectors": [], "consequence": {"es": "Sin evaluación publicada.", "en": "No assessment published."},
-            "prevention": {"es": "Consulte las autoridades locales.", "en": "Consult local authorities."}, "historicalImpacts": [],
-    })
-
-
 @app.get("/api/v1/datasets")
 def datasets():
     try:
@@ -1112,6 +1095,263 @@ def manifest():
         })
     except psycopg.Error:
         return jsonify({"error": "dataset_manifest_unavailable"}), 503
+
+
+_MUNICIPAL_GEOMETRIES: list[tuple[dict[str, object], dict[str, object], tuple[float, float, float, float]]] | None = None
+_MUNICIPAL_GEOMETRIES_LOADED_AT = 0.0
+
+
+def _coordinate_bounds(coordinates: object) -> tuple[float, float, float, float] | None:
+    points: list[tuple[float, float]] = []
+
+    def collect(value: object) -> None:
+        if not isinstance(value, (list, tuple)):
+            return
+        if len(value) >= 2 and isinstance(value[0], (int, float)) and isinstance(value[1], (int, float)):
+            points.append((float(value[0]), float(value[1])))
+            return
+        for child in value:
+            collect(child)
+
+    collect(coordinates)
+    if not points:
+        return None
+    xs, ys = zip(*points)
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _point_in_ring(lon: float, lat: float, ring: object) -> bool:
+    if not isinstance(ring, list) or len(ring) < 3:
+        return False
+    inside = False
+    previous = ring[-1]
+    for current in ring:
+        if not (isinstance(current, (list, tuple)) and len(current) >= 2
+                and isinstance(previous, (list, tuple)) and len(previous) >= 2):
+            previous = current
+            continue
+        x1, y1 = float(previous[0]), float(previous[1])
+        x2, y2 = float(current[0]), float(current[1])
+        cross = (lon - x1) * (y2 - y1) - (lat - y1) * (x2 - x1)
+        if abs(cross) < 1e-10 and min(x1, x2) - 1e-10 <= lon <= max(x1, x2) + 1e-10 and min(y1, y2) - 1e-10 <= lat <= max(y1, y2) + 1e-10:
+            return True
+        if (y1 > lat) != (y2 > lat) and lon < (x2 - x1) * (lat - y1) / (y2 - y1) + x1:
+            inside = not inside
+        previous = current
+    return inside
+
+
+def _point_in_geometry(lon: float, lat: float, geometry: object) -> bool:
+    if not isinstance(geometry, dict):
+        return False
+    kind, coordinates = geometry.get("type"), geometry.get("coordinates")
+    polygons = [coordinates] if kind == "Polygon" else coordinates if kind == "MultiPolygon" else []
+    for polygon in polygons:
+        if not isinstance(polygon, list) or not polygon or not _point_in_ring(lon, lat, polygon[0]):
+            continue
+        if not any(_point_in_ring(lon, lat, hole) for hole in polygon[1:]):
+            return True
+    return False
+
+
+def _municipal_geometries() -> list[tuple[dict[str, object], dict[str, object], tuple[float, float, float, float]]]:
+    global _MUNICIPAL_GEOMETRIES, _MUNICIPAL_GEOMETRIES_LOADED_AT
+    if _MUNICIPAL_GEOMETRIES is not None and time.monotonic() - _MUNICIPAL_GEOMETRIES_LOADED_AT < 900:
+        return _MUNICIPAL_GEOMETRIES
+    with connect_db() as connection:
+        rows = connection.execute(
+            """
+            SELECT to_jsonb(municipal_profiles) - 'geometry_geojson' AS properties,
+                   geometry_geojson
+              FROM territorial.municipal_profiles
+             WHERE geometry_geojson IS NOT NULL AND data_mode = 'real'
+             ORDER BY divipola
+            """
+        ).fetchall()
+    geometries = []
+    for properties, geometry in rows:
+        if isinstance(geometry, str):
+            try:
+                geometry = json.loads(geometry)
+            except json.JSONDecodeError:
+                continue
+        if not isinstance(geometry, dict):
+            continue
+        bounds = _coordinate_bounds(geometry.get("coordinates"))
+        if bounds is not None:
+            geometries.append((properties, geometry, bounds))
+    _MUNICIPAL_GEOMETRIES = geometries
+    _MUNICIPAL_GEOMETRIES_LOADED_AT = time.monotonic()
+    return geometries
+
+
+def _resolve_municipality(zone_id: str, lat: float | None, lon: float | None) -> dict[str, object] | None:
+    if len(zone_id) == 5 and zone_id.isdigit() and lat is None and lon is None:
+        with connect_db() as connection:
+            row = connection.execute(
+                "SELECT to_jsonb(municipal_profiles) - 'geometry_geojson' FROM territorial.municipal_profiles WHERE divipola = %s AND data_mode = 'real'",
+                (zone_id,),
+            ).fetchone()
+        return row[0] if row else None
+    if lat is None or lon is None:
+        raise ValueError("region_coordinates_required")
+    # Outside Colombia's broad envelope there can be no DIVIPOLA match.
+    if not -5.5 <= lat <= 14.5 or not -83.0 <= lon <= -65.5:
+        return None
+    matches = []
+    for properties, geometry, bounds in _municipal_geometries():
+        west, south, east, north = bounds
+        if west <= lon <= east and south <= lat <= north and _point_in_geometry(lon, lat, geometry):
+            matches.append(properties)
+    if not matches:
+        return None
+    # A point on a shared administrative boundary may hit two polygons; use stable DIVIPOLA ordering.
+    return sorted(matches, key=lambda item: str(item.get("divipola", "")))[0]
+
+
+@app.get("/api/v1/regions/<zone_id>/assessment")
+def regional_assessment(zone_id: str):
+    """Resolve a selected map location to official municipality-level exposure data."""
+    if len(zone_id) > 100:
+        return jsonify({"error": "region_id_too_long"}), 400
+    lat_value, lon_value = request.args.get("lat"), request.args.get("lon")
+    lat = lon = None
+    if (lat_value is None) != (lon_value is None):
+        return jsonify({"error": "latitude_and_longitude_must_be_provided_together"}), 400
+    if lat_value is not None:
+        try:
+            lat, lon = float(lat_value), float(lon_value)
+        except (TypeError, ValueError):
+            return jsonify({"error": "invalid_coordinates"}), 400
+        if not math.isfinite(lat) or not math.isfinite(lon) or not -90 <= lat <= 90 or not -180 <= lon <= 180:
+            return jsonify({"error": "coordinates_out_of_range"}), 400
+    try:
+        profile = _resolve_municipality(zone_id, lat, lon)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except psycopg.errors.UndefinedTable:
+        return jsonify({"error": "territorial_data_not_loaded"}), 503
+    except psycopg.Error:
+        return jsonify({"error": "territorial_data_unavailable"}), 503
+    if profile is None:
+        return jsonify({"error": "municipality_not_found", "message": "No official municipal profile covers this location."}), 404
+
+    divipola = str(profile["divipola"])
+    try:
+        with connect_db() as connection:
+            agricultural = connection.execute(
+                """
+                SELECT year, sum(area_harvested_ha)
+                  FROM territorial.agricultural_production
+                 WHERE divipola = %s AND data_mode = 'real'
+                 GROUP BY year
+                HAVING sum(area_harvested_ha) IS NOT NULL
+                 ORDER BY year DESC LIMIT 1
+                """, (divipola,),
+            ).fetchone()
+            feature_counts = connection.execute(
+                """
+                SELECT feature_type, count(*)
+                  FROM territorial.exposure_features
+                 WHERE divipola = %s AND data_mode = 'real'
+                 GROUP BY feature_type
+                """, (divipola,),
+            ).fetchall()
+            source_rows = connection.execute(
+                "SELECT source_id, source_vintage FROM territorial.source_snapshots WHERE snapshot_id = ANY(%s)",
+                (profile.get("source_snapshot_ids") or [],),
+            ).fetchall()
+    except psycopg.errors.UndefinedTable:
+        return jsonify({"error": "territorial_data_not_loaded"}), 503
+    except psycopg.Error:
+        return jsonify({"error": "territorial_data_unavailable"}), 503
+
+    def optional_count(value: object) -> int | None:
+        return int(round(float(value))) if value is not None else None
+
+    def local_text(es: str, en: str) -> dict[str, str]:
+        return {"es": es, "en": en}
+
+    activity = profile.get("nonresidential_units")
+    crops_year = agricultural[0] if agricultural else None
+    harvested_area = optional_count(agricultural[1]) if agricultural else None
+    sectors = []
+    if harvested_area is not None:
+        sectors.append(local_text("Agricultura (EVA municipal)", "Agriculture (municipal EVA)"))
+    if activity is not None and float(activity) > 0:
+        sectors.append(local_text("Actividad económica censada", "Census-recorded economic activity"))
+    if not sectors:
+        sectors.append(local_text("Actividad económica sin dato disponible", "Economic activity data unavailable"))
+
+    factors = []
+    housing_deficit = profile.get("housing_deficit_percent")
+    poverty = profile.get("multidimensional_poverty_index")
+    if housing_deficit is not None:
+        factors.append(local_text(
+            f"Déficit habitacional censal: {float(housing_deficit):.1f}%",
+            f"Census housing deficit: {float(housing_deficit):.1f}%",
+        ))
+    if poverty is not None:
+        factors.append(local_text(
+            f"Índice de pobreza multidimensional: {float(poverty):.1f}",
+            f"Multidimensional poverty index: {float(poverty):.1f}",
+        ))
+    if not factors:
+        factors.append(local_text("Indicadores de vulnerabilidad no disponibles", "Vulnerability indicators unavailable"))
+
+    features = {str(kind): int(count) for kind, count in feature_counts}
+    infrastructure = []
+    if features.get("road") is not None:
+        infrastructure.append({"label": local_text("Elementos viales registrados", "Recorded road features"), "count": features["road"]})
+    if profile.get("school_site_count") is not None:
+        infrastructure.append({"label": local_text("Sedes educativas", "School sites"), "count": int(profile["school_site_count"])})
+    if profile.get("health_facility_count") is not None:
+        infrastructure.append({"label": local_text("Centros de salud", "Health facilities"), "count": int(profile["health_facility_count"])})
+
+    data_sources = sorted({
+        f"{source_id}{f' ({vintage})' if vintage else ''}" for source_id, vintage in source_rows
+    })
+    census = str(profile.get("census_vintage") or "2018")
+    if not data_sources:
+        data_sources = [f"DANE CNPV {census}"]
+    if crops_year is not None:
+        data_sources.append(f"UPRA EVA {crops_year}")
+    updated_at = profile.get("updated_at")
+    return jsonify({
+        "zoneId": zone_id,
+        "mode": "real",
+        "divipola": divipola,
+        "municipalityName": profile["municipality_name"],
+        "departmentName": profile.get("department_name"),
+        "source": local_text(" · ".join(data_sources), " · ".join(data_sources)),
+        "dataSources": data_sources,
+        "population": optional_count(profile.get("population_total")),
+        "homes": optional_count(profile.get("dwellings_total")),
+        "productiveHa": harvested_area,
+        "productiveHaYear": crops_year,
+        "infrastructure": infrastructure,
+        "vulnerability": {"status": "assessed" if housing_deficit is not None or poverty is not None else "unassessed", "factors": factors},
+        "risk": {"level": "unassessed", "method": local_text(
+            "Los indicadores describen exposición municipal; no constituyen una clasificación de amenaza ni una predicción.",
+            "These indicators describe municipal exposure; they are not a hazard classification or forecast.",
+        )},
+        "assessedAt": updated_at,
+        "sectors": sectors,
+        "consequence": local_text(
+            "El perfil municipal resume población, vivienda y actividad registrada. No indica que una amenaza haya ocurrido ni estima daños.",
+            "The municipal profile summarizes population, housing and recorded activity. It does not indicate that a hazard occurred or estimate damage.",
+        ),
+        "prevention": local_text(
+            "Contrastar las capas y su fecha con autoridades y evaluación técnica local antes de priorizar intervenciones.",
+            "Compare the layers and their dates with local authorities and technical assessment before prioritizing interventions.",
+        ),
+        "historicalImpacts": [],
+        "forecast": {
+            "status": "unavailable", "horizon": local_text("Sin pronóstico", "No forecast"), "method": "",
+            "uncertainty": local_text("No hay una serie LOS validada para esta zona.", "No validated LOS series is available for this area."),
+            "summary": local_text("Los datos de exposición no generan predicciones.", "Exposure data do not generate predictions."),
+        },
+    })
 
 
 @app.get("/api/v1/models/status")

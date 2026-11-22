@@ -15,22 +15,25 @@ test("API supports empty results, HTTP errors and invalid payloads without demo 
   const originalFetch = globalThis.fetch;
   const originalBase = process.env.NEXT_PUBLIC_SAROS_API;
   const data = demoAssessments[0];
+  const lat = 6.2;
+  const lon = -72.4;
+  const signal = () => new AbortController().signal;
   try {
     process.env.NEXT_PUBLIC_SAROS_API = "https://example.test";
     globalThis.fetch = async (url) => {
-      assert.equal(url, `https://example.test/api/v1/regions/${data.zoneId}/assessment`);
+      assert.equal(url, `https://example.test/api/v1/regions/${data.zoneId}/assessment?lat=${lat}&lon=${lon}`);
       return Response.json(data);
     };
-    assert.equal((await loadAssessment(data.zoneId, new AbortController().signal))?.zoneId, data.zoneId);
+    assert.equal((await loadAssessment(data.zoneId, lat, lon, signal()))?.zoneId, data.zoneId);
     globalThis.fetch = async () => new Response(null, { status: 404 });
-    assert.equal(await loadAssessment(data.zoneId, new AbortController().signal), null);
+    assert.equal(await loadAssessment(data.zoneId, lat, lon, signal()), null);
     globalThis.fetch = async () => new Response(null, { status: 503 });
-    await assert.rejects(loadAssessment(data.zoneId, new AbortController().signal));
+    await assert.rejects(loadAssessment(data.zoneId, lat, lon, signal()));
     globalThis.fetch = async () => Response.json({ zoneId: "wrong" });
-    await assert.rejects(loadAssessment(data.zoneId, new AbortController().signal));
+    await assert.rejects(loadAssessment(data.zoneId, lat, lon, signal()));
     delete process.env.NEXT_PUBLIC_SAROS_API;
-    assert.equal(await loadAssessment(data.zoneId, new AbortController().signal), data);
-    assert.equal(await loadAssessment("unknown", new AbortController().signal), null);
+    assert.equal(await loadAssessment(data.zoneId, lat, lon, signal()), data);
+    assert.equal(await loadAssessment("unknown", lat, lon, signal()), null);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalBase === undefined) delete process.env.NEXT_PUBLIC_SAROS_API;

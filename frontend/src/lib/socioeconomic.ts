@@ -4,9 +4,14 @@ export type TerritorialAssessment = {
   zoneId: string;
   mode: "demo" | "real";
   source: LocalText;
-  population: number;
-  homes: number;
-  productiveHa: number;
+  population: number | null;
+  homes: number | null;
+  productiveHa: number | null;
+  productiveHaYear?: number | null;
+  divipola?: string;
+  municipalityName?: string;
+  departmentName?: string | null;
+  dataSources?: string[];
   infrastructure: { label: LocalText; count: number }[];
   vulnerability: { status: "unassessed" | "assessed"; factors: LocalText[] };
   risk: { level: "unassessed" | "low" | "moderate" | "high"; method: LocalText };

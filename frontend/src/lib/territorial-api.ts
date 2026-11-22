@@ -112,7 +112,7 @@ export async function loadMunicipalProfile(
 
 const record = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const text = (v: unknown): boolean => record(v) && typeof v.es === "string" && typeof v.en === "string";
-const count = (v: unknown): boolean => typeof v === "number" && Number.isFinite(v) && v >= 0;
+const count = (v: unknown): boolean => v === null || (typeof v === "number" && Number.isFinite(v) && v >= 0);
 const date = (v: unknown): boolean => typeof v === "string" && Number.isFinite(Date.parse(v));
 const list = (v: unknown, check: (item: unknown) => boolean): boolean => Array.isArray(v) && v.every(check);
 const member = (v: unknown, options: string[]): boolean => typeof v === "string" && options.includes(v);
@@ -134,21 +134,16 @@ export function parseAssessment(value: unknown, zoneId: string): TerritorialAsse
   return value as TerritorialAssessment;
 }
 
-export async function loadAssessment(zoneId: string, signal: AbortSignal): Promise<TerritorialAssessment | null> {
+export async function loadAssessment(zoneId: string, lat: number, lon: number, signal: AbortSignal): Promise<TerritorialAssessment | null> {
   const fallback = demoAssessments.find((item) => item.zoneId === zoneId) ?? null;
   const base = process.env.NEXT_PUBLIC_SAROS_API;
   if (!base) return fallback;
-  try {
-    const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/regions/${encodeURIComponent(zoneId)}/assessment`, {
-      signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]), cache: "no-store",
-    });
-    if (response.status === 404 || response.status === 204) return fallback;
-    if (!response.ok) throw new Error(`Assessment HTTP ${response.status}`);
-    const payload: unknown = await response.json();
-    return parseAssessment(payload, zoneId);
-  } catch (error) {
-    // No ocultar cancelaciones de navegación; para caídas reales del servicio, usar el respaldo local.
-    if (signal.aborted) throw error;
-    return fallback;
-  }
+  const params = new URLSearchParams({ lat: String(lat), lon: String(lon) });
+  const response = await fetch(`${base.replace(/\/$/, "")}/api/v1/regions/${encodeURIComponent(zoneId)}/assessment?${params}`, {
+    signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]), cache: "no-store",
+  });
+  if (response.status === 404 || response.status === 204) return null;
+  if (!response.ok) throw new Error(`Assessment HTTP ${response.status}`);
+  const payload: unknown = await response.json();
+  return parseAssessment(payload, zoneId);
 }
