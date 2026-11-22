@@ -29,14 +29,20 @@ record_failure() {
 
 restore_previous_release() {
   local restored=0
+  local -a restore_services=(saros api predictor)
   log "Rolling back to ${current_commit:0:12}."
   git -C "$deploy_repo" reset --hard "$current_commit" || restored=1
   export SAROS_IMAGE_TAG="$current_commit"
   docker image tag "${old_image_ids[saros]}" "ghcr.io/sebastov12/spaceapps2-saros:${current_commit}" || restored=1
   docker image tag "${old_image_ids[api]}" "ghcr.io/sebastov12/spaceapps2-api:${current_commit}" || restored=1
   docker image tag "${old_image_ids[predictor]}" "ghcr.io/sebastov12/spaceapps2-nisar-model:${current_commit}" || restored=1
-  if ! compose up -d --no-build --no-deps --wait --wait-timeout 240 saros api predictor; then
-    compose logs --tail=80 --no-color saros api predictor || true
+  if grep -q '^  operations-reporter:' "$deploy_repo/infra/saros/docker-compose.yml"; then
+    restore_services+=(operations-reporter)
+  else
+    docker rm -f spaceapps2-operations-reporter >/dev/null 2>&1 || true
+  fi
+  if ! compose up -d --no-build --no-deps --wait --wait-timeout 240 "${restore_services[@]}"; then
+    compose logs --tail=80 --no-color "${restore_services[@]}" || true
     restored=1
   fi
   return "$restored"
@@ -133,7 +139,7 @@ fi
 # Images are built and published by GitHub Actions. Pull them before touching
 # any running service so a missing image or registry/auth problem leaves the
 # current release available and can be retried on the next timer tick.
-if ! compose pull saros api predictor; then
+if ! compose pull saros api predictor operations-reporter; then
   log "Images for ${target_commit:0:12} are not available from GHCR yet; current containers remain untouched and the next timer tick will retry."
   git -C "$deploy_repo" reset --hard "$current_commit"
   exit 0
@@ -145,7 +151,7 @@ if ! compose --profile migration run --rm --no-deps nisar-migrate; then
   fail_before_restart "database migrations"
 fi
 
-if compose up -d --no-build --no-deps --wait --wait-timeout 240 saros api predictor; then
+if compose up -d --no-build --no-deps --wait --wait-timeout 240 saros api predictor operations-reporter; then
   rm -f "$failure_marker"
   log "Deployment succeeded: ${current_commit:0:12} -> ${target_commit:0:12}."
   exit 0

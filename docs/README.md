@@ -1,40 +1,24 @@
-# Documentación SAROS
+# SAROS Documentation Index
 
-Este directorio contiene únicamente documentos Markdown y está agrupado por tema.
+This repository contains the project architecture, data-source notes, model records, operating instructions, and Space Apps delivery material. The current English documentation set is the best starting point for reviewers and users.
 
-## Arquitectura y producto
+## Space Apps 2026
 
-- [Visión y alcance](arquitectura/01-vision-y-alcance.md)
-- [Arquitectura del sistema](arquitectura/02-arquitectura-del-sistema.md)
-- [Stack tecnológico](arquitectura/03-stack-tecnologico.md)
-- [Datos y procesamiento](arquitectura/04-datos-y-procesamiento.md)
-- [API y contratos](arquitectura/05-api-y-contratos.md)
-- [Experiencia y recomendaciones](arquitectura/06-experiencia-y-recomendaciones.md)
-- [Seguridad, privacidad y resiliencia](arquitectura/07-seguridad-privacidad-y-resiliencia.md)
-- [Despliegue y operación](arquitectura/08-despliegue-y-operacion.md)
-- [Decisiones de arquitectura](arquitectura/09-decisiones-arquitectura.md)
-- [Plan de implementación](arquitectura/10-plan-de-implementacion.md)
-- [Catálogo de datos](arquitectura/11-catalogo-de-datos.md)
+- [Project overview](space-apps-2026/project-overview.md)
+- [User guide](space-apps-2026/user-guide.md)
+- [System architecture](space-apps-2026/architecture.md)
+- [Data and scientific method](space-apps-2026/data-and-methods.md)
+- [Validation and current production results](space-apps-2026/validation-and-results.md)
+- [Operations and deployment manual](space-apps-2026/operations-manual.md)
+- [API reference](space-apps-2026/api-reference.md)
+- [Demo runbook](space-apps-2026/demo-runbook.md)
 
-## Datos e investigación
+## Existing technical records
 
-- [Análisis socioeconómico](datos/analisis-socioeconomico.md)
-- [Datos territoriales de Colombia](datos/datos-territoriales-colombia.md)
-- [Ingesta de datos reales](datos/ingesta-datos-reales.md)
-- [Contexto de datos en tiempo real](datos/tiempo-real.md)
+- [Architecture decisions and technical plans](arquitectura/)
+- [Data-source and ingestion records](datos/)
+- [Model records](modelos/)
+- [Space Apps submission](proyecto/entrega.md)
+- [ASF catalog evidence](../evidence/README.md)
 
-## Modelos
-
-- [Modelo predictivo NISAR: método, implementación y avances](modelos/modelo-predictivo-nisar.md)
-- [Síntesis de modelos para Colombia](modelos/modelo-sintesis-colombia.md)
-- [Modelo predictivo y asistente](modelos/modelo-predictivo-y-asistente.md)
-
-## Proyecto
-
-- [Entrega Space Apps](proyecto/entrega.md)
-
-## Recursos relacionados
-
-- Los snapshots de investigación ASF están en [evidence](../evidence/README.md).
-- La guía que reúne criterios de diseño, evolución, prototipos y grabaciones frontend está en [frontend/design/README.md](../frontend/design/README.md).
-- Los datos de trabajo y artefactos locales permanecen en `data/` y otras carpetas de procesamiento; no son documentación ni necesariamente forman parte del despliegue.
+The English Space Apps manuals provide the current product description and operating guidance. Older working notes remain useful as implementation history and may retain their original language.

@@ -1,0 +1,23 @@
+.operations-page{min-height:100vh;padding:clamp(24px,5vw,72px);background:radial-gradient(ellipse at 80% 0%,rgba(0,212,255,.12),transparent 38%),#080c18;color:#e8f1ff;font-family:var(--font-ui,system-ui,sans-serif)}
+.operations-header{display:flex;justify-content:space-between;align-items:center;gap:16px;color:#93a4c3;font-size:11px;letter-spacing:.12em}
+.operations-header a{color:#bdf5ff;text-decoration:none;font-weight:700}
+.operations-intro{max-width:840px;margin:clamp(60px,10vh,110px) 0 44px}
+.operations-eyebrow{color:#00d4ff;font-size:10px;font-weight:700;letter-spacing:.2em}
+.operations-intro h1{margin:12px 0;font-size:clamp(38px,7vw,76px);line-height:1.02;letter-spacing:-.045em}
+.operations-intro>p:not(.operations-eyebrow),.operations-section>p:not(.operations-eyebrow){max-width:800px;color:#aab7ca;line-height:1.7}
+.operations-intro small{display:block;margin-top:18px;color:#8798ad}
+.operations-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.operations-card,.operations-section{border:1px solid rgba(120,170,255,.16);border-radius:14px;background:rgba(14,21,40,.78);padding:20px}
+.operations-card span{display:block;color:#95a8bd;font-size:11px;line-height:1.5}
+.operations-card strong{display:block;margin-top:10px;font-size:24px}
+.operations-section{margin-top:32px}
+.operations-section h2{font-size:clamp(24px,4vw,36px);margin:8px 0}
+.operations-table-wrap{overflow-x:auto;margin-top:22px}
+.operations-table-wrap table{width:100%;border-collapse:collapse;min-width:760px;text-align:left;font-size:13px}
+.operations-table-wrap th,.operations-table-wrap td{padding:13px 12px;border-bottom:1px solid rgba(120,170,255,.13);white-space:nowrap}
+.operations-table-wrap thead th{color:#9bb1c7;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.operations-table-wrap tbody th{color:#e8f1ff;font-weight:600}
+.operations-note,.operations-limit{margin-top:18px;padding:14px 16px;border-left:2px solid #f5aa52;background:rgba(245,170,82,.07);color:#c7d2df;font-size:13px;line-height:1.65}
+.operations-limit strong{color:#ffcf8a}
+.operations-footer{padding:38px 0 8px;color:#77879d;font-size:11px}
+@media(max-width:640px){.operations-header{align-items:flex-start;flex-direction:column}.operations-section{padding:16px}.operations-card strong{font-size:20px}}

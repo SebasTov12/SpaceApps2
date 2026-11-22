@@ -99,6 +99,14 @@ html body .review-card {
   z-index: 7
 }
 
+
+.operations-shortcut {
+  position: absolute; z-index: 2; top: 48px; right: clamp(18px, 4vw, 64px);
+  padding: 9px 12px; border: 1px solid rgba(0, 212, 255, .28); border-radius: 999px;
+  background: rgba(8, 12, 28, .78); color: #d8f8ff; font-size: 11px; text-decoration: none;
+  pointer-events: auto; backdrop-filter: blur(12px)
+}
+.operations-shortcut:hover, .operations-shortcut:focus-visible { border-color: var(--saros-tech); outline: none }
 .ticker-dock {
   position: absolute;
   left: 0;

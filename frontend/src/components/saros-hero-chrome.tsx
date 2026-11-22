@@ -21,6 +21,7 @@ export default function SarosHeroChrome({ progress, departure }: { progress: Mot
 
   return (
     <motion.div className="saros-chrome" style={{ opacity: chromeOpacity }}>
+      <a className="operations-shortcut" href="/operations">Data & validation <span aria-hidden="true">↗</span></a>
       <motion.div className="ticker-dock ticker-dock-top" style={{ opacity: topOpacity, y: topY, filter: topBlur, pointerEvents: topEvents }}>
         <HeadlineTicker />
       </motion.div>

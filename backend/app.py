@@ -87,6 +87,121 @@ def has_assistant_auth() -> bool:
     return bool(ASSISTANT_TOKEN) and request.headers.get("Authorization") == f"Bearer {ASSISTANT_TOKEN}"
 
 
+def build_operational_report(connection: psycopg.Connection) -> dict[str, object]:
+    """Summarize live data readiness and an out-of-time historical-impact backtest."""
+    observation_count, latest_observation = connection.execute(
+        "SELECT count(*), max(observation_date) FROM nisar.observations WHERE data_mode = 'real'"
+    ).fetchone()
+    forecast_runs = connection.execute("SELECT count(*) FROM nisar.forecast_runs WHERE data_mode = 'real'").fetchone()[0]
+    catalog_count, gunw_count, raster_count = connection.execute(
+        """
+        SELECT (SELECT count(*) FROM nisar.catalog_assets),
+               (SELECT count(*) FROM nisar.catalog_assets WHERE processing_level = 'GUNW'),
+               (SELECT count(*) FROM nisar.raster_assets)
+        """
+    ).fetchone()
+    latest = connection.execute(
+        """
+        SELECT model_version, track_id, municipality, department, anomaly_index,
+               changed_fraction, priority_score, priority, data_mode, created_at
+          FROM analysis.composite_assessments ORDER BY created_at DESC LIMIT 1
+        """
+    ).fetchone()
+
+    metrics: dict[str, object] = {}
+    records = connection.execute(
+        """
+        SELECT event_date, upper(trim(coalesce(department, ''))),
+               upper(trim(coalesce(municipality, ''))),
+               affected_families, affected_people, homes_damaged, homes_destroyed
+          FROM hazards.records
+         WHERE record_type = 'event_impact' AND event_date >= DATE '2019-01-01'
+           AND event_date < DATE '2026-01-01'
+        """
+    ).fetchall()
+    metric_columns = {
+        "affected_families": 3,
+        "affected_people": 4,
+        "homes_damaged": 5,
+        "homes_destroyed": 6,
+    }
+    for name, column in metric_columns.items():
+        train = [row for row in records if row[0].year in (2019, 2020, 2021, 2022)
+                 and row[column] is not None and float(row[column]) >= 0]
+        holdout = [row for row in records if row[0].year == 2025
+                   and row[column] is not None and float(row[column]) >= 0]
+        if not train or not holdout:
+            metrics[name] = {"status": "insufficient_records", "train_n": len(train), "holdout_n": len(holdout)}
+            continue
+        global_mean = float(np.mean([float(row[column]) for row in train]))
+        departments: dict[str, list[float]] = {}
+        municipalities: dict[tuple[str, str], list[float]] = {}
+        for row in train:
+            value = float(row[column])
+            department = str(row[1] or "UNKNOWN").strip().upper() or "UNKNOWN"
+            municipality = str(row[2] or "UNKNOWN").strip().upper() or "UNKNOWN"
+            departments.setdefault(department, []).append(value)
+            municipalities.setdefault((department, municipality), []).append(value)
+        department_means = {
+            dept: (sum(values) + 10.0 * global_mean) / (len(values) + 10.0)
+            for dept, values in departments.items()
+        }
+        municipality_means = {}
+        for key, values in municipalities.items():
+            dept_mean = department_means.get(key[0], global_mean)
+            municipality_means[key] = (sum(values) + 10.0 * dept_mean) / (len(values) + 10.0)
+        errors, baseline_errors = [], []
+        for row in holdout:
+            actual = float(row[column])
+            department = str(row[1] or "UNKNOWN").strip().upper() or "UNKNOWN"
+            municipality = str(row[2] or "UNKNOWN").strip().upper() or "UNKNOWN"
+            predicted = municipality_means.get((department, municipality), department_means.get(department, global_mean))
+            errors.append(abs(predicted - actual))
+            baseline_errors.append(abs(global_mean - actual))
+        model_mae = float(np.mean(errors))
+        baseline_mae = float(np.mean(baseline_errors))
+        metrics[name] = {
+            "status": "out_of_time_historical_impact_backtest",
+            "train_period": "2019-2022", "holdout_period": "2025",
+            "train_n": len(train), "holdout_n": len(holdout),
+            "model_mae": model_mae, "global_mean_baseline_mae": baseline_mae,
+            "improvement_vs_baseline_percent": (100.0 * (baseline_mae - model_mae) / baseline_mae)
+            if baseline_mae else None,
+            "unit": "reported " + ("people" if name == "affected_people" else "families" if name == "affected_families" else "houses"),
+        }
+
+    return {
+        "schema_version": "saros-operations-v1",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "service": {"api": "ready", "composite_model": model_ready()},
+        "nisar": {
+            "catalog_assets": catalog_count, "gunw_granules": gunw_count,
+            "raster_assets": raster_count, "real_los_observations": observation_count,
+            "latest_los_date": latest_observation.isoformat() if latest_observation else None,
+            "forecast_runs": forecast_runs,
+            "forecast_status": "exploratory_forecast_recorded" if forecast_runs else "not_available_no_validated_los_series",
+        },
+        "historical_impact_backtest": {
+            "method": "department_municipality_empirical_bayes_shrinkage",
+            "shrinkage_prior_event_count": 10,
+            "metrics": metrics,
+            "interpretation": "Retrospective reported-impact regression only; not NISAR movement forecasting, causal loss estimation, or event probability.",
+        },
+        "latest_exploratory_assessment": ({
+            "model_version": latest[0], "track_id": latest[1], "municipality": latest[2],
+            "department": latest[3], "anomaly_index": latest[4],
+            "changed_fraction": latest[5], "relative_priority_score": latest[6],
+            "priority": latest[7], "data_mode": latest[8], "created_at": latest[9].isoformat(),
+        } if latest else None),
+        "limitations": [
+            "A catalog granule is not a calibrated LOS observation.",
+            "Exploratory anomaly scores are not future-event probabilities or validated warnings.",
+            "Reported historical impacts are not causal estimates for a new event.",
+        ],
+    }
+
+
+
 def assistant_data_context(selected_point_id: str | None = None) -> dict[str, object]:
     """Build a compact, database-backed context; keep forecasts and observations distinct."""
     context: dict[str, object] = {
@@ -1390,6 +1505,40 @@ def model_service_status():
             "service_ready": False, "composite_ready": False,
             "unet_ready": False, "model_version": None, "supported_tracks": [],
         }), 200
+
+
+@app.get("/api/v1/operations/report")
+def operations_report():
+    """Return the latest scheduled, database-backed data and validation report."""
+    try:
+        with connect_db() as connection:
+            row = connection.execute(
+                "SELECT report, created_at FROM analysis.operational_snapshots ORDER BY created_at DESC LIMIT 1"
+            ).fetchone()
+            if row:
+                return jsonify({**row[0], "snapshot_saved_at": row[1].isoformat(), "persisted": True})
+            return jsonify({**build_operational_report(connection), "persisted": False})
+    except psycopg.Error:
+        return jsonify({"error": "operations_report_unavailable", "hint": "Apply migration 011."}), 503
+
+
+@app.post("/api/v1/operations/refresh")
+def refresh_operations_report():
+    """Refresh one auditable production snapshot. Intended for the reporter container."""
+    if not PREDICTION_TOKEN:
+        return jsonify({"error": "operations_refresh_not_configured"}), 503
+    if not has_prediction_auth():
+        return jsonify({"error": "unauthorized"}), 401
+    try:
+        with connect_db() as connection:
+            report = build_operational_report(connection)
+            row = connection.execute(
+                "INSERT INTO analysis.operational_snapshots (report) VALUES (%s) RETURNING created_at",
+                (Jsonb(report),),
+            ).fetchone()
+        return jsonify({**report, "snapshot_saved_at": row[0].isoformat(), "persisted": True}), 201
+    except psycopg.Error:
+        return jsonify({"error": "operations_refresh_failed", "hint": "Check the database and migration 011."}), 503
 
 
 @app.get("/api/v1/territorial/municipalities")

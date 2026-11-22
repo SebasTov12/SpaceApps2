@@ -442,6 +442,7 @@ export default function ZoneView() {
     <div ref={wrapper} className="zone-layer">
       <nav id="zonas" className="zone-nav" aria-label={c.zones}>
         <p>{c.zonesHint}</p>
+        <a className="zone-operations-link" href="/operations">{lang === "en" ? "Data, validation & system status" : "Datos, validación y estado del sistema"} <span aria-hidden="true">↗</span></a>
         <ul>
           {riskZones.map((z) => (
             <li key={z.id}><button type="button" onClick={() => focusZone(z.id)}>{z.place[lang]} · <span translate={z.kind === "subsidence" && globalLang === "pt" ? "no" : undefined}>{riskKindLabel(z.kind, lang, globalLang)}</span></button></li>

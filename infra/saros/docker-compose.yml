@@ -93,6 +93,24 @@ services:
         aliases:
           - spaceapps2-api
 
+  operations-reporter:
+    container_name: spaceapps2-operations-reporter
+    image: ghcr.io/sebastov12/spaceapps2-api:${SAROS_IMAGE_TAG:-latest}
+    command: ["python", "operations_scheduler.py"]
+    restart: unless-stopped
+    cpus: 0.15
+    mem_limit: 128m
+    init: true
+    environment:
+      SAROS_API_URL: http://spaceapps2-api:8000
+      SAROS_PREDICTION_TOKEN: ${SAROS_PREDICTION_TOKEN:?Set SAROS_PREDICTION_TOKEN in the server .env}
+      SAROS_REPORT_INTERVAL_SECONDS: ${SAROS_REPORT_INTERVAL_SECONDS:-86400}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - saros_private
+
   postgres:
     container_name: spaceapps2-postgres
     image: postgres:16-alpine
@@ -129,7 +147,7 @@ services:
       PGPASSWORD: ${SAROS_POSTGRES_PASSWORD:?Set SAROS_POSTGRES_PASSWORD in the server .env}
     volumes:
       - ../../pipeline/sql:/migrations:ro
-    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/004_nisar_forecast.sql", "-f", "/migrations/006_real_data_ingestion.sql", "-f", "/migrations/007_composite_model.sql", "-f", "/migrations/008_assistant_interactions.sql", "-f", "/migrations/009_colombia_territorial_exposure.sql", "-f", "/migrations/010_correct_gunw_pair_dates.sql"]
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/004_nisar_forecast.sql", "-f", "/migrations/006_real_data_ingestion.sql", "-f", "/migrations/007_composite_model.sql", "-f", "/migrations/008_assistant_interactions.sql", "-f", "/migrations/009_colombia_territorial_exposure.sql", "-f", "/migrations/010_correct_gunw_pair_dates.sql", "-f", "/migrations/011_operational_snapshots.sql"]
     depends_on:
       postgres:
         condition: service_healthy
