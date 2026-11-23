@@ -22,6 +22,23 @@ compose() {
   docker compose --env-file "$env_file" -f "$compose_file" "$@"
 }
 
+ensure_operations_reporter() {
+  if ! grep -q '^  operations-reporter:' "$compose_file"; then
+    log "Operations reporter service is absent from the deployed Compose file."
+    return 1
+  fi
+
+  export SAROS_IMAGE_TAG="$target_commit"
+  if compose up -d --no-build --no-deps --wait --wait-timeout 120 operations-reporter; then
+    log "Operations reporter is running for ${target_commit:0:12}."
+    return 0
+  fi
+
+  log "Could not start the operations reporter; the next timer tick will retry."
+  compose logs --tail=40 --no-color operations-reporter || true
+  return 1
+}
+
 record_failure() {
   mkdir -p "$state_dir"
   printf '%s\n' "$target_commit" > "$failure_marker"
@@ -79,6 +96,7 @@ target_commit="$(git -C "$deploy_repo" rev-parse origin/main)"
 
 if [[ "$current_commit" == "$target_commit" ]]; then
   log "SAROS is current at ${current_commit:0:12}."
+  ensure_operations_reporter || exit 1
   exit 0
 fi
 
@@ -151,7 +169,10 @@ if ! compose --profile migration run --rm --no-deps nisar-migrate; then
   fail_before_restart "database migrations"
 fi
 
-if compose up -d --no-build --no-deps --wait --wait-timeout 240 saros api predictor operations-reporter; then
+if compose up -d --no-build --no-deps --wait --wait-timeout 240 saros api predictor; then
+  if ! ensure_operations_reporter; then
+    log "Core services are deployed; the next timer tick will retry the operations reporter."
+  fi
   rm -f "$failure_marker"
   log "Deployment succeeded: ${current_commit:0:12} -> ${target_commit:0:12}."
   exit 0
